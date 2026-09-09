@@ -2,35 +2,37 @@
 FROM node:20-alpine AS node_builder
 WORKDIR /app
 COPY package*.json vite.config.js ./
-RUN npm install
+RUN npm ci || npm install
 COPY resources resources/
 COPY public public/
 RUN npm run build
 
-# Stage 2: PHP & Web Server
-FROM php:8.2-cli-alpine
+# Stage 2: Production PHP Runtime (FrankenPHP on Alpine)
+FROM dunglas/frankenphp:1-php8.2-alpine
 
-# Install ekstensi PostgreSQL dan dependensi
-RUN apk add --no-cache libpq-dev libzip-dev zip unzip postgresql-client \
-    && docker-php-ext-install pdo pdo_pgsql zip bcmath
+# Install Postgres client and required PHP extensions for Laravel + Supabase
+RUN apk add --no-cache libpq-dev postgresql-client \
+    && install-php-extensions pdo_pgsql zip bcmath intl opcache pcntl
 
-# Install Composer
-COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
+# Install Composer binary
+COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 
 WORKDIR /var/www/html
 
-# Salin source code proyek
+# Copy source code and pre-compiled frontend assets
 COPY . .
 COPY --from=node_builder /app/public/build public/build
+COPY Caddyfile /etc/caddy/Caddyfile
 
-# Install dependensi PHP
-RUN composer install --no-dev --optimize-autoloader --no-interaction
+# Install production PHP dependencies
+RUN composer install --no-dev --optimize-autoloader --no-interaction --no-progress
 
-# Set permission storage
+# Set directory permissions for Laravel runtime
 RUN chown -R www-data:www-data storage bootstrap/cache \
     && chmod -R 775 storage bootstrap/cache
 
+ENV SERVER_NAME=":8080"
 EXPOSE 8080
 
-# Jalankan optimize & server
-CMD sh -c "php artisan storage:link --force && php artisan config:cache && php artisan route:cache && php artisan view:cache && php artisan serve --host=0.0.0.0 --port=8080"
+# Production boot: optimize caches and run FrankenPHP server
+CMD ["sh", "-c", "php artisan storage:link --force && php artisan config:cache && php artisan route:cache && php artisan view:cache && frankenphp run --config /etc/caddy/Caddyfile"]

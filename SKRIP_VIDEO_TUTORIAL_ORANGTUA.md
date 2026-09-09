@@ -1,25 +1,48 @@
 # 🎬 SKRIP VIDEO TUTORIAL: PANDUAN PORTAL ORANG TUA (IMS)
+### *Integrated Management System — SMA Islam Al Azhar 7 Solo Baru*
 
+---
+
+## 📌 INFORMASI PRODUKSI VIDEO
+* **Judul Video:** Panduan Mudah Menggunakan Portal Orang Tua IMS
 * **Target Durasi:** 01:50 – 02:00 (Maksimal 2 Menit)
-* **Tone/Suasana:** Hangat, bersahabat, profesional, dan menenangkan hati wali murid.
-* **BGM (Musik Latar):** Akustik islami lembut / instrumental piano tempo santai.
+* **Target Audiens:** Orang Tua / Wali Murid
+* **Tone & Persona:** Hangat, bersahabat, profesional, mudah dipahami, dan mengayomi.
+* **Musik Latar (BGM):** Instrumen akustik islami lembut / melodi piano santai (volume 15–20% saat voiceover berbicara).
+* **Format Output Rekaman:** 1080p Full HD (1920 × 1080), 60 fps, rasio 16:9.
 
 ---
 
-### TABEL RUNDOWN & NASKAH PRODUKSI (00:00 - 02:00)
+## ⏱️ RUNDOWN & NASKAH PRODUKSI LENGKAP (00:00 – 02:00)
 
-| Menit (Waktu) | Visual di Layar (Screen Recording) | Naskah Suara (Voiceover / VO) | Teks Pendukung di Layar (Caption) |
+| Detik / Durasi | Panduan Visual Layar (Screenplay & Cursor) | Naskah Voiceover (Kata per Kata) | Teks Grafis di Layar (Lower Third / Caption) |
 | :--- | :--- | :--- | :--- |
-| **00:00 – 00:15** <br>*(15 Detik)* | • Menampilkan halaman Login IMS.<br>• Memasukkan username & password orang tua, lalu klik tombol **Masuk**.<br>• Transisi mulus masuk ke Dashboard Orang Tua dengan sambutan banner hangat. | *"Assalamu’alaikum Warahmatullahi Wabarakatuh. Selamat datang Ayah dan Bunda di Portal Terpadu IMS — Integrated Management System. Melalui portal ini, Ayah Bunda dapat memantau jejak ananda secara real-time dari rumah."* | **Portal Wali Santri IMS**<br>Pantau Ananda Kapan Saja & Di Mana Saja |
-| **00:15 – 00:35** <br>*(20 Detik)* | • Kursor mengarah ke bagian atas Dashboard: Banner sambutan khusus wali murid.<br>• Menyorot tombol **Tab Pilihan Ananda** (*Multi-child Switcher*), kursor mengklik nama anak pertama lalu anak kedua. | *"Setelah login, Ayah Bunda akan langsung disambut di Dashboard Utama. Bagi Ayah Bunda yang memiliki lebih dari satu putra atau putri di sekolah, cukup klik nama ananda di tab atas untuk beralih profil dengan mudah dan praktis."* | **Multi-Anak (1 Akun)**<br>Pilih profil ananda dengan sekali klik |
-| **00:35 – 01:05** <br>*(30 Detik)* | • Layar zoom-in ke **3 Kartu Bento Utama**: <br>1. *Diagram Lingkaran Tahfizh* (persentase & jumlah juz/jilid).<br>2. *Medali Karakter & Adab* beserta checklist 5 waktu shalat.<br>3. *Kartu Kedisiplinan & Poin Reward*. | *"Di layar utama, terdapat 3 hal pantauan penting: Pertama, capaian Tahfizh Al-Qur'an dan persentase target hafalan. Kedua, evaluasi Karakter & Adab, lengkap dengan checklist shalat fardhu lima waktu hari ini. Serta ketiga, catatan kedisiplinan dan poin prestasi ananda."* | **3 Hal Pemantauan:**<br>1. Tahfizh Mutqin<br>2. Adab & Shalat 5 Waktu<br>3. Kedisiplinan & Prestasi |
-| **01:05 – 01:35** <br>*(30 Detik)* | • Kursor mengklik sub-tab: <br>1. **Tahfizh & Target**: Gulir melihat target kurikulum, peta perjalanan (*milestone*), dan riwayat setoran hafalan baru & muraja'ah terakhir.<br>2. **Catatan Adab**: Sorot skor dan klik *Buka Lembar Adab*.<br>3. **Kedisiplinan**: Sorot rincian poin reward & pelanggaran. | *"Gulir ke bawah untuk rincian lebih dalam: Pada tab Tahfizh, Ayah Bunda bisa melihat target kurikulum serta ayat yang baru saja disetorkan dan dimuraja'ah. Di tab Adab, pantau pembiasaan karakter ananda. Dan di tab Kedisiplinan, lihat apresiasi reward maupun catatan tata tertib yang perlu pendampingan."* | **Rincian Jejak Belajar:**<br>• Riwayat Hafalan & Muraja'ah<br>• Buku Mutaba'ah Adab<br>• Catatan Poin Ananda |
-| **01:35 – 01:50** <br>*(15 Detik)* | • Membuka sidebar navigasi kiri.<br>• Mengklik menu **Mushaf Al-Qur'an** (menampilkan lembaran mushaf digital).<br>• Menunjukkan menu **Progress / Rapor** (tampilan rekap capaian ananda). | *"Ayah Bunda juga dapat membuka menu samping untuk mengakses Mushaf Al-Qur'an Digital guna menyimak hafalan ananda dari rumah, serta melihat rekapitulasi Rapor Digital perkembangan berkala."* | **Menu Tambahan:**<br>📖 Mushaf Al-Qur'an Digital<br>📊 Rapor Perkembangan |
-| **01:50 – 02:00** <br>*(10 Detik)* | • Tampilan layar kembali ke Dashboard penuh.<br>• Menampilkan kartu penutup berisi kontak sekolah / narasi penutup.<br>• Fade out ke logo instansi & teks IMS. | *"Mari bersama-sama kita dampingi tumbuh kembang ananda menjadi generasi Qur'ani yang berakhlak mulia. Terima kasih, Wassalamu’alaikum Warahmatullahi Wabarakatuh."* | **Bersama Menjaga Amanah Ananda**<br>Integrated Management System |
+| **00:00 – 00:15** <br>*(15 Detik)* | • Tampilkan halaman utama Login IMS dengan latar belakang sekolah yang jernih.<br>• Kursor mengetikkan username & password orang tua, lalu klik tombol **LOGIN**.<br>• Transisi halus masuk ke halaman **Dashboard Orang Tua**. | *"Assalamu’alaikum Warahmatullahi Wabarakatuh. Selamat datang Ayah dan Bunda di Portal Terpadu IMS — SMA Islam Al Azhar 7 Solo Baru. Kini, Ayah Bunda dapat mendampingi dan memantau perkembangan ananda tercinta secara langsung dan transparan dari mana saja."* | **Portal Orang Tua IMS**<br>SMA Islam Al Azhar 7 Solo Baru |
+| **00:15 – 00:35** <br>*(20 Detik)* | • Kursor menyorot banner sambutan hangat di bagian atas.<br>• Kursor mengklik **Tab Pilihan Ananda** (*Multi-Child Switcher*) di atas layar, berganti dari anak pertama ke anak kedua secara mulus. | *"Setelah masuk, Ayah Bunda langsung tiba di Beranda Utama. Bagi Ayah Bunda yang memiliki lebih dari satu putra atau putri di sekolah, cukup klik tab nama ananda di bagian atas untuk berpindah profil pemantauan dalam satu akun, tanpa perlu repot keluar-masuk aplikasi."* | **Fitur Multi-Anak (1 Akun)**<br>Pindah profil ananda dengan satu klik |
+| **00:35 – 01:00** <br>*(25 Detik)* | • Kursor mengklik menu **Tahfizh** (atau kartu capaian tahfizh).<br>• Layar memperlihatkan diagram persentase target hafalan, surah dan ayat terakhir yang disetorkan, serta riwayat muraja'ah harian. | *"Pada menu Tahfizh, Ayah Bunda dapat melihat capaian hafalan Al-Qur'an ananda secara detail: mulai dari persentase ketercapaian target juz, surah dan ayat terakhir yang disetorkan kepada asatidz, hingga keteraturan muraja'ah ananda setiap harinya."* | **Menu Tahfizh & Muraja'ah**<br>• Target Capaian Hafalan<br>• Riwayat Setoran & Muraja'ah Harian |
+| **01:00 – 01:25** <br>*(25 Detik)* | • Kursor berpindah ke menu **Adab**.<br>• Sorot skor indeks adab karakter islami.<br>• Tampilkan checklist mutaba'ah ibadah harian seperti shalat fardhu 5 waktu dan pembiasaan adab baik di sekolah. | *"Selanjutnya pada menu Adab, Ayah Bunda dapat memantau pembiasaan karakter islami ananda di sekolah: mulai dari keteraturan shalat fardhu lima waktu, adab kepada guru dan teman, hingga evaluasi keteladanan harian yang dibimbing oleh musyrif pendamping."* | **Menu Adab & Karakter**<br>• Pembiasaan Shalat 5 Waktu<br>• Indeks Nilai Karakter Islami |
+| **01:25 – 01:45** <br>*(20 Detik)* | • Kursor mengklik menu **Mushaf Al-Qur'an** (tampilkan lembaran mushaf digital yang interaktif).<br>• Lalu buka menu **Poin & Disiplin** (tampilkan catatan apresiasi reward kedisiplinan ananda). | *"Portal ini juga menyediakan Mushaf Al-Qur'an Digital resmi yang dilengkapi audio tilawah untuk menemani ananda mengaji di rumah. Ayah Bunda juga bisa memeriksa menu Poin & Disiplin untuk memantau catatan ketertiban dan prestasi ananda."* | **Fitur Unggulan:**<br>📖 Mushaf Al-Qur'an Digital Interaktif<br>⭐ Catatan Poin Prestasi & Kedisiplinan |
+| **01:45 – 02:00** <br>*(15 Detik)* | • Tunjukkan navigasi bawah (*Floating Bottom Nav*) di layar smartphone / iPad.<br>• Tampilan kembali ke kartu Beranda.<br>• Fade out ke logo SMA Islam Al Azhar 7 Solo Baru dan kontak sekolah. | *"Seluruh kemudahan ini dapat diakses nyaman melalui ponsel pintar Anda. Mari bersinergi menghantarkan ananda menjadi generasi Qur'ani yang berakhlak mulia. Terima kasih, Wassalamu’alaikum Warahmatullahi Wabarakatuh."* | **Bersinergi Menjaga Amanah Ananda**<br>Portal IMS SMA Islam Al Azhar 7 Solo Baru |
 
 ---
 
-### 💡 Tips Penting saat Perekaman Video:
-1. **Resolusi Rekaman:** Disarankan menggunakan resolusi layar **1920 × 1080 (16:9)** pada browser dan zoom 110% agar tulisan angka dan teks terbaca jelas di layar smartphone.
-2. **Akun Uji Coba:** Gunakan akun orang tua percontohan yang sudah memiliki riwayat setoran, catatan adab, dan checklist shalat agar tampilan dashboard tampak aktif dan informatif.
-3. **Sorotan Kursor:** Gunakan efek lingkaran kuning / sorotan pada kursor mouse untuk mempermudah wali santri mengikuti alur panduan.
+## 🎯 DAFTAR MENU KHUSUS ORANG TUA YANG DIJELASKAN
+1. **Beranda / Dashboard Terpadu:** Pusat ringkasan pemantauan terintegrasi dengan dukungan multi-anak (*1 akun untuk semua ananda*).
+2. **Tahfizh & Muraja'ah:** Pantauan target juz/jilid, riwayat hafalan baru (ziyadah), serta riwayat muraja'ah berkala.
+3. **Adab & Karakter Islami:** Catatan mutaba'ah ibadah harian, shalat fardhu 5 waktu, dan perilaku akhlak ananda di lingkungan sekolah.
+4. **Mushaf Al-Qur'an Digital:** Mushaf 30 juz resmi dengan audio tilawah dan navigasi surah yang praktis untuk disimak bersama ananda di rumah.
+5. **Poin & Disiplin (Ketahanan Sekolah):** Catatan poin tata tertib dan apresiasi prestasi siswa.
+6. **Mobile Bottom Navigation:** Navigasi cepat khusus perangkat mobile dan tablet (Tahfizh, Adab, Beranda, Mushaf, Lainnya).
+
+---
+
+## 💡 PANDUAN TEKNIS BAGI KREATOR VIDEO (RECORDING TIPS)
+1. **Tampilan Browser:** 
+   - Gunakan Google Chrome atau Safari dengan resolusi layar `1920 × 1080` (Full HD).
+   - Setel zoom browser ke `105%` atau `110%` agar angka capaian dan teks tabel terbaca sangat tajam di layar handphone wali murid.
+2. **Akun Percontohan (Demo Data):**
+   - Pastikan akun orang tua uji coba sudah ditautkan dengan minimal 1 atau 2 data murid yang memiliki riwayat setoran tahfizh dan nilai adab aktif.
+3. **Efek Kursor (Pointer Highlight):**
+   - Aktifkan efek sorotan kursor (lingkaran kuning transparan atau klik animasi) di aplikasi perekam (OBS, Camtasia, atau ScreenFlow) agar mata audiens mudah mengikuti bagian yang sedang dijelaskan.
+4. **Penyampaian Suara (Voiceover Pacing):**
+   - Bicara dengan artikulasi santai, ramah, dan artikulatif (kecepatan ideal sekitar 125–135 kata per menit).

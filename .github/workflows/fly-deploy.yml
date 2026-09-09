@@ -3,12 +3,12 @@ name: Fly Deploy
 on:
   push:
     branches:
-      - setup-supabase-fly
       - main
+  workflow_dispatch:
 
 jobs:
   deploy:
-    name: Deploy app
+    name: Deploy app to Fly.io
     runs-on: ubuntu-latest
     concurrency: deploy-group
     steps:
@@ -16,7 +16,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Setup Flyctl
-        uses: superfly/flyctl-actions/setup-flyctl@master
+        uses: superfly/flyctl-actions/setup-flyctl@v1
 
       - name: Deploy to Fly.io
         run: flyctl deploy --remote-only
