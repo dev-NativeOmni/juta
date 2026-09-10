@@ -104,19 +104,19 @@ class BackupDatabaseCommandTest extends TestCase
         File::cleanDirectory($backupDir);
 
         // Create an old file
-        $oldFile = $backupDir . '/old_backup.sql';
+        $oldFile = $backupDir.'/old_backup.sql';
         File::put($oldFile, 'OLD CONTENT');
         // Set modify time to 15 days ago
         touch($oldFile, now()->subDays(15)->timestamp);
 
         // Create a recent file
-        $recentFile = $backupDir . '/recent_backup.sql';
+        $recentFile = $backupDir.'/recent_backup.sql';
         File::put($recentFile, 'RECENT CONTENT');
         // Set modify time to 5 days ago
         touch($recentFile, now()->subDays(5)->timestamp);
 
         // Create a non-sql file that should not be touched
-        $otherFile = $backupDir . '/old_file.txt';
+        $otherFile = $backupDir.'/old_file.txt';
         File::put($otherFile, 'TEXT CONTENT');
         touch($otherFile, now()->subDays(15)->timestamp);
 
