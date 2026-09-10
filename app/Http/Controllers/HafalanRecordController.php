@@ -11,9 +11,11 @@ use App\Models\Surah;
 use App\Models\TeacherProfile;
 use App\Models\UmmiRecord;
 use App\Models\User;
+use App\Services\StudentProgressService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 
 class HafalanRecordController extends Controller
@@ -53,11 +55,11 @@ class HafalanRecordController extends Controller
                         $q->whereHas('student', function ($sub) use ($search) {
                             $sub->where('name', 'like', "%{$search}%");
                         })
-                        ->orWhereHas('surah', function ($sub) use ($search) {
-                            $sub->where('name_latin', 'like', "%{$search}%");
-                        })
-                        ->orWhere('ummi_jilid', 'like', "%{$search}%")
-                        ->orWhere('materi', 'like', "%{$search}%");
+                            ->orWhereHas('surah', function ($sub) use ($search) {
+                                $sub->where('name_latin', 'like', "%{$search}%");
+                            })
+                            ->orWhere('ummi_jilid', 'like', "%{$search}%")
+                            ->orWhere('materi', 'like', "%{$search}%");
                     });
                 })
                 ->latest('tanggal')
@@ -97,9 +99,9 @@ class HafalanRecordController extends Controller
                         $q->whereHas('student', function ($sub) use ($search) {
                             $sub->where('name', 'like', "%{$search}%");
                         })
-                        ->orWhereHas('surah', function ($sub) use ($search) {
-                            $sub->where('name_latin', 'like', "%{$search}%");
-                        });
+                            ->orWhereHas('surah', function ($sub) use ($search) {
+                                $sub->where('name_latin', 'like', "%{$search}%");
+                            });
                     });
                 })
                 ->latest('submitted_at')
@@ -255,8 +257,8 @@ class HafalanRecordController extends Controller
             'nilai' => ['nullable', 'string', 'max:10'],
             'hafalan_surah_id' => ['nullable', 'integer', 'exists:surahs,id'],
             'hafalan_ayah' => ['nullable', 'string', 'max:50'],
-            'disimak_guru' => ['required', \Illuminate\Validation\Rule::in(['Ya', 'Tidak'])],
-            'disimak_ortu' => ['required', \Illuminate\Validation\Rule::in(['Ya', 'Tidak'])],
+            'disimak_guru' => ['required', Rule::in(['Ya', 'Tidak'])],
+            'disimak_ortu' => ['required', Rule::in(['Ya', 'Tidak'])],
             'catatan' => ['nullable', 'string'],
         ]);
 
@@ -290,7 +292,7 @@ class HafalanRecordController extends Controller
 
         $count = 0;
         foreach ($records as $record) {
-            if ($user->hasAnyRole(['super_admin', 'admin']) || ($user->hasRole('teacher') && (int)$record->teacher_id === (int)$user->teacherProfile?->id)) {
+            if ($user->hasAnyRole(['super_admin', 'admin']) || ($user->hasRole('teacher') && (int) $record->teacher_id === (int) $user->teacherProfile?->id)) {
                 $record->delete();
                 $count++;
             }
@@ -313,7 +315,7 @@ class HafalanRecordController extends Controller
 
         $count = 0;
         foreach ($records as $record) {
-            if ($user->hasAnyRole(['super_admin', 'admin']) || ($user->hasRole('teacher') && (int)$record->teacher_id === (int)$user->teacherProfile?->id)) {
+            if ($user->hasAnyRole(['super_admin', 'admin']) || ($user->hasRole('teacher') && (int) $record->teacher_id === (int) $user->teacherProfile?->id)) {
                 $record->delete();
                 $count++;
             }
@@ -362,13 +364,13 @@ class HafalanRecordController extends Controller
                 $name = $class->name ?? '';
                 $level = (string) ($class->level ?? '');
                 $isGrade10 = (
-                    (preg_match('/\bX\b/i', $name) && !preg_match('/\b(XI|XII)\b/i', $name))
+                    (preg_match('/\bX\b/i', $name) && ! preg_match('/\b(XI|XII)\b/i', $name))
                     || preg_match('/\b10\b/i', $name)
                     || preg_match('/^X[-_\s]?E/i', $name)
                     || preg_match('/kelas\s*(X|10)/i', $name)
-                    || (preg_match('/\bX\b/i', $level) && !preg_match('/\b(XI|XII)\b/i', $level))
+                    || (preg_match('/\bX\b/i', $level) && ! preg_match('/\b(XI|XII)\b/i', $level))
                     || preg_match('/\b10\b/i', $level)
-                ) && !preg_match('/\b(XI|XII|11|12)\b/i', $name);
+                ) && ! preg_match('/\b(XI|XII|11|12)\b/i', $name);
 
                 return $isGrade10;
             })->values();
@@ -395,7 +397,7 @@ class HafalanRecordController extends Controller
         abort_if($user->hasAnyRole(['student', 'parent']), 403, 'Opsi cetak kartu UMMI tidak diperbolehkan untuk akun murid dan orang tua.');
 
         // Check if student belongs to the visible students for this user
-        $visibleStudentIds = app(\App\Services\StudentProgressService::class)
+        $visibleStudentIds = app(StudentProgressService::class)
             ->visibleStudentQuery($user)
             ->pluck('id');
 
