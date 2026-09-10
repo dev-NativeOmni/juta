@@ -15,7 +15,6 @@ class PruneExpiredApiTokensTest extends TestCase
     {
         parent::setUp();
 
-        // Ensure the tokens table exists for standard tests
         if (! Schema::hasTable('personal_access_tokens')) {
             $this->artisan('migrate');
         }
@@ -23,7 +22,6 @@ class PruneExpiredApiTokensTest extends TestCase
 
     public function test_it_deletes_expired_tokens()
     {
-        // Insert active token
         DB::table('personal_access_tokens')->insert([
             'tokenable_type' => 'App\\Models\\User',
             'tokenable_id' => 1,
@@ -35,7 +33,6 @@ class PruneExpiredApiTokensTest extends TestCase
             'updated_at' => now(),
         ]);
 
-        // Insert expired token
         DB::table('personal_access_tokens')->insert([
             'tokenable_type' => 'App\\Models\\User',
             'tokenable_id' => 2,
@@ -59,7 +56,6 @@ class PruneExpiredApiTokensTest extends TestCase
 
     public function test_it_does_not_delete_tokens_in_dry_run_mode()
     {
-        // Insert expired token
         DB::table('personal_access_tokens')->insert([
             'tokenable_type' => 'App\\Models\\User',
             'tokenable_id' => 1,
@@ -77,13 +73,11 @@ class PruneExpiredApiTokensTest extends TestCase
             ->expectsOutput('Dry run: 1 expired API token(s) would be deleted.')
             ->assertSuccessful();
 
-        // Ensure token still exists
         $this->assertEquals(1, DB::table('personal_access_tokens')->count());
     }
 
     public function test_it_respects_the_days_option()
     {
-        // Token expired 2 days ago
         DB::table('personal_access_tokens')->insert([
             'tokenable_type' => 'App\\Models\\User',
             'tokenable_id' => 1,
@@ -95,7 +89,6 @@ class PruneExpiredApiTokensTest extends TestCase
             'updated_at' => now(),
         ]);
 
-        // Token expired 10 days ago
         DB::table('personal_access_tokens')->insert([
             'tokenable_type' => 'App\\Models\\User',
             'tokenable_id' => 2,
@@ -109,12 +102,10 @@ class PruneExpiredApiTokensTest extends TestCase
 
         $this->assertEquals(2, DB::table('personal_access_tokens')->count());
 
-        // Delete tokens expired at least 5 days ago
         $this->artisan('ims:prune-api-tokens', ['--days' => 5])
             ->expectsOutput('Deleted 1 expired API token(s).')
             ->assertSuccessful();
 
-        // The token expired 2 days ago should still be there
         $this->assertEquals(1, DB::table('personal_access_tokens')->count());
         $this->assertEquals('Token 2 Days Ago', DB::table('personal_access_tokens')->first()->name);
     }
@@ -130,7 +121,6 @@ class PruneExpiredApiTokensTest extends TestCase
 
     public function test_it_fails_if_expires_at_column_does_not_exist()
     {
-        // Recreate the table without the expires_at column
         Schema::dropIfExists('personal_access_tokens');
         Schema::create('personal_access_tokens', function ($table) {
             $table->id();
