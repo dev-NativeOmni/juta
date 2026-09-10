@@ -7,7 +7,9 @@ use App\Models\ParentProfile;
 use App\Models\Student;
 use App\Models\StudentPoint;
 use App\Models\SystemNotification;
+use Carbon\Carbon;
 use Illuminate\Contracts\View\View;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
@@ -230,7 +232,7 @@ class StudentPointController extends Controller
             ->with('success', 'Catatan poin kedisiplinan berhasil diperbarui.');
     }
 
-    public function chart(Request $request): View|\Illuminate\Http\RedirectResponse
+    public function chart(Request $request): View|RedirectResponse
     {
         $user = Auth::user();
 
@@ -289,7 +291,7 @@ class StudentPointController extends Controller
             ->when($classRoomId, fn ($q) => $q->whereHas('student', fn ($sq) => $sq->where('class_room_id', $classRoomId)))
             ->get();
 
-        $violationsByMonth = $allYearViolations->groupBy(fn ($item) => (int) \Carbon\Carbon::parse($item->date)->format('n'));
+        $violationsByMonth = $allYearViolations->groupBy(fn ($item) => (int) Carbon::parse($item->date)->format('n'));
 
         $monthlyTrends = [];
         for ($m = 1; $m <= 12; $m++) {
