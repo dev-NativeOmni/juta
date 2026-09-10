@@ -3,12 +3,10 @@
 namespace Tests\Unit\Services;
 
 use App\Services\DashboardService;
-use App\Services\StudentMotivationService;
-use App\Services\StudentProgressService;
-use Illuminate\Support\Facades\Cache;
-use Tests\TestCase;
-use PHPUnit\Framework\Attributes\Test;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Cache;
+use PHPUnit\Framework\Attributes\Test;
+use Tests\TestCase;
 
 class DashboardServiceTest extends TestCase
 {
