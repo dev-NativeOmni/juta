@@ -379,15 +379,17 @@ class SpreadsheetInputController extends Controller
             $records = [];
         }
 
+        $studentsMap = Student::whereIn('id', array_keys($records))->get()->keyBy('id');
+
         try {
-            DB::transaction(function () use ($request, $classRoomId, $type, $visibleStudentIds, $isWeekly, $weekDatesMap, $records) {
+            DB::transaction(function () use ($request, $classRoomId, $type, $visibleStudentIds, $isWeekly, $weekDatesMap, $records, $studentsMap) {
                 foreach ($records as $studentId => $studentData) {
                     $studentId = (int)$studentId;
                     if (!$visibleStudentIds->contains($studentId)) {
                         continue; // Skip student without access (halaqoh scope)
                     }
 
-                    $student = Student::find($studentId);
+                    $student = $studentsMap->get($studentId);
                     if (!$student) {
                         continue;
                     }
