@@ -282,7 +282,7 @@ class ProgressController extends Controller
             $recMonth = $rec->submitted_at
                 ? $rec->submitted_at->format('Y-m')
                 : $rec->created_at->format('Y-m');
-            
+
             if ($recMonth < $firstMonth) {
                 $tempCumulative += (float) $rec->lines_count;
             }

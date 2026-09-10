@@ -102,7 +102,7 @@ class ClassScheduleTest extends TestCase
         ]));
         $response->assertStatus(200);
         $response->assertViewHas('dates');
-        
+
         $dates = $response->viewData('dates');
         $this->assertNotContains("{$year}-08-17", $dates);
         $this->assertNotContains("{$year}-08-20", $dates);

@@ -177,7 +177,7 @@ class SettingController extends Controller
 
         $holidays = Setting::getNationalHolidays($year);
         $classRooms = \App\Models\ClassRoom::query()->orderBy('name')->get();
-        
+
         $classHolidaysRaw = Setting::get("class_holidays_{$year}");
         $classHolidays = $classHolidaysRaw ? json_decode($classHolidaysRaw, true) : [];
 

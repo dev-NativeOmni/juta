@@ -90,7 +90,7 @@ class ClassRoomController extends Controller
         // Capaian Hafalan logic
         $month = (int) $request->input('month', now()->month);
         $year = (int) $request->input('year', now()->year);
-        
+
         $currentDay = now()->day;
         if ($currentDay <= 7) $defaultWeek = 1;
         elseif ($currentDay <= 14) $defaultWeek = 2;
@@ -120,19 +120,19 @@ class ClassRoomController extends Controller
 
         $capaianData = [];
         $allStudents = $classRoom->students()->with(['teacher.user'])->orderBy('name')->get();
-        
+
         foreach ($allStudents as $index => $std) {
             $records = \App\Models\HafalanRecord::with('surah')
                 ->where('student_id', $std->id)
                 ->whereBetween('submitted_at', [$startDate, $endDate])
                 ->where('status', 'passed')
                 ->get();
-                
+
             $surahNames = [];
             $ayatRanges = [];
             $totalLines = 0;
             $scores = [];
-            
+
             foreach ($records as $rec) {
                 if ($rec->surah) {
                     $surahNames[] = $rec->surah->name_latin;
@@ -143,12 +143,12 @@ class ClassRoomController extends Controller
                     $scores[] = $rec->score_letter;
                 }
             }
-            
+
             $avgScoreLetter = '-';
             if (!empty($scores)) {
                 $avgScoreLetter = implode(', ', array_unique($scores));
             }
-            
+
             $capaianData[] = [
                 'no' => $index + 1,
                 'student' => $std,
@@ -210,19 +210,19 @@ class ClassRoomController extends Controller
 
         $data = [];
         $allStudents = $classRoom->students()->with(['teacher.user'])->orderBy('name')->get();
-        
+
         foreach ($allStudents as $index => $std) {
             $records = \App\Models\HafalanRecord::with('surah')
                 ->where('student_id', $std->id)
                 ->whereBetween('submitted_at', [$startDate, $endDate])
                 ->where('status', 'passed')
                 ->get();
-                
+
             $surahNames = [];
             $ayatRanges = [];
             $totalLines = 0;
             $scores = [];
-            
+
             foreach ($records as $rec) {
                 if ($rec->surah) {
                     $surahNames[] = $rec->surah->name_latin;
@@ -233,7 +233,7 @@ class ClassRoomController extends Controller
                     $scores[] = $rec->score_letter;
                 }
             }
-            
+
             $avgScoreLetter = '-';
             if (!empty($scores)) {
                 $avgScoreLetter = implode(', ', array_unique($scores));
@@ -253,10 +253,10 @@ class ClassRoomController extends Controller
         }
 
         $tempFile = tempnam(sys_get_temp_dir(), 'capaian_export_').'.xlsx';
-        
+
         $monthsIndo = [
-            1 => 'Januari', 2 => 'Februari', 3 => 'Maret', 4 => 'April', 
-            5 => 'Mei', 6 => 'Juni', 7 => 'Juli', 8 => 'Agustus', 
+            1 => 'Januari', 2 => 'Februari', 3 => 'Maret', 4 => 'April',
+            5 => 'Mei', 6 => 'Juni', 7 => 'Juli', 8 => 'Agustus',
             9 => 'September', 10 => 'Oktobers', 11 => 'November', 12 => 'Desember'
         ];
         $monthName = $monthsIndo[$month] ?? 'Bulan';

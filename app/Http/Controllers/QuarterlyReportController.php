@@ -42,7 +42,7 @@ class QuarterlyReportController extends Controller
             $latestDate = \Carbon\Carbon::parse($latestRecord->submitted_at);
             $detectedMonth = $latestDate->format('m');
             $yearVal = $latestDate->year;
-            
+
             if (in_array($detectedMonth, ['07', '08', '09'])) {
                 $detectedTerm = '1';
                 $detectedYearString = "{$yearVal}/" . ($yearVal + 1);
@@ -310,7 +310,7 @@ class QuarterlyReportController extends Controller
                 foreach ($uniqueDates as $date) {
                     if (!$date) continue;
                     $materi = "Muroja'ah & Ziyadah Hafalan";
-                    
+
                     $jurnalData[] = [
                         'tanggal' => date('d-m-Y', strtotime($date)),
                         'materi' => $materi,
@@ -344,7 +344,7 @@ class QuarterlyReportController extends Controller
                 foreach ($groupStudents as $student) {
                     $sHaf = $gHafalanRecords->where('student_id', $student->id);
                     $sAtt = $gAttendances->where('student_id', $student->id);
-                    
+
                     $pekanRecords = [];
                     $totalCapaianLines = 0;
 
@@ -536,7 +536,7 @@ class QuarterlyReportController extends Controller
                 'reguler_records' => $regulerRecords,
                 'months' => array_values($monthsMap),
                 'total_students' => count($groupStudents),
-                'tuntas_count' => $isTahfizhProgram 
+                'tuntas_count' => $isTahfizhProgram
                     ? collect($tahfizhRecords)->where('is_tuntas', true)->count()
                     : collect($regulerRecords)->where('is_tuntas', true)->count()
             ];

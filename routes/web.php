@@ -499,4 +499,3 @@ Route::get('/storage/{path}', function (string $path) {
         'Cache-Control' => 'public, max-age=86400',
     ]);
 })->where('path', '.*')->name('storage.fallback');
-

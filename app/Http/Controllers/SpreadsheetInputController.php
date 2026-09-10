@@ -54,12 +54,12 @@ class SpreadsheetInputController extends Controller
         // Parse month dates (Monday to Friday only)
         $year = (int) date('Y', strtotime($selectedMonth . '-01'));
         $month = (int) date('m', strtotime($selectedMonth . '-01'));
-        
+
         $allDates = [];
         $daysInMonth = (int) date('t', strtotime($selectedMonth . '-01'));
         $tahfizhDays = $selectedClass?->tahfizh_days ?? [1, 2, 3, 4, 5];
         $holidays = \App\Models\Setting::getNationalHolidays($year);
-        
+
         $classHolidaysRaw = \App\Models\Setting::get("class_holidays_{$year}");
         $classHolidays = $classHolidaysRaw ? json_decode($classHolidaysRaw, true) : [];
 
@@ -67,7 +67,7 @@ class SpreadsheetInputController extends Controller
             $time = mktime(0, 0, 0, $month, $day, $year);
             $dayOfWeek = (int) date('N', $time);
             $dateString = date('Y-m-d', $time);
-            
+
             $isClassHoliday = isset($classHolidays[$dateString]) && in_array($selectedClass?->id, $classHolidays[$dateString]);
 
             if (in_array($dayOfWeek, $tahfizhDays, true) && !in_array($dateString, $holidays, true) && !$isClassHoliday) {
@@ -92,23 +92,23 @@ class SpreadsheetInputController extends Controller
             'Jan' => 'Jan', 'Feb' => 'Feb', 'Mar' => 'Mar', 'Apr' => 'Apr', 'May' => 'Mei', 'Jun' => 'Jun',
             'Jul' => 'Jul', 'Aug' => 'Agt', 'Sep' => 'Sep', 'Oct' => 'Okt', 'Nov' => 'Nov', 'Dec' => 'Des'
         ];
-        
+
         foreach ($weeks as $weekNum => $weekDates) {
             $startDate = reset($weekDates);
             $endDate = end($weekDates);
-            
+
             $startDay = date('j', strtotime($startDate));
             $startMonth = $monthsName[date('M', strtotime($startDate))];
-            
+
             $endDay = date('j', strtotime($endDate));
             $endMonth = $monthsName[date('M', strtotime($endDate))];
-            
+
             if ($startMonth === $endMonth) {
                 $label = "Pekan $weekCounter ($startDay - $endDay $startMonth)";
             } else {
                 $label = "Pekan $weekCounter ($startDay $startMonth - $endDay $endMonth)";
             }
-            
+
             $weeksList[$weekCounter] = [
                 'label' => $label,
                 'dates' => $weekDates,
@@ -117,7 +117,7 @@ class SpreadsheetInputController extends Controller
         }
 
         $selectedWeek = $request->input('week', 'all');
-        
+
         $meetingFrequency = $selectedClass?->program?->meeting_frequency ?? 'setiap hari';
         $isWeekly = ($meetingFrequency === 'seminggu sekali');
 
@@ -346,7 +346,7 @@ class SpreadsheetInputController extends Controller
             $year = (int) date('Y', strtotime($validated['month'] . '-01'));
             $month = (int) date('m', strtotime($validated['month'] . '-01'));
             $daysInMonth = (int) date('t', strtotime($validated['month'] . '-01'));
-            
+
             $weeks = [];
             for ($d = 1; $d <= $daysInMonth; $d++) {
                 $time = mktime(0, 0, 0, $month, $d, $year);

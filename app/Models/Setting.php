@@ -363,4 +363,3 @@ class Setting extends Model
         return is_array($decoded) ? array_replace_recursive($default, $decoded) : $default;
     }
 }
-

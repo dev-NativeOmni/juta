@@ -286,7 +286,7 @@ class AdabTest extends TestCase
     {
         $admin = User::where('username', 'superadmin')->first();
         $classRoom = \App\Models\ClassRoom::first();
-        
+
         $students = [
             Student::create(['name' => 'Murid Test 1', 'student_number' => 'M1', 'class_room_id' => $classRoom->id]),
             Student::create(['name' => 'Murid Test 2', 'student_number' => 'M2', 'class_room_id' => $classRoom->id]),

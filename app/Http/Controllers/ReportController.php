@@ -1109,7 +1109,7 @@ class ReportController extends Controller
         $current = $startDate->copy()->startOfDay();
         $end = $endDate->copy()->endOfDay();
         $tahfizhDays = $classRoom->tahfizh_days;
-        
+
         $year = $startDate->year;
         $holidays = \App\Models\Setting::getNationalHolidays($year);
         $classHolidaysRaw = \App\Models\Setting::get("class_holidays_{$year}");
@@ -1121,7 +1121,7 @@ class ReportController extends Controller
                 $dayOfWeek = $current->dayOfWeek;
                 $isoDay = $dayOfWeek === 0 ? 7 : $dayOfWeek;
                 $dateString = $current->toDateString();
-                
+
                 $isClassHoliday = isset($classHolidays[$dateString]) && in_array($classRoom->id, $classHolidays[$dateString]);
 
                 if (in_array($isoDay, $tahfizhDays, true) && !in_array($dateString, $holidays, true) && !$isClassHoliday) {
@@ -1319,7 +1319,7 @@ class ReportController extends Controller
         $classUmmiJilid = '';
         $classUmmiHalaman = '';
         $classUmmiHafalanSurah = '';
-        
+
         if ($hasUmmiRecords) {
             $firstUmmi = $ummiRecords->first();
             $classUmmiJilid = $firstUmmi->ummi_jilid;

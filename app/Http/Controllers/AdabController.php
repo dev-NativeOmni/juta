@@ -235,8 +235,8 @@ class AdabController extends Controller
                     'attendance_rate' => 0,
                     'students_detail' => [],
                 ];
-            }            
-            
+            }
+
             $studentsDetail = [];
             $totalAttendanceRateSum = 0;
             $totalFilledDaysSum = 0;
@@ -306,7 +306,7 @@ class AdabController extends Controller
         ];
 
         // ─── OPTIMIZED 12-Month Historical Trend ───
-        
+
         $allYearRecords = \App\Models\AdabRecord::whereIn('student_id', $studentIds)
             ->whereBetween('assessment_date', [\Carbon\Carbon::createFromDate($year, 1, 1)->toDateString(), \Carbon\Carbon::createFromDate($year, 12, 31)->toDateString()])
             ->get()

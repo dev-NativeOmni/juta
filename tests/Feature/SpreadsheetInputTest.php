@@ -77,7 +77,7 @@ class SpreadsheetInputTest extends TestCase
         $response = $this->actingAs($this->teacherUser)->post(route('spreadsheet-input.save'), $payload);
 
         $response->assertRedirect();
-        
+
         // Assert Attendance was saved
         $this->assertDatabaseHas('attendances', [
             'student_id' => $this->student->id,
@@ -216,7 +216,7 @@ class SpreadsheetInputTest extends TestCase
 
         $response->assertStatus(200);
         $response->assertViewHas('selectedWeek', '1');
-        
+
         $dates = $response->viewData('dates');
         $this->assertCount(5, $dates);
         $this->assertEquals('2026-08-03', $dates[0]);
@@ -245,7 +245,7 @@ class SpreadsheetInputTest extends TestCase
 
         $response->assertStatus(200);
         $response->assertViewHas('isWeekly', true);
-        
+
         $dates = $response->viewData('dates');
         // August 2026 has 5 weeks with working days
         $this->assertCount(5, $dates);
