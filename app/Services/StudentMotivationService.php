@@ -152,12 +152,12 @@ class StudentMotivationService
             );
 
             $result[] = [
-                'key'         => $badge->key,
-                'title'       => $badge->title,
+                'key' => $badge->key,
+                'title' => $badge->title,
                 'description' => $badge->description,
-                'icon'        => $badge->icon,
-                'status'      => $status['status'],
-                'value'       => $status['value'],
+                'icon' => $badge->icon,
+                'status' => $status['status'],
+                'value' => $status['value'],
             ];
         }
 
@@ -182,35 +182,35 @@ class StudentMotivationService
         return match ($badge->type) {
             'count_hafalan' => [
                 'status' => $totalHafalanRecords >= $target ? 'earned' : 'locked',
-                'value'  => "{$totalHafalanRecords}/{$target}",
+                'value' => "{$totalHafalanRecords}/{$target}",
             ],
             'passed_hafalan' => [
                 'status' => $passedHafalanRecords >= $target ? 'earned' : 'locked',
-                'value'  => "{$passedHafalanRecords}/{$target}",
+                'value' => "{$passedHafalanRecords}/{$target}",
             ],
             'percent_quran' => [
                 'status' => $progressPercent >= $target ? 'earned' : 'locked',
-                'value'  => number_format($progressPercent, 2) . '%',
+                'value' => number_format($progressPercent, 2).'%',
             ],
             'count_murajaah' => [
                 'status' => $totalMurajaahRecords >= $target ? 'earned' : 'locked',
-                'value'  => "{$totalMurajaahRecords}/{$target}",
+                'value' => "{$totalMurajaahRecords}/{$target}",
             ],
             'completed_targets' => [
                 'status' => $completedTargets >= $target ? 'earned' : 'locked',
-                'value'  => "{$completedTargets}/{$target}",
+                'value' => "{$completedTargets}/{$target}",
             ],
             'clean_target' => [
                 'status' => $overdueTargets === 0 ? 'earned' : 'attention',
-                'value'  => "{$overdueTargets} terlambat",
+                'value' => "{$overdueTargets} terlambat",
             ],
             'score_quality' => [
                 'status' => ($averageHafalanScore >= $target || $averageMurajaahScore >= $target) ? 'earned' : 'locked',
-                'value'  => 'H: ' . number_format($averageHafalanScore, 1) . ' / M: ' . number_format($averageMurajaahScore, 1),
+                'value' => 'H: '.number_format($averageHafalanScore, 1).' / M: '.number_format($averageMurajaahScore, 1),
             ],
             'completed_juz' => [
                 'status' => in_array((int) $badge->target_juz, $completedJuz) ? 'earned' : 'locked',
-                'value'  => in_array((int) $badge->target_juz, $completedJuz) ? 'Khatam ✓' : 'Belum',
+                'value' => in_array((int) $badge->target_juz, $completedJuz) ? 'Khatam ✓' : 'Belum',
             ],
             default => ['status' => 'locked', 'value' => '-'],
         };
@@ -228,14 +228,14 @@ class StudentMotivationService
         float $averageMurajaahScore
     ): array {
         return [
-            ['key' => 'first_hafalan',   'title' => 'Setoran Pertama',  'description' => 'Memiliki minimal 1 setoran hafalan.',                    'icon' => 'sparkles',    'status' => $totalHafalanRecords >= 1  ? 'earned' : 'locked',    'value' => "{$totalHafalanRecords}/1"],
-            ['key' => 'five_hafalan',    'title' => '5 Setoran',         'description' => 'Mencapai minimal 5 setoran hafalan.',                    'icon' => 'bolt',        'status' => $totalHafalanRecords >= 5  ? 'earned' : 'locked',    'value' => "{$totalHafalanRecords}/5"],
+            ['key' => 'first_hafalan',   'title' => 'Setoran Pertama',  'description' => 'Memiliki minimal 1 setoran hafalan.',                    'icon' => 'sparkles',    'status' => $totalHafalanRecords >= 1 ? 'earned' : 'locked',    'value' => "{$totalHafalanRecords}/1"],
+            ['key' => 'five_hafalan',    'title' => '5 Setoran',         'description' => 'Mencapai minimal 5 setoran hafalan.',                    'icon' => 'bolt',        'status' => $totalHafalanRecords >= 5 ? 'earned' : 'locked',    'value' => "{$totalHafalanRecords}/5"],
             ['key' => 'ten_passed',      'title' => '10 Hafalan Lulus',  'description' => 'Memiliki minimal 10 setoran hafalan berstatus lulus.',   'icon' => 'check-badge', 'status' => $passedHafalanRecords >= 10 ? 'earned' : 'locked',  'value' => "{$passedHafalanRecords}/10"],
-            ['key' => 'one_percent',     'title' => '1% Al-Qur\'an',     'description' => 'Progress hafalan minimal 1% dari total ayat.',           'icon' => 'book-open',   'status' => $progressPercent >= 1      ? 'earned' : 'locked',    'value' => number_format($progressPercent, 2).'%'],
-            ['key' => 'five_percent',    'title' => '5% Al-Qur\'an',     'description' => 'Progress hafalan minimal 5% dari total ayat.',           'icon' => 'book-open',   'status' => $progressPercent >= 5      ? 'earned' : 'locked',    'value' => number_format($progressPercent, 2).'%'],
-            ['key' => 'murajaah_active', 'title' => 'Murajaah Aktif',    'description' => 'Memiliki minimal 5 catatan murajaah.',                   'icon' => 'arrow-path',  'status' => $totalMurajaahRecords >= 5  ? 'earned' : 'locked',   'value' => "{$totalMurajaahRecords}/5"],
-            ['key' => 'target_finisher', 'title' => 'Penuntas Target',   'description' => 'Menyelesaikan minimal 3 target hafalan.',                'icon' => 'trophy',      'status' => $completedTargets >= 3      ? 'earned' : 'locked',   'value' => "{$completedTargets}/3"],
-            ['key' => 'clean_target',    'title' => 'Target Tertib',      'description' => 'Tidak memiliki target terlambat.',                       'icon' => 'shield-check','status' => $overdueTargets === 0       ? 'earned' : 'attention','value' => "{$overdueTargets} terlambat"],
+            ['key' => 'one_percent',     'title' => '1% Al-Qur\'an',     'description' => 'Progress hafalan minimal 1% dari total ayat.',           'icon' => 'book-open',   'status' => $progressPercent >= 1 ? 'earned' : 'locked',    'value' => number_format($progressPercent, 2).'%'],
+            ['key' => 'five_percent',    'title' => '5% Al-Qur\'an',     'description' => 'Progress hafalan minimal 5% dari total ayat.',           'icon' => 'book-open',   'status' => $progressPercent >= 5 ? 'earned' : 'locked',    'value' => number_format($progressPercent, 2).'%'],
+            ['key' => 'murajaah_active', 'title' => 'Murajaah Aktif',    'description' => 'Memiliki minimal 5 catatan murajaah.',                   'icon' => 'arrow-path',  'status' => $totalMurajaahRecords >= 5 ? 'earned' : 'locked',   'value' => "{$totalMurajaahRecords}/5"],
+            ['key' => 'target_finisher', 'title' => 'Penuntas Target',   'description' => 'Menyelesaikan minimal 3 target hafalan.',                'icon' => 'trophy',      'status' => $completedTargets >= 3 ? 'earned' : 'locked',   'value' => "{$completedTargets}/3"],
+            ['key' => 'clean_target',    'title' => 'Target Tertib',      'description' => 'Tidak memiliki target terlambat.',                       'icon' => 'shield-check', 'status' => $overdueTargets === 0 ? 'earned' : 'attention', 'value' => "{$overdueTargets} terlambat"],
             ['key' => 'score_quality',   'title' => 'Kualitas Baik',      'description' => 'Rata-rata nilai hafalan atau murajaah minimal 80.',      'icon' => 'star',        'status' => ($averageHafalanScore >= 80 || $averageMurajaahScore >= 80) ? 'earned' : 'locked', 'value' => 'H: '.number_format($averageHafalanScore, 2).' / M: '.number_format($averageMurajaahScore, 2)],
         ];
     }

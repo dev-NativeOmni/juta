@@ -3,13 +3,10 @@
 namespace Tests\Feature;
 
 use App\Models\Attendance;
-use App\Models\HafalanRecord;
-use App\Models\UmmiRecord;
-use App\Models\Surah;
-use App\Models\Student;
 use App\Models\ClassRoom;
-use App\Models\TeacherProfile;
-use App\Models\User;
+use App\Models\HafalanRecord;
+use App\Models\Program;
+use App\Models\UmmiRecord;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\Feature\Concerns\SetsUpHafizPlusData;
@@ -66,22 +63,22 @@ class SpreadsheetInputTest extends TestCase
                                     'score' => '95',
                                     'status' => 'passed',
                                     'submission_type' => 'new',
-                                ]
-                            ]
-                        ]
-                    ]
-                ]
-            ]
+                                ],
+                            ],
+                        ],
+                    ],
+                ],
+            ],
         ];
 
         $response = $this->actingAs($this->teacherUser)->post(route('spreadsheet-input.save'), $payload);
 
         $response->assertRedirect();
-        
+
         // Assert Attendance was saved
         $this->assertDatabaseHas('attendances', [
             'student_id' => $this->student->id,
-            'tanggal' => $date . ' 00:00:00',
+            'tanggal' => $date.' 00:00:00',
             'status' => 'hadir',
         ]);
 
@@ -93,7 +90,7 @@ class SpreadsheetInputTest extends TestCase
             'ayah_end' => 5,
             'score' => 95,
             'status' => 'passed',
-            'submitted_at' => $date . ' 00:00:00',
+            'submitted_at' => $date.' 00:00:00',
         ]);
     }
 
@@ -122,12 +119,12 @@ class SpreadsheetInputTest extends TestCase
                                     'id' => null,
                                     'surah_id' => $this->surah->id,
                                     'ayah' => '1-5',
-                                ]
-                            ]
-                        ]
-                    ]
-                ]
-            ]
+                                ],
+                            ],
+                        ],
+                    ],
+                ],
+            ],
         ];
 
         $response = $this->actingAs($this->teacherUser)->post(route('spreadsheet-input.save'), $payload);
@@ -137,7 +134,7 @@ class SpreadsheetInputTest extends TestCase
         // Assert Attendance was saved
         $this->assertDatabaseHas('attendances', [
             'student_id' => $this->student->id,
-            'tanggal' => $date . ' 00:00:00',
+            'tanggal' => $date.' 00:00:00',
             'status' => 'hadir',
         ]);
 
@@ -145,7 +142,7 @@ class SpreadsheetInputTest extends TestCase
         $this->assertDatabaseHas('ummi_records', [
             'student_id' => $this->student->id,
             'tatap_muka' => 3,
-            'tanggal' => $date . ' 00:00:00',
+            'tanggal' => $date.' 00:00:00',
             'ummi_jilid' => 'Jilid 2',
             'ummi_halaman' => '25',
             'materi' => 'Ghoroib',
@@ -179,12 +176,12 @@ class SpreadsheetInputTest extends TestCase
                                     'score' => '95',
                                     'status' => 'passed',
                                     'submission_type' => 'new',
-                                ]
-                            ]
-                        ]
-                    ]
-                ]
-            ]
+                                ],
+                            ],
+                        ],
+                    ],
+                ],
+            ],
         ];
 
         $response = $this->actingAs($this->teacherUser)->post(route('spreadsheet-input.save'), $payload);
@@ -194,7 +191,7 @@ class SpreadsheetInputTest extends TestCase
         // Assert Attendance was saved as 'sakit'
         $this->assertDatabaseHas('attendances', [
             'student_id' => $this->student->id,
-            'tanggal' => $date . ' 00:00:00',
+            'tanggal' => $date.' 00:00:00',
             'status' => 'sakit',
         ]);
 
@@ -216,7 +213,7 @@ class SpreadsheetInputTest extends TestCase
 
         $response->assertStatus(200);
         $response->assertViewHas('selectedWeek', '1');
-        
+
         $dates = $response->viewData('dates');
         $this->assertCount(5, $dates);
         $this->assertEquals('2026-08-03', $dates[0]);
@@ -227,7 +224,7 @@ class SpreadsheetInputTest extends TestCase
     public function teacher_can_view_weekly_program_spreadsheet_columns_grouped_by_week(): void
     {
         // 1. Create weekly program
-        $weeklyProgram = \App\Models\Program::create([
+        $weeklyProgram = Program::create([
             'name' => 'Program Reguler Mingguan',
             'meeting_frequency' => 'seminggu sekali',
             'status' => 'active',
@@ -245,7 +242,7 @@ class SpreadsheetInputTest extends TestCase
 
         $response->assertStatus(200);
         $response->assertViewHas('isWeekly', true);
-        
+
         $dates = $response->viewData('dates');
         // August 2026 has 5 weeks with working days
         $this->assertCount(5, $dates);
@@ -285,18 +282,18 @@ class SpreadsheetInputTest extends TestCase
                                     'score' => '95',
                                     'status' => 'passed',
                                     'submission_type' => 'new',
-                                ]
-                            ]
-                        ]
-                    ]
-                ]
-            ]
+                                ],
+                            ],
+                        ],
+                    ],
+                ],
+            ],
         ];
 
         $this->actingAs($this->teacherUser)->post(route('spreadsheet-input.save'), $payload1);
 
-        $this->assertEquals(1, HafalanRecord::where('student_id', $this->student->id)->where('submitted_at', $date . ' 00:00:00')->count());
-        $record = HafalanRecord::where('student_id', $this->student->id)->where('submitted_at', $date . ' 00:00:00')->first();
+        $this->assertEquals(1, HafalanRecord::where('student_id', $this->student->id)->where('submitted_at', $date.' 00:00:00')->count());
+        $record = HafalanRecord::where('student_id', $this->student->id)->where('submitted_at', $date.' 00:00:00')->first();
 
         // 2. Second Save (submit with the created record ID)
         $payload2 = [
@@ -317,17 +314,17 @@ class SpreadsheetInputTest extends TestCase
                                     'score' => '95',
                                     'status' => 'passed',
                                     'submission_type' => 'new',
-                                ]
-                            ]
-                        ]
-                    ]
-                ]
-            ]
+                                ],
+                            ],
+                        ],
+                    ],
+                ],
+            ],
         ];
 
         $this->actingAs($this->teacherUser)->post(route('spreadsheet-input.save'), $payload2);
 
         // Assert record count is still 1 (no duplicates!)
-        $this->assertEquals(1, HafalanRecord::where('student_id', $this->student->id)->where('submitted_at', $date . ' 00:00:00')->count());
+        $this->assertEquals(1, HafalanRecord::where('student_id', $this->student->id)->where('submitted_at', $date.' 00:00:00')->count());
     }
 }
