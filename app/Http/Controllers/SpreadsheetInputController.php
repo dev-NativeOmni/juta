@@ -381,13 +381,52 @@ class SpreadsheetInputController extends Controller
 
         try {
             DB::transaction(function () use ($request, $classRoomId, $type, $visibleStudentIds, $isWeekly, $weekDatesMap, $records) {
+                // Preload Surahs
+                $surahs = Surah::getAllCached()->keyBy('id');
+
+                // Extract all valid student IDs and dates to preload data
+                $validStudentIds = [];
+                $allTargetDates = [];
+
+                foreach ($records as $sId => $studentData) {
+                    $sId = (int)$sId;
+                    if (!$visibleStudentIds->contains($sId)) {
+                        continue;
+                    }
+                    $validStudentIds[] = $sId;
+                    foreach (array_keys($studentData['dates'] ?? []) as $date) {
+                        if ($isWeekly && !empty($weekDatesMap[$date])) {
+                            $allTargetDates = array_merge($allTargetDates, $weekDatesMap[$date]);
+                        } else {
+                            $allTargetDates[] = $date;
+                        }
+                    }
+                }
+
+                $allTargetDates = array_unique($allTargetDates);
+                $validStudentIds = array_unique($validStudentIds);
+
+                // Preload Students with their Teacher ID resolution mapping
+                $students = Student::whereIn('id', $validStudentIds)->get()->keyBy('id');
+
+                // Preload Hafalan Records and Ummi Records
+                $allHafalanRecords = HafalanRecord::whereIn('student_id', $validStudentIds)
+                    ->whereIn('submitted_at', $allTargetDates)
+                    ->get()
+                    ->groupBy('student_id');
+
+                $allUmmiRecords = UmmiRecord::whereIn('student_id', $validStudentIds)
+                    ->whereIn('tanggal', $allTargetDates)
+                    ->get()
+                    ->groupBy('student_id');
+
                 foreach ($records as $studentId => $studentData) {
                     $studentId = (int)$studentId;
                     if (!$visibleStudentIds->contains($studentId)) {
                         continue; // Skip student without access (halaqoh scope)
                     }
 
-                    $student = Student::find($studentId);
+                    $student = $students->get($studentId);
                     if (!$student) {
                         continue;
                     }
@@ -439,15 +478,29 @@ class SpreadsheetInputController extends Controller
                             continue;
                         }
 
+                        // Get preloaded records for this specific student and target dates
+                        $studentHafalanRecords = collect($allHafalanRecords->get($studentId, []))
+                            ->filter(function($rec) use ($targetDates) {
+                                $dateVal = $rec->submitted_at instanceof \Carbon\Carbon ? $rec->submitted_at->format('Y-m-d') : substr((string)$rec->submitted_at, 0, 10);
+                                return in_array($dateVal, $targetDates);
+                            })
+                            ->values();
+                        $studentUmmiRecords = collect($allUmmiRecords->get($studentId, []))
+                            ->filter(function($rec) use ($targetDates) {
+                                $dateVal = $rec->tanggal instanceof \Carbon\Carbon ? $rec->tanggal->format('Y-m-d') : substr((string)$rec->tanggal, 0, 10);
+                                return in_array($dateVal, $targetDates);
+                            })
+                            ->values();
+
                         // 2. Save Setoran (Hafalan / UMMI)
                         if ($attendance === 'hadir' || $hasHafalanInput || $hasUmmiInput) {
                             if ($type === 'hafalan') {
-                                $this->saveHafalanRecords($studentId, $teacherId, $date, $cellData, $targetDates);
+                                $this->saveHafalanRecords($studentId, $teacherId, $date, $cellData, $studentHafalanRecords, $surahs);
                             } elseif ($type === 'ummi') {
                                 if ($student->tahfizh_level === 'ummi' || $hasUmmiInput) {
-                                    $this->saveUmmiRecords($studentId, $teacherId, $date, $cellData, $targetDates);
+                                    $this->saveUmmiRecords($studentId, $teacherId, $date, $cellData, $studentUmmiRecords, $surahs);
                                 } else {
-                                    $this->saveHafalanRecords($studentId, $teacherId, $date, $cellData, $targetDates);
+                                    $this->saveHafalanRecords($studentId, $teacherId, $date, $cellData, $studentHafalanRecords, $surahs);
                                 }
                             }
                         }
@@ -493,12 +546,8 @@ class SpreadsheetInputController extends Controller
             ->with('success', 'Perubahan data kelas berhasil disimpan.');
     }
 
-    private function saveHafalanRecords(int $studentId, int $teacherId, string $date, array $cellData, array $targetDates): void
+    private function saveHafalanRecords(int $studentId, int $teacherId, string $date, array $cellData, \Illuminate\Support\Collection $existingRecords, \Illuminate\Support\Collection $surahs): void
     {
-        $existingRecords = HafalanRecord::where('student_id', $studentId)
-            ->whereIn('submitted_at', $targetDates)
-            ->get();
-
         $existingRecordIds = $existingRecords->pluck('id')->toArray();
         $processedRecordIds = [];
 
@@ -511,7 +560,7 @@ class SpreadsheetInputController extends Controller
             $ayahEnd = filled($hafalanData['ayah_end'] ?? null) ? (int)$hafalanData['ayah_end'] : $ayahStart;
 
             // Calculate lines count
-            $surah = Surah::find($hafalanData['surah_id']);
+            $surah = $surahs->get($hafalanData['surah_id']);
             $baris = 0.0;
             if ($surah) {
                 $baris = \App\Http\Controllers\ReportController::calculateLines(
@@ -567,12 +616,8 @@ class SpreadsheetInputController extends Controller
         }
     }
 
-    private function saveUmmiRecords(int $studentId, int $teacherId, string $date, array $cellData, array $targetDates): void
+    private function saveUmmiRecords(int $studentId, int $teacherId, string $date, array $cellData, \Illuminate\Support\Collection $existingRecords, \Illuminate\Support\Collection $surahs): void
     {
-        $existingRecords = UmmiRecord::where('student_id', $studentId)
-            ->whereIn('tanggal', $targetDates)
-            ->get();
-
         $existingRecordIds = $existingRecords->pluck('id')->toArray();
         $processedRecordIds = [];
 
@@ -589,9 +634,9 @@ class SpreadsheetInputController extends Controller
         }));
 
         if (!$hasUmmiFields && empty($hafalansList)) {
-            UmmiRecord::where('student_id', $studentId)
-                ->whereIn('tanggal', $targetDates)
-                ->delete();
+            if (!empty($existingRecordIds)) {
+                UmmiRecord::whereIn('id', $existingRecordIds)->delete();
+            }
             return;
         }
 
@@ -626,7 +671,7 @@ class SpreadsheetInputController extends Controller
                     continue;
                 }
 
-                $surah = !empty($hafalanData['surah_id']) ? Surah::find($hafalanData['surah_id']) : null;
+                $surah = !empty($hafalanData['surah_id']) ? $surahs->get($hafalanData['surah_id']) : null;
                 $baris = 0.0;
                 if ($surah && !empty($hafalanData['ayah'])) {
                     $clean = str_replace(' ', '', $hafalanData['ayah']);
