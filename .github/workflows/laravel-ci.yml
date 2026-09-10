@@ -65,4 +65,7 @@ jobs:
       run: ./vendor/bin/pint --test
 
     - name: Run Application Tests
-      run: php artisan test
+      run: DB_CONNECTION=sqlite DB_DATABASE=:memory: php artisan test
+      env:
+        DB_CONNECTION: sqlite
+        DB_DATABASE: ":memory:"
