@@ -4,12 +4,15 @@ namespace Tests\Unit\Services;
 
 use App\Models\HafalanRecord;
 use App\Models\HafalanTarget;
+use App\Models\Student;
+use App\Models\Surah;
+use App\Models\User;
 use App\Services\HafalanTargetAutoCompletionService;
+use Carbon\Carbon;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\Feature\Concerns\SetsUpHafizPlusData;
 use Tests\TestCase;
-use Carbon\Carbon;
 
 class HafalanTargetAutoCompletionServiceTest extends TestCase
 {
@@ -23,11 +26,11 @@ class HafalanTargetAutoCompletionServiceTest extends TestCase
 
         $this->setUpHafizPlusData();
 
-        $this->service = new HafalanTargetAutoCompletionService();
+        $this->service = new HafalanTargetAutoCompletionService;
     }
 
     #[Test]
-    public function completeTargetsFromRecord_does_not_process_if_record_is_not_passed(): void
+    public function complete_targets_from_record_does_not_process_if_record_is_not_passed(): void
     {
         $record = HafalanRecord::create([
             'student_id' => $this->student->id,
@@ -56,7 +59,7 @@ class HafalanTargetAutoCompletionServiceTest extends TestCase
     }
 
     #[Test]
-    public function completeTargetsFromRecord_does_not_process_if_required_fields_are_missing(): void
+    public function complete_targets_from_record_does_not_process_if_required_fields_are_missing(): void
     {
         $record = new HafalanRecord([
             'student_id' => $this->student->id,
@@ -72,7 +75,7 @@ class HafalanTargetAutoCompletionServiceTest extends TestCase
     }
 
     #[Test]
-    public function completeTargetsFromRecord_completes_matching_active_targets(): void
+    public function complete_targets_from_record_completes_matching_active_targets(): void
     {
         $targetDate = Carbon::now()->subDays(2);
 
@@ -133,7 +136,7 @@ class HafalanTargetAutoCompletionServiceTest extends TestCase
     }
 
     #[Test]
-    public function syncExistingTargets_updates_targets_and_returns_count(): void
+    public function sync_existing_targets_updates_targets_and_returns_count(): void
     {
         $submittedAt = Carbon::now()->subDays(2);
 
@@ -177,7 +180,7 @@ class HafalanTargetAutoCompletionServiceTest extends TestCase
     }
 
     #[Test]
-    public function syncExistingTargets_dry_run_does_not_update_targets_but_returns_count(): void
+    public function sync_existing_targets_dry_run_does_not_update_targets_but_returns_count(): void
     {
         $record = HafalanRecord::create([
             'student_id' => $this->student->id,
@@ -207,7 +210,7 @@ class HafalanTargetAutoCompletionServiceTest extends TestCase
     }
 
     #[Test]
-    public function matchingPassedRecordForTarget_finds_correct_record(): void
+    public function matching_passed_record_for_target_finds_correct_record(): void
     {
         $target = HafalanTarget::create([
             'student_id' => $this->student->id,
@@ -236,7 +239,7 @@ class HafalanTargetAutoCompletionServiceTest extends TestCase
     }
 
     #[Test]
-    public function matchingPassedRecordForTarget_returns_earliest_record_when_multiple_match(): void
+    public function matching_passed_record_for_target_returns_earliest_record_when_multiple_match(): void
     {
         $target = HafalanTarget::create([
             'student_id' => $this->student->id,
@@ -275,7 +278,7 @@ class HafalanTargetAutoCompletionServiceTest extends TestCase
     }
 
     #[Test]
-    public function matchingPassedRecordForTarget_returns_null_if_no_match(): void
+    public function matching_passed_record_for_target_returns_null_if_no_match(): void
     {
         $target = HafalanTarget::create([
             'student_id' => $this->student->id,
@@ -291,7 +294,7 @@ class HafalanTargetAutoCompletionServiceTest extends TestCase
         HafalanRecord::create([
             'student_id' => $this->student->id,
             'teacher_id' => $this->teacherProfile->id,
-            'surah_id' => \App\Models\Surah::create(['number' => 2, 'name_ar' => 'Test', 'name_latin' => 'Test', 'total_ayah' => 10, 'juz_start' => 1, 'juz_end' => 1])->id, // Different surah
+            'surah_id' => Surah::create(['number' => 2, 'name_ar' => 'Test', 'name_latin' => 'Test', 'total_ayah' => 10, 'juz_start' => 1, 'juz_end' => 1])->id, // Different surah
             'ayah_start' => 1,
             'ayah_end' => 5,
             'status' => 'passed',
@@ -300,7 +303,7 @@ class HafalanTargetAutoCompletionServiceTest extends TestCase
 
         // Wrong student
         HafalanRecord::create([
-            'student_id' => \App\Models\Student::create(['user_id' => \App\Models\User::factory()->create()->id, 'class_room_id' => $this->student->class_room_id, 'teacher_id' => $this->teacherProfile->id, 'name' => 'Santri Test 2', 'student_number' => 'TEST-SNT-002', 'gender' => 'male', 'birth_date' => '2010-05-10', 'status' => 'active'])->id, // Different student
+            'student_id' => Student::create(['user_id' => User::factory()->create()->id, 'class_room_id' => $this->student->class_room_id, 'teacher_id' => $this->teacherProfile->id, 'name' => 'Santri Test 2', 'student_number' => 'TEST-SNT-002', 'gender' => 'male', 'birth_date' => '2010-05-10', 'status' => 'active'])->id, // Different student
             'teacher_id' => $this->teacherProfile->id,
             'surah_id' => $this->surah->id,
             'ayah_start' => 1,
