@@ -33,14 +33,14 @@ class Badge extends Model
     public static function typeLabels(): array
     {
         return [
-            'count_hafalan'    => 'Jumlah Total Setoran Hafalan',
-            'passed_hafalan'   => 'Jumlah Setoran Lulus',
-            'percent_quran'    => 'Persentase Hafalan Al-Qur\'an (%)',
-            'count_murajaah'   => 'Jumlah Murajaah',
-            'completed_targets'=> 'Jumlah Target Selesai',
-            'clean_target'     => 'Tidak Ada Target Terlambat',
-            'score_quality'    => 'Rata-Rata Nilai ≥ Target',
-            'completed_juz'    => 'Khatam Juz Tertentu',
+            'count_hafalan' => 'Jumlah Total Setoran Hafalan',
+            'passed_hafalan' => 'Jumlah Setoran Lulus',
+            'percent_quran' => 'Persentase Hafalan Al-Qur\'an (%)',
+            'count_murajaah' => 'Jumlah Murajaah',
+            'completed_targets' => 'Jumlah Target Selesai',
+            'clean_target' => 'Tidak Ada Target Terlambat',
+            'score_quality' => 'Rata-Rata Nilai ≥ Target',
+            'completed_juz' => 'Khatam Juz Tertentu',
         ];
     }
 }

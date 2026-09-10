@@ -187,7 +187,7 @@ class NavigationMenuTest extends TestCase
         $response->assertDontSee(route('parents.index'));
         $response->assertDontSee(route('students.index'));
         $response->assertDontSee(route('reports.teachers'));
-        $response->assertDontSee('href="' . route('reports.index') . '"');
+        $response->assertDontSee('href="'.route('reports.index').'"');
         $response->assertDontSee(route('digital-reports.index'));
         $response->assertDontSee(route('users.index'));
         $response->assertDontSee(route('audit-logs.index'));
@@ -226,7 +226,7 @@ class NavigationMenuTest extends TestCase
         $response->assertDontSee(route('hafalan-records.index'));
         $response->assertDontSee(route('murajaah-records.index'));
         $response->assertDontSee(route('hafalan-targets.index'));
-        $response->assertDontSee('href="' . route('adab.index') . '"');
+        $response->assertDontSee('href="'.route('adab.index').'"');
         $response->assertDontSee(route('users.index'));
         $response->assertDontSee(route('audit-logs.index'));
         $response->assertDontSee(route('settings.index'));
@@ -236,7 +236,7 @@ class NavigationMenuTest extends TestCase
         $response->assertDontSee('<span>Progress</span>');
         $response->assertDontSee('Rapor Digital');
         $response->assertDontSee('Kinerja Guru');
-        $response->assertDontSee('href="' . route('student-points.index') . '"');
+        $response->assertDontSee('href="'.route('student-points.index').'"');
 
         // Should see
         $response->assertSee(route('reports.periodic'));
