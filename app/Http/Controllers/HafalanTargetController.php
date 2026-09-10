@@ -37,8 +37,8 @@ class HafalanTargetController extends Controller
                     $sub->whereNotNull('ummi_jilid')
                         ->orWhereHas('student.classRoom', function ($c) {
                             $c->where('name', 'like', 'X %')
-                              ->orWhere('name', 'like', 'X-%')
-                              ->orWhere('name', 'X');
+                                ->orWhere('name', 'like', 'X-%')
+                                ->orWhere('name', 'X');
                         });
                 });
             })
@@ -130,13 +130,14 @@ class HafalanTargetController extends Controller
         $grade10ClassRooms = $classRooms->filter(function ($c) {
             $name = $c->name;
             $level = $c->level ?? '';
-            return ((preg_match('/\bX\b/i', $name) && !preg_match('/\b(XI|XII)\b/i', $name))
+
+            return ((preg_match('/\bX\b/i', $name) && ! preg_match('/\b(XI|XII)\b/i', $name))
                 || preg_match('/\b10\b/i', $name)
                 || preg_match('/^X[-_\s]?E/i', $name)
                 || preg_match('/kelas\s*(X|10)/i', $name)
-                || (preg_match('/\bX\b/i', $level) && !preg_match('/\b(XI|XII)\b/i', $level))
+                || (preg_match('/\bX\b/i', $level) && ! preg_match('/\b(XI|XII)\b/i', $level))
                 || preg_match('/\b10\b/i', $level))
-                && !preg_match('/\b(XI|XII|11|12)\b/i', $name);
+                && ! preg_match('/\b(XI|XII|11|12)\b/i', $name);
         })->values();
 
         $regulerClassRooms = $classRooms->reject(function ($c) use ($grade10ClassRooms) {
@@ -168,7 +169,7 @@ class HafalanTargetController extends Controller
             ->when($request->filled('class_room_id'), function ($q) use ($request) {
                 $q->where('class_room_id', $request->integer('class_room_id'));
             })
-            ->when($request->filled('teacher_id') || $isTeacherOnly, function ($q) use ($request, $currentTeacherId) {
+            ->when($request->filled('teacher_id') || $isTeacherOnly, function ($q) use ($currentTeacherId) {
                 $q->where('teacher_id', $currentTeacherId);
             });
 
@@ -288,13 +289,13 @@ class HafalanTargetController extends Controller
             $studentsQuery->whereHas('classRoom', function ($q) {
                 $q->where(function ($sq) {
                     $sq->where('name', 'like', '%X%')
-                       ->orWhere('name', 'like', '%10%')
-                       ->orWhere('level', 'like', '%X%')
-                       ->orWhere('level', 'like', '%10%');
+                        ->orWhere('name', 'like', '%10%')
+                        ->orWhere('level', 'like', '%X%')
+                        ->orWhere('level', 'like', '%10%');
                 })->where('name', 'not like', '%XI%')
-                  ->where('name', 'not like', '%XII%')
-                  ->where('name', 'not like', '%11%')
-                  ->where('name', 'not like', '%12%');
+                    ->where('name', 'not like', '%XII%')
+                    ->where('name', 'not like', '%11%')
+                    ->where('name', 'not like', '%12%');
             });
         }
 

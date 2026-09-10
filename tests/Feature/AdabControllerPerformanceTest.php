@@ -2,14 +2,14 @@
 
 namespace Tests\Feature;
 
-use Illuminate\Foundation\Testing\RefreshDatabase;
-use Tests\TestCase;
-use App\Models\User;
+use App\Models\AdabRecord;
+use App\Models\ClassRoom;
 use App\Models\Role;
 use App\Models\Student;
-use App\Models\ClassRoom;
-use App\Models\AdabRecord;
+use App\Models\User;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
+use Tests\TestCase;
 
 class AdabControllerPerformanceTest extends TestCase
 {
@@ -33,10 +33,10 @@ class AdabControllerPerformanceTest extends TestCase
         // Create 20 students
         $students = [];
         for ($i = 0; $i < 20; $i++) {
-            $studentUser = User::factory()->create(['username' => 'student' . $i, 'status' => 'active']);
+            $studentUser = User::factory()->create(['username' => 'student'.$i, 'status' => 'active']);
             $student = Student::create([
-                'name' => 'Student ' . $i,
-                'student_number' => 'S' . $i,
+                'name' => 'Student '.$i,
+                'student_number' => 'S'.$i,
                 'class_room_id' => $classRoom->id,
                 'user_id' => $studentUser->id,
             ]);
@@ -46,7 +46,7 @@ class AdabControllerPerformanceTest extends TestCase
                 'student_id' => $student->id,
                 'assessment_date' => now()->toDateString(),
                 'answers' => ['cat_0' => [1, 1], 'cat_1' => [1, 0]],
-                'total_score' => 75
+                'total_score' => 75,
             ]);
         }
 
@@ -67,8 +67,8 @@ class AdabControllerPerformanceTest extends TestCase
             }
         }
 
-        echo "Total Queries: " . $totalQueries . "\n";
-        echo "AdabRecord Queries: " . $adabQueries . "\n";
+        echo 'Total Queries: '.$totalQueries."\n";
+        echo 'AdabRecord Queries: '.$adabQueries."\n";
 
         $this->assertEquals(0, $adabQueries, "There should be no N+1 queries for AdabRecord in the loop. Current count: $adabQueries");
     }

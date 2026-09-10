@@ -2,7 +2,10 @@
 
 namespace Tests\Feature;
 
+use App\Models\ClassRoom;
+use App\Models\Program;
 use App\Models\Role;
+use App\Models\Student;
 use App\Models\User;
 use Database\Seeders\RoleSeeder;
 use Database\Seeders\UserSeeder;
@@ -84,19 +87,19 @@ class PeriodicReportTest extends TestCase
         $admin = User::where('username', 'admin')->first();
 
         // 1. Create a daily program and class
-        $dailyProgram = \App\Models\Program::create([
+        $dailyProgram = Program::create([
             'name' => 'Program Harian',
             'meeting_frequency' => 'setiap hari',
             'status' => 'active',
         ]);
-        $classRoom = \App\Models\ClassRoom::create([
+        $classRoom = ClassRoom::create([
             'name' => 'Kelas X Harian',
             'program_id' => $dailyProgram->id,
             'status' => 'active',
         ]);
 
         // 2. Create student with reguler level (5 lines/meeting)
-        $student = \App\Models\Student::create([
+        $student = Student::create([
             'name' => 'Santri Reguler',
             'class_room_id' => $classRoom->id,
             'tahfizh_level' => 'reguler',
