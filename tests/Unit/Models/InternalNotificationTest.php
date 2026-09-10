@@ -12,7 +12,7 @@ class InternalNotificationTest extends TestCase
      */
     public function test_get_priority_label_attribute(): void
     {
-        $notification = new InternalNotification();
+        $notification = new InternalNotification;
 
         // Test 'low' priority
         $notification->priority = 'low';
