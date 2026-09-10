@@ -36,11 +36,11 @@ class UserController extends Controller
                     ->orWhere('username', 'like', "%{$search}%")
                     ->orWhereHas('studentProfile.parents.user', function ($pq) use ($search) {
                         $pq->where('name', 'like', "%{$search}%")
-                           ->orWhere('username', 'like', "%{$search}%");
+                            ->orWhere('username', 'like', "%{$search}%");
                     })
                     ->orWhereHas('parentProfile.students.user', function ($sq) use ($search) {
                         $sq->where('name', 'like', "%{$search}%")
-                           ->orWhere('username', 'like', "%{$search}%");
+                            ->orWhere('username', 'like', "%{$search}%");
                     })
                     ->orWhereHas('parentProfile.students', function ($sq) use ($search) {
                         $sq->where('name', 'like', "%{$search}%");
@@ -65,7 +65,7 @@ class UserController extends Controller
 
         $users = $query->orderBy('name')->paginate(20)->withQueryString();
         $roles = Role::orderBy('display_name')->get();
-        $classRooms = \App\Models\ClassRoom::orderBy('name')->get();
+        $classRooms = ClassRoom::orderBy('name')->get();
 
         $roleCounts = DB::table('users')
             ->select('role_id', DB::raw('count(*) as total'))
@@ -77,7 +77,7 @@ class UserController extends Controller
         $inactiveUsers = User::where('status', 'inactive')->count();
         $activeUsers = User::where('status', 'active')->count();
 
-        $allParentProfiles = ParentProfile::with('user')->get()->sortBy(fn($p) => strtolower($p->user?->name ?? ''))->values();
+        $allParentProfiles = ParentProfile::with('user')->get()->sortBy(fn ($p) => strtolower($p->user?->name ?? ''))->values();
         $allStudentProfiles = Student::with(['user', 'classRoom'])->get()->sortBy('name')->values();
 
         return view('users.index', compact(

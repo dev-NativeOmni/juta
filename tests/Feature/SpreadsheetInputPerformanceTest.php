@@ -2,20 +2,13 @@
 
 namespace Tests\Feature;
 
-use App\Models\Attendance;
-use App\Models\HafalanRecord;
-use App\Models\UmmiRecord;
-use App\Models\Surah;
 use App\Models\Student;
-use App\Models\ClassRoom;
-use App\Models\TeacherProfile;
-use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\Feature\Concerns\SetsUpHafizPlusData;
 use Tests\TestCase;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Str;
 
 class SpreadsheetInputPerformanceTest extends TestCase
 {
@@ -38,8 +31,8 @@ class SpreadsheetInputPerformanceTest extends TestCase
                 'user_id' => null,
                 'class_room_id' => $classRoom->id,
                 'teacher_id' => $this->teacherProfile->id,
-                'name' => 'Santri Test ' . $i,
-                'student_number' => 'TEST-SNT-' . Str::random(5),
+                'name' => 'Santri Test '.$i,
+                'student_number' => 'TEST-SNT-'.Str::random(5),
                 'gender' => 'male',
                 'birth_date' => '2010-05-10',
                 'status' => 'active',
@@ -65,10 +58,10 @@ class SpreadsheetInputPerformanceTest extends TestCase
                                 'score' => '95',
                                 'status' => 'passed',
                                 'submission_type' => 'new',
-                            ]
-                        ]
-                    ]
-                ]
+                            ],
+                        ],
+                    ],
+                ],
             ];
         }
 
@@ -89,8 +82,8 @@ class SpreadsheetInputPerformanceTest extends TestCase
         $queries = DB::getQueryLog();
         $queryCount = count($queries);
 
-        echo "\nExecution time: " . $executionTime . " seconds\n";
-        echo "Query count: " . $queryCount . "\n";
+        echo "\nExecution time: ".$executionTime." seconds\n";
+        echo 'Query count: '.$queryCount."\n";
 
         $this->assertTrue(true);
     }
