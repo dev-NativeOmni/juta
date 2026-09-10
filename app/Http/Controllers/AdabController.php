@@ -8,9 +8,12 @@ use App\Models\ClassRoom;
 use App\Models\Setting;
 use App\Models\Student;
 use App\Models\User;
+use Carbon\Carbon;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\View\View;
 
@@ -126,7 +129,7 @@ class AdabController extends Controller
             if ($isParent) {
                 $classRankings = collect();
             } else {
-                $classRankings = \Illuminate\Support\Facades\Cache::remember("adab_class_rankings_{$year}_{$month}", 180, function () use ($year, $month) {
+                $classRankings = Cache::remember("adab_class_rankings_{$year}_{$month}", 180, function () use ($year, $month) {
                     return ClassRoom::query()
                         ->with(['students' => fn ($q) => $q->where('status', 'active')])
                         ->get()
@@ -142,6 +145,7 @@ class AdabController extends Controller
                                     return 0;
                                 }
                             });
+
                             return [
                                 'name' => $classRoom->name,
                                 'avg_score' => round($scores->avg() ?: 0, 1),
@@ -167,7 +171,7 @@ class AdabController extends Controller
     /* -----------------------------------------------------------------------
      | MONTHLY CHART — Kuisioner Adab per Kelas per Bulan
      * -------------------------------------------------------------------- */
-    public function monthlyChart(Request $request): View|\Illuminate\Http\RedirectResponse
+    public function monthlyChart(Request $request): View|RedirectResponse
     {
         $user = Auth::user();
 
@@ -202,28 +206,28 @@ class AdabController extends Controller
         $effectiveDaysTotal = Setting::getEffectiveDaysCount($year, $month);
 
         // Fetch all AdabRecord for the selected month in one query
-        $startDate = \Carbon\Carbon::createFromDate($year, $month, 1)->toDateString();
-        $endDate = \Carbon\Carbon::createFromDate($year, $month, 1)->endOfMonth()->toDateString();
-        $adabRecordsThisMonth = \App\Models\AdabRecord::whereIn('student_id', $studentIds)
+        $startDate = Carbon::createFromDate($year, $month, 1)->toDateString();
+        $endDate = Carbon::createFromDate($year, $month, 1)->endOfMonth()->toDateString();
+        $adabRecordsThisMonth = AdabRecord::whereIn('student_id', $studentIds)
             ->whereBetween('assessment_date', [$startDate, $endDate])
             ->get()
             ->groupBy('student_id');
 
         // Fetch all mentor assessments for the selected month in one query
-        $mentorAssessmentsThisMonth = \App\Models\AdabMentorAssessment::whereIn('student_id', $studentIds)
+        $mentorAssessmentsThisMonth = AdabMentorAssessment::whereIn('student_id', $studentIds)
             ->where('year', $year)
             ->where('month', $month)
             ->get()
             ->keyBy('student_id');
 
         // Fetch latest mentor assessments for fallback
-        $fallbackAssessments = \App\Models\AdabMentorAssessment::whereIn('student_id', $studentIds)
+        $fallbackAssessments = AdabMentorAssessment::whereIn('student_id', $studentIds)
             ->orderByDesc('year')
             ->orderByDesc('month')
             ->get()
             ->groupBy('student_id');
 
-        $classReport = $classRooms->map(function ($classRoom) use ($year, $month, $effectiveDaysTotal, $holidays, $adabRecordsThisMonth, $mentorAssessmentsThisMonth, $fallbackAssessments) {
+        $classReport = $classRooms->map(function ($classRoom) use ($year, $month, $effectiveDaysTotal, $adabRecordsThisMonth, $mentorAssessmentsThisMonth, $fallbackAssessments) {
             $students = $classRoom->students;
             $totalStudents = $students->count();
 
@@ -235,8 +239,8 @@ class AdabController extends Controller
                     'attendance_rate' => 0,
                     'students_detail' => [],
                 ];
-            }            
-            
+            }
+
             $studentsDetail = [];
             $totalAttendanceRateSum = 0;
             $totalFilledDaysSum = 0;
@@ -306,13 +310,14 @@ class AdabController extends Controller
         ];
 
         // ─── OPTIMIZED 12-Month Historical Trend ───
-        
-        $allYearRecords = \App\Models\AdabRecord::whereIn('student_id', $studentIds)
-            ->whereBetween('assessment_date', [\Carbon\Carbon::createFromDate($year, 1, 1)->toDateString(), \Carbon\Carbon::createFromDate($year, 12, 31)->toDateString()])
+
+        $allYearRecords = AdabRecord::whereIn('student_id', $studentIds)
+            ->whereBetween('assessment_date', [Carbon::createFromDate($year, 1, 1)->toDateString(), Carbon::createFromDate($year, 12, 31)->toDateString()])
             ->get()
             ->groupBy(function ($rec) {
-                $m = (int) \Carbon\Carbon::parse($rec->assessment_date)->format('n');
-                return $rec->student_id . '-' . $m;
+                $m = (int) Carbon::parse($rec->assessment_date)->format('n');
+
+                return $rec->student_id.'-'.$m;
             });
 
         $monthlyTrends = [];
@@ -330,6 +335,7 @@ class AdabController extends Controller
                     'full_month_name' => $monthsList[$m],
                     'rate' => 0,
                 ];
+
                 continue;
             }
 
@@ -339,7 +345,7 @@ class AdabController extends Controller
 
             foreach ($allStudentsInScope as $st) {
                 // Get pre-grouped records from memory
-                $studentMonthRecords = $allYearRecords->get($st->id . '-' . $m, collect());
+                $studentMonthRecords = $allYearRecords->get($st->id.'-'.$m, collect());
                 $filledDates = $studentMonthRecords->pluck('assessment_date')->unique();
                 $effectiveDaysFilled = 0;
                 foreach ($filledDates as $dateStr) {
@@ -598,7 +604,7 @@ class AdabController extends Controller
     /* -----------------------------------------------------------------------
      | BATCH / FAST STORE MENTOR SCORES — per class per month
      * -------------------------------------------------------------------- */
-    public function batchStoreMentorScores(Request $request): \Illuminate\Http\JsonResponse|\Illuminate\Http\RedirectResponse
+    public function batchStoreMentorScores(Request $request): JsonResponse|RedirectResponse
     {
         $user = Auth::user();
         if ($user->hasRole('student') || $user->hasRole('parent')) {
@@ -679,7 +685,7 @@ class AdabController extends Controller
     /* -----------------------------------------------------------------------
      | GET MENTOR CLASS DATA (AJAX for fast input)
      * -------------------------------------------------------------------- */
-    public function getMentorClassData(Request $request): \Illuminate\Http\JsonResponse
+    public function getMentorClassData(Request $request): JsonResponse
     {
         $user = Auth::user();
         if ($user->hasRole('student') || $user->hasRole('parent')) {
@@ -718,7 +724,7 @@ class AdabController extends Controller
             ->keyBy('student_id');
 
         // Previous month calculation
-        $prevDate = \Carbon\Carbon::createFromDate($year, $month, 1)->subMonth();
+        $prevDate = Carbon::createFromDate($year, $month, 1)->subMonth();
         $prevAssessments = AdabMentorAssessment::whereIn('student_id', $studentIds)
             ->where('year', $prevDate->year)
             ->where('month', $prevDate->month)

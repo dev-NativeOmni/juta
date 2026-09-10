@@ -4,7 +4,7 @@ namespace Tests\Feature;
 
 use App\Models\ClassRoom;
 use App\Models\Program;
-use App\Models\Role;
+use App\Models\Setting;
 use App\Models\Student;
 use App\Models\User;
 use Database\Seeders\RoleSeeder;
@@ -17,7 +17,9 @@ class ClassScheduleTest extends TestCase
     use RefreshDatabase;
 
     private User $adminUser;
+
     private User $teacherUser;
+
     private ClassRoom $classRoom;
 
     protected function setUp(): void
@@ -64,9 +66,9 @@ class ClassScheduleTest extends TestCase
         $payload = [
             'schedules' => [
                 3 => [
-                    $this->classRoom->id => 1
-                ]
-            ]
+                    $this->classRoom->id => 1,
+                ],
+            ],
         ];
 
         $response = $this->actingAs($this->adminUser)->post(route('class-schedules.update'), $payload);
@@ -79,12 +81,12 @@ class ClassScheduleTest extends TestCase
     public function test_holidays_are_excluded_from_spreadsheet_and_reports(): void
     {
         $year = (int) date('Y');
-        \App\Models\Setting::set("national_holidays_{$year}", json_encode([
+        Setting::set("national_holidays_{$year}", json_encode([
             "{$year}-08-17",
             "{$year}-08-20",
         ]));
 
-        $holidays = \App\Models\Setting::getNationalHolidays($year);
+        $holidays = Setting::getNationalHolidays($year);
         $this->assertContains("{$year}-08-17", $holidays);
         $this->assertContains("{$year}-08-20", $holidays);
 
@@ -102,7 +104,7 @@ class ClassScheduleTest extends TestCase
         ]));
         $response->assertStatus(200);
         $response->assertViewHas('dates');
-        
+
         $dates = $response->viewData('dates');
         $this->assertNotContains("{$year}-08-17", $dates);
         $this->assertNotContains("{$year}-08-20", $dates);
