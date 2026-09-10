@@ -5,8 +5,6 @@ namespace Tests\Unit\Services;
 use App\Models\Student;
 use App\Models\User;
 use App\Services\DashboardService;
-use App\Services\StudentMotivationService;
-use App\Services\StudentProgressService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\Feature\Concerns\SetsUpHafizPlusData;
