@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Http\Controllers\ReportController;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -44,7 +45,7 @@ class UmmiRecord extends Model
         if ($this->baris !== null) {
             return (float) $this->baris;
         }
-        if (!$this->surah || !$this->hafalan_ayah) {
+        if (! $this->surah || ! $this->hafalan_ayah) {
             return 0.0;
         }
         $clean = str_replace(' ', '', $this->hafalan_ayah);
@@ -59,7 +60,8 @@ class UmmiRecord extends Model
         if ($start <= 0 || $end <= 0 || $start > $end) {
             return 0.0;
         }
-        return \App\Http\Controllers\ReportController::calculateLines(
+
+        return ReportController::calculateLines(
             $this->surah->number,
             $start,
             $end,

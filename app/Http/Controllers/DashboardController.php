@@ -13,11 +13,11 @@ use App\Models\Student;
 use App\Models\StudentPoint;
 use App\Models\TahfizhExam;
 use App\Services\DashboardService;
-use Carbon\Carbon;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Cache;
 
 class DashboardController extends Controller
 {
@@ -220,8 +220,8 @@ class DashboardController extends Controller
         $avgScoreMonth = $monthlyScores->isNotEmpty() ? round($monthlyScores->avg(), 1) : 0;
         $adabGradeMonth = Setting::getAdabGrade($avgScoreMonth);
 
-        $rankCacheKey = 'pendamping_adab_rankings_' . ($user->id) . "_{$year}_{$month}";
-        $classRankings = \Illuminate\Support\Facades\Cache::remember($rankCacheKey, 120, function () use ($assignedClassIds, $year, $month) {
+        $rankCacheKey = 'pendamping_adab_rankings_'.($user->id)."_{$year}_{$month}";
+        $classRankings = Cache::remember($rankCacheKey, 120, function () use ($assignedClassIds, $year, $month) {
             $classRoomQuery = ClassRoom::with(['students' => fn ($q) => $q->where('status', 'active')]);
             if ($assignedClassIds !== null) {
                 $classRoomQuery->whereIn('id', $assignedClassIds);
@@ -235,6 +235,7 @@ class DashboardController extends Controller
                         return ['name' => $classRoom->name, 'avg_score' => 0];
                     }
                     $sc = $st->map(fn ($s) => Setting::calculateAdabScore($s->id, $year, $month)['final_score']);
+
                     return ['name' => $classRoom->name, 'avg_score' => round($sc->avg(), 1)];
                 })
                 ->sortByDesc('avg_score')
@@ -295,40 +296,40 @@ class DashboardController extends Controller
         // ─── Tahfizh Summary ───────────────────────────────────────────
         try {
             $hafalanThisMonth = HafalanRecord::whereBetween('submitted_at', [$startOfMonth, $endOfMonth])->count();
-            $hafalanToday     = HafalanRecord::whereDate('submitted_at', $today)->count();
-            $activeTargets    = HafalanTarget::where('status', 'in_progress')->count();
+            $hafalanToday = HafalanRecord::whereDate('submitted_at', $today)->count();
+            $activeTargets = HafalanTarget::where('status', 'in_progress')->count();
             $completedTargets = HafalanTarget::where('status', 'completed')->count();
-            $totalTargets     = $activeTargets + $completedTargets;
-            $targetRate       = $totalTargets > 0 ? round(($completedTargets / $totalTargets) * 100, 1) : 0;
+            $totalTargets = $activeTargets + $completedTargets;
+            $targetRate = $totalTargets > 0 ? round(($completedTargets / $totalTargets) * 100, 1) : 0;
 
             // Monthly hafalan per class-level (X, XI, XII)
             $tahfizhByLevel = [
-                'X'   => HafalanRecord::whereBetween('submitted_at', [$startOfMonth, $endOfMonth])
+                'X' => HafalanRecord::whereBetween('submitted_at', [$startOfMonth, $endOfMonth])
                     ->whereHas('student.classRoom', fn ($q) => $q->where('name', 'like', 'X %')->where('name', 'not like', 'XI%'))->count(),
-                'XI'  => HafalanRecord::whereBetween('submitted_at', [$startOfMonth, $endOfMonth])
+                'XI' => HafalanRecord::whereBetween('submitted_at', [$startOfMonth, $endOfMonth])
                     ->whereHas('student.classRoom', fn ($q) => $q->where('name', 'like', 'XI %')->where('name', 'not like', 'XII%'))->count(),
                 'XII' => HafalanRecord::whereBetween('submitted_at', [$startOfMonth, $endOfMonth])
                     ->whereHas('student.classRoom', fn ($q) => $q->where('name', 'like', 'XII %'))->count(),
             ];
         } catch (\Throwable) {
             $hafalanThisMonth = 0;
-            $hafalanToday     = 0;
-            $activeTargets    = 0;
+            $hafalanToday = 0;
+            $activeTargets = 0;
             $completedTargets = 0;
-            $targetRate       = 0;
-            $tahfizhByLevel   = ['X' => 0, 'XI' => 0, 'XII' => 0];
+            $targetRate = 0;
+            $tahfizhByLevel = ['X' => 0, 'XI' => 0, 'XII' => 0];
         }
 
         // ─── Adab (Keagamaan) Summary ──────────────────────────────────
         try {
-            $totalStudents    = Student::where('status', 'active')->count();
-            $adabFilledToday  = AdabRecord::where('assessment_date', $today)->count();
-            $fillPercentage   = $totalStudents > 0 ? round(($adabFilledToday / $totalStudents) * 100, 1) : 0;
+            $totalStudents = Student::where('status', 'active')->count();
+            $adabFilledToday = AdabRecord::where('assessment_date', $today)->count();
+            $fillPercentage = $totalStudents > 0 ? round(($adabFilledToday / $totalStudents) * 100, 1) : 0;
 
             // Compute adab scores by level and overall in a single optimized pass
             $classRooms = ClassRoom::with(['students' => fn ($q) => $q->where('status', 'active')])->get();
             $adabByLevel = [
-                'X'   => 0, 'XI'  => 0, 'XII' => 0,
+                'X' => 0, 'XI' => 0, 'XII' => 0,
                 'X_total' => 0, 'XI_total' => 0, 'XII_total' => 0,
             ];
             $allScores = [];
@@ -348,40 +349,40 @@ class DashboardController extends Controller
                     $allScores[] = $sc;
                     if ($key) {
                         $adabByLevel[$key] += $sc;
-                        $adabByLevel[$key . '_total']++;
+                        $adabByLevel[$key.'_total']++;
                     }
                 }
             }
 
             $avgAdabScore = count($allScores) > 0 ? round(array_sum($allScores) / count($allScores), 1) : 0;
-            $adabGrade    = Setting::getAdabGrade($avgAdabScore);
+            $adabGrade = Setting::getAdabGrade($avgAdabScore);
 
             foreach (['X', 'XI', 'XII'] as $lv) {
-                $cnt = $adabByLevel[$lv . '_total'];
+                $cnt = $adabByLevel[$lv.'_total'];
                 $adabByLevel[$lv] = $cnt > 0 ? round($adabByLevel[$lv] / $cnt, 1) : 0;
             }
         } catch (\Throwable) {
-            $totalStudents   = 0;
+            $totalStudents = 0;
             $adabFilledToday = 0;
-            $fillPercentage  = 0;
-            $avgAdabScore    = 0;
-            $adabGrade       = '-';
-            $adabByLevel     = ['X' => 0, 'XI' => 0, 'XII' => 0];
+            $fillPercentage = 0;
+            $avgAdabScore = 0;
+            $adabGrade = '-';
+            $adabByLevel = ['X' => 0, 'XI' => 0, 'XII' => 0];
         }
 
         // ─── Tanse (Ketahanan Sekolah) Summary ─────────────────────────
         try {
             $violations = StudentPoint::where('type', '!=', 'reward')
                 ->whereBetween('date', [$startOfMonth, $endOfMonth])->get();
-            $rewards    = StudentPoint::where('type', 'reward')
+            $rewards = StudentPoint::where('type', 'reward')
                 ->whereBetween('date', [$startOfMonth, $endOfMonth])->count();
 
             $tanseStats = [
-                'violations'       => $violations->count(),
+                'violations' => $violations->count(),
                 'violation_points' => $violations->sum('points'),
-                'lateness'         => $violations->where('type', 'lateness')->count(),
-                'attribute'        => $violations->where('type', 'attribute')->count(),
-                'rewards'          => $rewards,
+                'lateness' => $violations->where('type', 'lateness')->count(),
+                'attribute' => $violations->where('type', 'attribute')->count(),
+                'rewards' => $rewards,
             ];
 
             // Tanse 6-month trend
@@ -389,7 +390,7 @@ class DashboardController extends Controller
             for ($i = 5; $i >= 0; $i--) {
                 $m = now()->subMonths($i);
                 $tanseTrend[] = [
-                    'label'  => $m->format('M'),
+                    'label' => $m->format('M'),
                     'points' => StudentPoint::where('type', '!=', 'reward')
                         ->whereYear('date', $m->year)->whereMonth('date', $m->month)->sum('points'),
                 ];

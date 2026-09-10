@@ -21,9 +21,13 @@ class HafalanTargetsConfigTest extends TestCase
     use RefreshDatabase;
 
     private User $superAdmin;
+
     private User $teacher;
+
     private TeacherProfile $teacherProfile;
+
     private Role $roleSuperAdmin;
+
     private Role $roleTeacher;
 
     protected function setUp(): void

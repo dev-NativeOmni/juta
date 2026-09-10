@@ -16,7 +16,7 @@ return new class extends Migration
                 Schema::table('hafalan_records', function (Blueprint $table) {
                     $table->index(['student_id', 'submitted_at'], 'idx_hafalan_std_subdate');
                 });
-            } catch (\Throwable $e) {
+            } catch (Throwable $e) {
                 // Index already exists, ignore
             }
         }
@@ -26,7 +26,7 @@ return new class extends Migration
                 Schema::table('attendances', function (Blueprint $table) {
                     $table->index(['student_id', 'tanggal'], 'idx_att_std_tanggal');
                 });
-            } catch (\Throwable $e) {
+            } catch (Throwable $e) {
                 // Index already exists, ignore
             }
 
@@ -34,7 +34,7 @@ return new class extends Migration
                 Schema::table('attendances', function (Blueprint $table) {
                     $table->index(['class_room_id', 'tanggal'], 'idx_att_cls_tanggal');
                 });
-            } catch (\Throwable $e) {
+            } catch (Throwable $e) {
                 // Index already exists, ignore
             }
         }
@@ -44,7 +44,7 @@ return new class extends Migration
                 Schema::table('ummi_records', function (Blueprint $table) {
                     $table->index(['student_id', 'tanggal'], 'idx_ummi_std_tanggal');
                 });
-            } catch (\Throwable $e) {
+            } catch (Throwable $e) {
                 // Index already exists, ignore
             }
         }
@@ -54,7 +54,7 @@ return new class extends Migration
                 Schema::table('murajaah_records', function (Blueprint $table) {
                     $table->index(['student_id', 'submitted_at'], 'idx_murajaah_std_subdate');
                 });
-            } catch (\Throwable $e) {
+            } catch (Throwable $e) {
                 // Index already exists, ignore
             }
         }
@@ -70,7 +70,8 @@ return new class extends Migration
                 Schema::table('hafalan_records', function (Blueprint $table) {
                     $table->dropIndex('idx_hafalan_std_subdate');
                 });
-            } catch (\Throwable $e) {}
+            } catch (Throwable $e) {
+            }
         }
 
         if (Schema::hasTable('attendances')) {
@@ -79,7 +80,8 @@ return new class extends Migration
                     $table->dropIndex('idx_att_std_tanggal');
                     $table->dropIndex('idx_att_cls_tanggal');
                 });
-            } catch (\Throwable $e) {}
+            } catch (Throwable $e) {
+            }
         }
 
         if (Schema::hasTable('ummi_records')) {
@@ -87,7 +89,8 @@ return new class extends Migration
                 Schema::table('ummi_records', function (Blueprint $table) {
                     $table->dropIndex('idx_ummi_std_tanggal');
                 });
-            } catch (\Throwable $e) {}
+            } catch (Throwable $e) {
+            }
         }
 
         if (Schema::hasTable('murajaah_records')) {
@@ -95,7 +98,8 @@ return new class extends Migration
                 Schema::table('murajaah_records', function (Blueprint $table) {
                     $table->dropIndex('idx_murajaah_std_subdate');
                 });
-            } catch (\Throwable $e) {}
+            } catch (Throwable $e) {
+            }
         }
     }
 };

@@ -2,7 +2,9 @@
 
 namespace Tests\Feature;
 
+use App\Models\ClassRoom;
 use App\Models\HafalanTarget;
+use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\Feature\Concerns\SetsUpHafizPlusData;
@@ -361,12 +363,12 @@ class HafalanTargetTest extends TestCase
         $this->student->classRoom->update(['name' => 'X E1', 'level' => '10']);
 
         // Student 2 (Grade 11 under same teacher)
-        $grade11Class = \App\Models\ClassRoom::create([
+        $grade11Class = ClassRoom::create([
             'name' => 'XI F3',
             'level' => '11',
         ]);
         $grade11Student = \App\Models\Student::create([
-            'user_id' => \App\Models\User::factory()->create()->id,
+            'user_id' => User::factory()->create()->id,
             'teacher_id' => $this->teacherProfile->id,
             'class_room_id' => $grade11Class->id,
             'name' => 'Grade 11 Student',
