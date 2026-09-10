@@ -64,7 +64,7 @@ class MurajaahRecordController extends Controller
 
         $formData = $this->formData($user);
         $classRooms = $formData['classRooms'];
-        
+
         $selectedClassId = $request->integer('class_room_id') ?: ($classRooms->first()?->id ?? 0);
 
         $students = Student::query()

@@ -8,7 +8,6 @@ use App\Models\TeacherProfile;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
 
 class AttendanceController extends Controller
@@ -57,10 +56,10 @@ class AttendanceController extends Controller
         $classRoomId = $request->integer('class_room_id');
         $date = $request->input('date', date('Y-m-d'));
 
-        if (!$classRoomId) {
+        if (! $classRoomId) {
             return response()->json([
                 'success' => false,
-                'message' => 'Classroom ID is required.'
+                'message' => 'Classroom ID is required.',
             ], 400);
         }
 
@@ -120,7 +119,7 @@ class AttendanceController extends Controller
         $validated = $validator->validated();
 
         // Check auth
-        if (!$visibleStudentIds->contains($validated['student_id'])) {
+        if (! $visibleStudentIds->contains($validated['student_id'])) {
             return response()->json([
                 'success' => false,
                 'message' => 'Unauthorized.',
