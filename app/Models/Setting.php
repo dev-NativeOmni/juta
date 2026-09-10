@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Cache;
 
@@ -10,8 +11,11 @@ class Setting extends Model
     protected $fillable = ['key', 'value'];
 
     protected static array $holidaysCache = [];
+
     protected static array $effectiveDatesSetCache = [];
+
     protected static array $effectiveDaysCountCache = [];
+
     protected static array $studentAdabScoreCache = [];
 
     public static function get($key, $default = null)
@@ -130,7 +134,7 @@ class Setting extends Model
     /**
      * Check if a date is an effective day for Adab questionnaire (Selasa-Jumat, excluding national holidays).
      */
-    public static function isEffectiveAdabDay(\Carbon\Carbon $date, array $holidays = []): bool
+    public static function isEffectiveAdabDay(Carbon $date, array $holidays = []): bool
     {
         // ISO day of week: 1=Senin, 2=Selasa, 3=Rabu, 4=Kamis, 5=Jumat, 6=Sabtu, 7=Minggu
         $dayIso = $date->dayOfWeekIso;
@@ -144,23 +148,23 @@ class Setting extends Model
      */
     public static function getEffectiveDatesSet(int $year, int $month, ?string $untilDate = null): array
     {
-        $cacheKey = "{$year}_{$month}_" . ($untilDate ?? 'full');
+        $cacheKey = "{$year}_{$month}_".($untilDate ?? 'full');
         if (isset(self::$effectiveDatesSetCache[$cacheKey])) {
             return self::$effectiveDatesSetCache[$cacheKey];
         }
 
-        $startDate = \Carbon\Carbon::createFromDate($year, $month, 1)->startOfDay();
+        $startDate = Carbon::createFromDate($year, $month, 1)->startOfDay();
         $daysInMonth = $startDate->daysInMonth;
 
-        $now = \Carbon\Carbon::now();
+        $now = Carbon::now();
         $isCurrentMonth = ($year === (int) $now->format('Y') && $month === (int) $now->format('n'));
 
         if ($untilDate) {
-            $endDate = \Carbon\Carbon::parse($untilDate)->endOfDay();
+            $endDate = Carbon::parse($untilDate)->endOfDay();
         } elseif ($isCurrentMonth) {
             $endDate = $now->copy()->endOfDay();
         } else {
-            $endDate = \Carbon\Carbon::createFromDate($year, $month, $daysInMonth)->endOfDay();
+            $endDate = Carbon::createFromDate($year, $month, $daysInMonth)->endOfDay();
         }
 
         $holidays = self::getNationalHolidays($year);
@@ -182,12 +186,13 @@ class Setting extends Model
      */
     public static function getEffectiveDaysCount(int $year, int $month, ?string $untilDate = null): int
     {
-        $cacheKey = "{$year}_{$month}_" . ($untilDate ?? 'full');
+        $cacheKey = "{$year}_{$month}_".($untilDate ?? 'full');
         if (isset(self::$effectiveDaysCountCache[$cacheKey])) {
             return self::$effectiveDaysCountCache[$cacheKey];
         }
 
         $datesSet = self::getEffectiveDatesSet($year, $month, $untilDate);
+
         return self::$effectiveDaysCountCache[$cacheKey] = max(1, count($datesSet));
     }
 
@@ -196,14 +201,14 @@ class Setting extends Model
      */
     public static function getStudentAdabAttendanceDetails(int $studentId, int $year, int $month): array
     {
-        $startDate = \Carbon\Carbon::createFromDate($year, $month, 1)->toDateString();
-        $endDate = \Carbon\Carbon::createFromDate($year, $month, 1)->endOfMonth()->toDateString();
+        $startDate = Carbon::createFromDate($year, $month, 1)->toDateString();
+        $endDate = Carbon::createFromDate($year, $month, 1)->endOfMonth()->toDateString();
 
         $effectiveDaysTotal = self::getEffectiveDaysCount($year, $month);
         $effectiveDatesSet = self::getEffectiveDatesSet($year, $month);
 
         // Fetch distinct assessment dates filled by student in effective days
-        $filledDates = \App\Models\AdabRecord::where('student_id', $studentId)
+        $filledDates = AdabRecord::where('student_id', $studentId)
             ->whereBetween('assessment_date', [$startDate, $endDate])
             ->pluck('assessment_date')
             ->unique();
@@ -238,14 +243,14 @@ class Setting extends Model
         $attendance = self::getStudentAdabAttendanceDetails($studentId, $year, $month);
         $attendanceRate = $attendance['attendance_rate'];
 
-        $mentorAssessment = \App\Models\AdabMentorAssessment::where('student_id', $studentId)
+        $mentorAssessment = AdabMentorAssessment::where('student_id', $studentId)
             ->where('year', $year)
             ->where('month', $month)
             ->first();
 
         if (! $mentorAssessment) {
             // Fallback: try latest available mentor assessment or use attendance rate
-            $mentorAssessment = \App\Models\AdabMentorAssessment::where('student_id', $studentId)
+            $mentorAssessment = AdabMentorAssessment::where('student_id', $studentId)
                 ->orderByDesc('year')->orderByDesc('month')
                 ->first();
         }
@@ -363,4 +368,3 @@ class Setting extends Model
         return is_array($decoded) ? array_replace_recursive($default, $decoded) : $default;
     }
 }
-

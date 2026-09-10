@@ -25,6 +25,6 @@ class RoleSwitchController extends Controller
 
         session(['active_role_id' => $targetRole->id]);
 
-        return redirect()->route('dashboard')->with('success', 'Berhasil beralih ke peran ' . $targetRole->display_name . '.');
+        return redirect()->route('dashboard')->with('success', 'Berhasil beralih ke peran '.$targetRole->display_name.'.');
     }
 }
