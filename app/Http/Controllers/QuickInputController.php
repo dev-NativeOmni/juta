@@ -85,7 +85,8 @@ class QuickInputController extends Controller
 
         $latestTatapMukaPerClass = DB::table('ummi_records')
             ->join('students', 'ummi_records.student_id', '=', 'students.id')
-            ->select('students.class_room_id', DB::raw('MAX(ummi_records.tatap_muka) as max_tatap_muka'))
+            ->select('students.class_room_id')
+            ->selectRaw('MAX(ummi_records.tatap_muka) as max_tatap_muka')
             ->groupBy('students.class_room_id')
             ->pluck('max_tatap_muka', 'students.class_room_id');
 

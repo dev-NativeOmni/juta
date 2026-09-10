@@ -375,7 +375,8 @@ class HafalanRecordController extends Controller
         }
 
         $latestTatapMukaPerStudent = DB::table('ummi_records')
-            ->select('student_id', DB::raw('MAX(tatap_muka) as max_tatap_muka'))
+            ->select('student_id')
+            ->selectRaw('MAX(tatap_muka) as max_tatap_muka')
             ->groupBy('student_id')
             ->pluck('max_tatap_muka', 'student_id');
 

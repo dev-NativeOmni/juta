@@ -68,7 +68,8 @@ class UserController extends Controller
         $classRooms = \App\Models\ClassRoom::orderBy('name')->get();
 
         $roleCounts = DB::table('users')
-            ->select('role_id', DB::raw('count(*) as total'))
+            ->select('role_id')
+            ->selectRaw('count(*) as total')
             ->groupBy('role_id')
             ->pluck('total', 'role_id')
             ->toArray();
