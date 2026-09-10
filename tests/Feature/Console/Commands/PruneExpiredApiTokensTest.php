@@ -19,8 +19,8 @@ class PruneExpiredApiTokensTest extends TestCase
             ->andReturn(false);
 
         $this->artisan('ims:prune-api-tokens')
-             ->expectsOutput('Table personal_access_tokens tidak ditemukan.')
-             ->assertExitCode(Command::FAILURE);
+            ->expectsOutput('Table personal_access_tokens tidak ditemukan.')
+            ->assertExitCode(Command::FAILURE);
     }
 
     public function test_it_fails_if_expires_at_column_missing(): void
@@ -34,8 +34,8 @@ class PruneExpiredApiTokensTest extends TestCase
             ->andReturn(false);
 
         $this->artisan('ims:prune-api-tokens')
-             ->expectsOutput('Column expires_at belum ada di personal_access_tokens.')
-             ->assertExitCode(Command::FAILURE);
+            ->expectsOutput('Column expires_at belum ada di personal_access_tokens.')
+            ->assertExitCode(Command::FAILURE);
     }
 
     public function test_it_can_dry_run_pruning(): void
@@ -50,11 +50,11 @@ class PruneExpiredApiTokensTest extends TestCase
         ]);
 
         $this->artisan('ims:prune-api-tokens', ['--dry-run' => true])
-             ->expectsOutput('Dry run: 1 expired API token(s) would be deleted.')
-             ->assertExitCode(Command::SUCCESS);
+            ->expectsOutput('Dry run: 1 expired API token(s) would be deleted.')
+            ->assertExitCode(Command::SUCCESS);
 
         $this->assertDatabaseHas('personal_access_tokens', [
-            'name' => 'test_token'
+            'name' => 'test_token',
         ]);
     }
 
@@ -79,15 +79,15 @@ class PruneExpiredApiTokensTest extends TestCase
         ]);
 
         $this->artisan('ims:prune-api-tokens')
-             ->expectsOutput('Deleted 1 expired API token(s).')
-             ->assertExitCode(Command::SUCCESS);
+            ->expectsOutput('Deleted 1 expired API token(s).')
+            ->assertExitCode(Command::SUCCESS);
 
         $this->assertDatabaseMissing('personal_access_tokens', [
-            'name' => 'expired_token'
+            'name' => 'expired_token',
         ]);
 
         $this->assertDatabaseHas('personal_access_tokens', [
-            'name' => 'valid_token'
+            'name' => 'valid_token',
         ]);
     }
 
@@ -112,15 +112,15 @@ class PruneExpiredApiTokensTest extends TestCase
         ]);
 
         $this->artisan('ims:prune-api-tokens', ['--days' => 7])
-             ->expectsOutput('Deleted 1 expired API token(s).')
-             ->assertExitCode(Command::SUCCESS);
+            ->expectsOutput('Deleted 1 expired API token(s).')
+            ->assertExitCode(Command::SUCCESS);
 
         $this->assertDatabaseMissing('personal_access_tokens', [
-            'name' => 'very_expired_token'
+            'name' => 'very_expired_token',
         ]);
 
         $this->assertDatabaseHas('personal_access_tokens', [
-            'name' => 'recently_expired_token'
+            'name' => 'recently_expired_token',
         ]);
     }
 }
