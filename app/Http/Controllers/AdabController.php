@@ -86,10 +86,14 @@ class AdabController extends Controller
         $year = $request->integer('year', (int) now()->format('Y'));
         $month = $request->integer('month', (int) now()->format('n'));
 
+        $studentIds = $students->pluck('id');
+        $todayRecords = AdabRecord::whereIn('student_id', $studentIds)
+            ->where('assessment_date', $today)
+            ->get()
+            ->keyBy('student_id');
+
         foreach ($students as $student) {
-            $student->today_record = AdabRecord::where('student_id', $student->id)
-                ->where('assessment_date', $today)
-                ->first();
+            $student->today_record = $todayRecords->get($student->id);
 
             $adabScoreData = Setting::calculateAdabScore($student->id, $year, $month);
             $student->adab_attendance_rate = $adabScoreData['attendance_rate'];

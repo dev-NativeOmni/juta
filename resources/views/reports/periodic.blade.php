@@ -506,7 +506,9 @@
             }
 
             function printUmmiCard(orientation = 'landscape') {
-                const printUrl = "{!! route('reports.periodic.print', array_merge(request()->query(), ['class_room_id' => $selectedClassId])) !!}&orientation=" + orientation;
+                const url = new URL(@json(route('reports.periodic.print', array_merge(request()->query(), ['class_room_id' => $selectedClassId]))));
+                url.searchParams.set('orientation', orientation);
+                const printUrl = url.toString();
                 window.open(printUrl, '_blank');
             }
 

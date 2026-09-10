@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\File;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
@@ -22,10 +23,10 @@ class DatabaseBackupController extends Controller
         ]);
     }
 
-    public function store(): RedirectResponse
+    public function store(Request $request): RedirectResponse
     {
         $exitCode = Artisan::call('ims:backup-database', [
-            '--prune' => true,
+            '--prune' => $request->boolean('prune', true),
         ]);
 
         $output = trim(Artisan::output());

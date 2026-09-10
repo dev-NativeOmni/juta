@@ -501,6 +501,7 @@ class SpreadsheetInputController extends Controller
 
         $existingRecordIds = $existingRecords->pluck('id')->toArray();
         $processedRecordIds = [];
+        $surahs = Surah::getAllCached()->keyBy('id');
 
         foreach ($cellData['hafalans'] ?? [] as $hafalanData) {
             if (empty($hafalanData['surah_id'])) {
@@ -511,7 +512,7 @@ class SpreadsheetInputController extends Controller
             $ayahEnd = filled($hafalanData['ayah_end'] ?? null) ? (int)$hafalanData['ayah_end'] : $ayahStart;
 
             // Calculate lines count
-            $surah = Surah::find($hafalanData['surah_id']);
+            $surah = $surahs->get($hafalanData['surah_id']);
             $baris = 0.0;
             if ($surah) {
                 $baris = \App\Http\Controllers\ReportController::calculateLines(
@@ -575,6 +576,7 @@ class SpreadsheetInputController extends Controller
 
         $existingRecordIds = $existingRecords->pluck('id')->toArray();
         $processedRecordIds = [];
+        $surahs = Surah::getAllCached()->keyBy('id');
 
         $ummiJilid = filled($cellData['ummi_jilid'] ?? null) ? $cellData['ummi_jilid'] : null;
         $ummiHalaman = filled($cellData['ummi_halaman'] ?? null) ? $cellData['ummi_halaman'] : null;
@@ -626,7 +628,7 @@ class SpreadsheetInputController extends Controller
                     continue;
                 }
 
-                $surah = !empty($hafalanData['surah_id']) ? Surah::find($hafalanData['surah_id']) : null;
+                $surah = !empty($hafalanData['surah_id']) ? $surahs->get($hafalanData['surah_id']) : null;
                 $baris = 0.0;
                 if ($surah && !empty($hafalanData['ayah'])) {
                     $clean = str_replace(' ', '', $hafalanData['ayah']);

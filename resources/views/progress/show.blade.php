@@ -307,11 +307,11 @@
                     new Chart(ctx, {
                         type: 'bar',
                         data: {
-                            labels: {!! json_encode($chartLabels) !!},
+                            labels: @json($chartLabels),
                             datasets: [
                                 {
                                     label: 'Setoran Bulanan (Baris)',
-                                    data: {!! json_encode($monthlyValues) !!},
+                                    data: @json($monthlyValues),
                                     backgroundColor: monthlyBgGradient,
                                     borderColor: 'rgb(16, 185, 129)',
                                     borderWidth: 2.5,
@@ -322,7 +322,7 @@
                                 },
                                 {
                                     label: 'Total Akumulasi (Baris)',
-                                    data: {!! json_encode($cumulativeValues) !!},
+                                    data: @json($cumulativeValues),
                                     backgroundColor: cumulativeBgGradient,
                                     borderColor: 'rgb(79, 70, 229)',
                                     borderWidth: 3.5,
