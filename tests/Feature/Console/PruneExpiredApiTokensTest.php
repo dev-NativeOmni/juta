@@ -16,7 +16,7 @@ class PruneExpiredApiTokensTest extends TestCase
         parent::setUp();
 
         // Ensure the tokens table exists for standard tests
-        if (!Schema::hasTable('personal_access_tokens')) {
+        if (! Schema::hasTable('personal_access_tokens')) {
             $this->artisan('migrate');
         }
     }
@@ -50,8 +50,8 @@ class PruneExpiredApiTokensTest extends TestCase
         $this->assertEquals(2, DB::table('personal_access_tokens')->count());
 
         $this->artisan('ims:prune-api-tokens')
-             ->expectsOutput('Deleted 1 expired API token(s).')
-             ->assertSuccessful();
+            ->expectsOutput('Deleted 1 expired API token(s).')
+            ->assertSuccessful();
 
         $this->assertEquals(1, DB::table('personal_access_tokens')->count());
         $this->assertEquals('Test Token 1', DB::table('personal_access_tokens')->first()->name);
@@ -74,8 +74,8 @@ class PruneExpiredApiTokensTest extends TestCase
         $this->assertEquals(1, DB::table('personal_access_tokens')->count());
 
         $this->artisan('ims:prune-api-tokens', ['--dry-run' => true])
-             ->expectsOutput('Dry run: 1 expired API token(s) would be deleted.')
-             ->assertSuccessful();
+            ->expectsOutput('Dry run: 1 expired API token(s) would be deleted.')
+            ->assertSuccessful();
 
         // Ensure token still exists
         $this->assertEquals(1, DB::table('personal_access_tokens')->count());
@@ -111,8 +111,8 @@ class PruneExpiredApiTokensTest extends TestCase
 
         // Delete tokens expired at least 5 days ago
         $this->artisan('ims:prune-api-tokens', ['--days' => 5])
-             ->expectsOutput('Deleted 1 expired API token(s).')
-             ->assertSuccessful();
+            ->expectsOutput('Deleted 1 expired API token(s).')
+            ->assertSuccessful();
 
         // The token expired 2 days ago should still be there
         $this->assertEquals(1, DB::table('personal_access_tokens')->count());
@@ -124,8 +124,8 @@ class PruneExpiredApiTokensTest extends TestCase
         Schema::dropIfExists('personal_access_tokens');
 
         $this->artisan('ims:prune-api-tokens')
-             ->expectsOutput('Table personal_access_tokens tidak ditemukan.')
-             ->assertFailed();
+            ->expectsOutput('Table personal_access_tokens tidak ditemukan.')
+            ->assertFailed();
     }
 
     public function test_it_fails_if_expires_at_column_does_not_exist()
@@ -138,7 +138,7 @@ class PruneExpiredApiTokensTest extends TestCase
         });
 
         $this->artisan('ims:prune-api-tokens')
-             ->expectsOutput('Column expires_at belum ada di personal_access_tokens.')
-             ->assertFailed();
+            ->expectsOutput('Column expires_at belum ada di personal_access_tokens.')
+            ->assertFailed();
     }
 }
