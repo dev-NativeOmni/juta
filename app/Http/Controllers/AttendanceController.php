@@ -8,7 +8,6 @@ use App\Models\TeacherProfile;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
 
 class AttendanceController extends Controller
