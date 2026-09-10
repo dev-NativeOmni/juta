@@ -127,7 +127,7 @@ class User extends Authenticatable
         return $this->hasMany(AdabMaterial::class, 'created_by');
     }
 
-    public function pendampingClasses(): \Illuminate\Database\Eloquent\Relations\BelongsToMany
+    public function pendampingClasses(): BelongsToMany
     {
         return $this->belongsToMany(ClassRoom::class, 'class_room_pendamping_adab', 'user_id', 'class_room_id')->withTimestamps();
     }
