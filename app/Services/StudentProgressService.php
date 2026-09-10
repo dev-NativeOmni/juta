@@ -6,13 +6,10 @@ use App\Models\HafalanRecord;
 use App\Models\HafalanTarget;
 use App\Models\MurajaahRecord;
 use App\Models\ParentProfile;
-use App\Models\Setting;
 use App\Models\Student;
 use App\Models\Surah;
 use App\Models\TeacherProfile;
-use App\Models\UmmiRecord;
 use App\Models\User;
-use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Cache;
@@ -45,7 +42,7 @@ class StudentProgressService
                 $teacherProfile = TeacherProfile::query()
                     ->whereHas('user', function ($q) use ($user) {
                         $q->where('name', 'like', '%'.$user->name.'%')
-                            ->orWhere('username', $user->username);
+                          ->orWhere('username', $user->username);
                     })
                     ->first();
 
@@ -138,13 +135,13 @@ class StudentProgressService
             $tahfizhLevel = $student->tahfizh_level ?? 'reguler';
 
             $isGrade10 = (bool) (
-                (preg_match('/\bX\b/i', $classRoomName) && ! preg_match('/\b(XI|XII)\b/i', $classRoomName))
+                (preg_match('/\bX\b/i', $classRoomName) && !preg_match('/\b(XI|XII)\b/i', $classRoomName))
                 || preg_match('/\b10\b/i', $classRoomName)
                 || preg_match('/^X[-_\s]?E/i', $classRoomName)
                 || preg_match('/kelas\s*(X|10)/i', $classRoomName)
-                || (preg_match('/\bX\b/i', $classRoomLevel) && ! preg_match('/\b(XI|XII)\b/i', $classRoomLevel))
+                || (preg_match('/\bX\b/i', $classRoomLevel) && !preg_match('/\b(XI|XII)\b/i', $classRoomLevel))
                 || preg_match('/\b10\b/i', $classRoomLevel)
-            ) && ! preg_match('/\b(XI|XII|11|12)\b/i', $classRoomName);
+            ) && !preg_match('/\b(XI|XII|11|12)\b/i', $classRoomName);
 
             $isUmmiProgram = $isGrade10 || $tahfizhLevel === 'ummi';
             $programCategory = $isUmmiProgram ? 'ummi' : 'reguler';
@@ -206,7 +203,7 @@ class StudentProgressService
             $programKey = $isTahfizhProgram ? 'tahfizh' : 'reguler';
 
             // Load configured target settings from Setting model (with robust default fallback)
-            $allTargetConfigs = Setting::getHafalanTargetsConfig();
+            $allTargetConfigs = \App\Models\Setting::getHafalanTargetsConfig();
             $targetCfg = $allTargetConfigs[$gradeKey][$programKey] ?? [
                 'target_juz_count' => $isTahfizhProgram ? 4 : 2,
                 'mode' => $gradeKey === 'grade_10' ? 'specific' : 'any',
@@ -217,14 +214,14 @@ class StudentProgressService
             $targetMode = $targetCfg['mode'] ?? ($gradeKey === 'grade_10' ? 'specific' : 'any');
             $targetSpecificJuz = array_values(array_map('intval', (array) ($targetCfg['specific_juz'] ?? [])));
 
-            if ($targetMode === 'specific' && ! empty($targetSpecificJuz)) {
+            if ($targetMode === 'specific' && !empty($targetSpecificJuz)) {
                 $targetTotalAyahs = 0;
                 $memorizedTargetAyahs = 0;
                 foreach ($targetSpecificJuz as $j) {
                     $targetTotalAyahs += self::$juzAyahCounts[$j] ?? ($juzStats['juz_total_ayahs'][$j] ?? 208);
                     $memorizedTargetAyahs += ($juzStats['juz_memorized_count'][$j] ?? 0);
                 }
-                $targetJuzLabel = "{$targetJuzCount} Juz (Juz ".implode(', ', $targetSpecificJuz).')';
+                $targetJuzLabel = "{$targetJuzCount} Juz (Juz " . implode(', ', $targetSpecificJuz) . ")";
             } else {
                 $targetTotalAyahs = (int) round(($targetJuzCount / 30) * $totalQuranAyahs);
                 $memorizedTargetAyahs = $memorizedAyahs;
@@ -237,7 +234,7 @@ class StudentProgressService
             $remainingAyahs = max(0, $targetTotalAyahs - $memorizedTargetAyahs);
 
             // ─── Ummi Program Details ───
-            $latestUmmiRecord = UmmiRecord::query()
+            $latestUmmiRecord = \App\Models\UmmiRecord::query()
                 ->with('surah')
                 ->where('student_id', $student->id)
                 ->latest('tanggal')
@@ -377,10 +374,10 @@ class StudentProgressService
                     ? 'Juz '.implode(', ', $juzStats['completed_juz'])
                     : 'Belum ada Juz lengkap',
 
-                'total_hafalan_records' => (clone $hafalanRecordsQuery)->count() + UmmiRecord::where('student_id', $student->id)->whereNotNull('hafalan_surah_id')->count(),
+                'total_hafalan_records' => (clone $hafalanRecordsQuery)->count() + \App\Models\UmmiRecord::where('student_id', $student->id)->whereNotNull('hafalan_surah_id')->count(),
                 'passed_hafalan_records' => (clone $hafalanRecordsQuery)
                     ->where('status', 'passed')
-                    ->count() + UmmiRecord::where('student_id', $student->id)->whereNotNull('hafalan_surah_id')->count(),
+                    ->count() + \App\Models\UmmiRecord::where('student_id', $student->id)->whereNotNull('hafalan_surah_id')->count(),
                 'repeat_hafalan_records' => (clone $hafalanRecordsQuery)
                     ->whereIn('status', ['repeat', 'needs_improvement'])
                     ->count(),
@@ -552,7 +549,7 @@ class StudentProgressService
             ->whereNotNull('ayah_end')
             ->get(['surah_id', 'ayah_start', 'ayah_end']);
 
-        $ummiRecords = UmmiRecord::where('student_id', $student->id)
+        $ummiRecords = \App\Models\UmmiRecord::where('student_id', $student->id)
             ->whereNotNull('hafalan_surah_id')
             ->whereNotNull('hafalan_ayah')
             ->get(['hafalan_surah_id', 'hafalan_ayah']);
@@ -652,7 +649,7 @@ class StudentProgressService
             ->whereNotNull('ayah_end')
             ->get(['surah_id', 'ayah_start', 'ayah_end']);
 
-        $ummiRecords = UmmiRecord::query()
+        $ummiRecords = \App\Models\UmmiRecord::query()
             ->where('student_id', $student->id)
             ->whereNotNull('hafalan_surah_id')
             ->whereNotNull('hafalan_ayah')
@@ -795,7 +792,7 @@ class StudentProgressService
                 ->orderBy('id', 'asc')
                 ->first();
 
-            $firstUmmi = UmmiRecord::query()
+            $firstUmmi = \App\Models\UmmiRecord::query()
                 ->with('surah')
                 ->where('student_id', $student->id)
                 ->orderBy('tanggal', 'asc')
@@ -804,8 +801,8 @@ class StudentProgressService
 
             $firstRecord = null;
             if ($firstHafalan && $firstUmmi) {
-                $hafDate = Carbon::parse($firstHafalan->submitted_at);
-                $ummiDate = Carbon::parse($firstUmmi->tanggal);
+                $hafDate = \Carbon\Carbon::parse($firstHafalan->submitted_at);
+                $ummiDate = \Carbon\Carbon::parse($firstUmmi->tanggal);
                 if ($hafDate->lte($ummiDate)) {
                     $firstRecord = [
                         'type' => 'hafalan',
@@ -815,8 +812,8 @@ class StudentProgressService
                     ];
                 } else {
                     $uTitle = $firstUmmi->surah?->name_latin
-                        ? ($firstUmmi->surah->name_latin.' (Ayat '.($firstUmmi->hafalan_ayah ?: '-').')')
-                        : (($firstUmmi->ummi_jilid ?? 'Ummi').' (Hal. '.($firstUmmi->ummi_halaman ?? '-').')');
+                        ? ($firstUmmi->surah->name_latin . ' (Ayat ' . ($firstUmmi->hafalan_ayah ?: '-') . ')')
+                        : (($firstUmmi->ummi_jilid ?? 'Ummi') . ' (Hal. ' . ($firstUmmi->ummi_halaman ?? '-') . ')');
                     $firstRecord = [
                         'type' => 'ummi',
                         'date' => $firstUmmi->tanggal?->format('d M Y'),
@@ -833,8 +830,8 @@ class StudentProgressService
                 ];
             } elseif ($firstUmmi) {
                 $uTitle = $firstUmmi->surah?->name_latin
-                    ? ($firstUmmi->surah->name_latin.' (Ayat '.($firstUmmi->hafalan_ayah ?: '-').')')
-                    : (($firstUmmi->ummi_jilid ?? 'Ummi').' (Hal. '.($firstUmmi->ummi_halaman ?? '-').')');
+                    ? ($firstUmmi->surah->name_latin . ' (Ayat ' . ($firstUmmi->hafalan_ayah ?: '-') . ')')
+                    : (($firstUmmi->ummi_jilid ?? 'Ummi') . ' (Hal. ' . ($firstUmmi->ummi_halaman ?? '-') . ')');
                 $firstRecord = [
                     'type' => 'ummi',
                     'date' => $firstUmmi->tanggal?->format('d M Y'),
@@ -851,7 +848,7 @@ class StudentProgressService
             $level = (int) ($student->classRoom?->level ?? 0);
 
             $isGrade12 = (bool) ($level === 12 || preg_match('/\bXII\b/i', $className) || preg_match('/\b12\b/i', $className));
-            $isGrade11 = (bool) ($level === 11 || (preg_match('/\bXI\b/i', $className) && ! preg_match('/\bXII\b/i', $className)) || preg_match('/\b11\b/i', $className));
+            $isGrade11 = (bool) ($level === 11 || (preg_match('/\bXI\b/i', $className) && !preg_match('/\bXII\b/i', $className)) || preg_match('/\b11\b/i', $className));
 
             $currentGradeNum = 10;
             if ($isGrade12) {
@@ -898,7 +895,7 @@ class StudentProgressService
                         ->orderBy('submitted_at', 'asc')
                         ->get();
 
-                    $ummiInTerm = UmmiRecord::query()
+                    $ummiInTerm = \App\Models\UmmiRecord::query()
                         ->with('surah')
                         ->where('student_id', $student->id)
                         ->whereDate('tanggal', '>=', $tStart)
@@ -928,9 +925,8 @@ class StudentProgressService
                     // Format Ummi
                     $formatU = function ($u) {
                         $fullStr = $u->surah?->name_latin
-                            ? ($u->surah->name_latin.' (Ayat '.($u->hafalan_ayah ?: '-').')')
-                            : (($u->ummi_jilid ?? 'Ummi').' (Hal. '.($u->ummi_halaman ?? '-').')');
-
+                            ? ($u->surah->name_latin . ' (Ayat ' . ($u->hafalan_ayah ?: '-') . ')')
+                            : (($u->ummi_jilid ?? 'Ummi') . ' (Hal. ' . ($u->ummi_halaman ?? '-') . ')');
                         return [
                             'date' => $u->tanggal?->format('d/m/Y'),
                             'surah_name' => $u->surah?->name_latin ?? ($u->ummi_jilid ?? 'Ummi'),
@@ -940,8 +936,8 @@ class StudentProgressService
                     };
 
                     if ($firstH && $firstU) {
-                        $hDate = Carbon::parse($firstH->submitted_at);
-                        $uDate = Carbon::parse($firstU->tanggal);
+                        $hDate = \Carbon\Carbon::parse($firstH->submitted_at);
+                        $uDate = \Carbon\Carbon::parse($firstU->tanggal);
                         $termFirst = $hDate->lte($uDate) ? $formatH($firstH) : $formatU($firstU);
                     } elseif ($firstH) {
                         $termFirst = $formatH($firstH);
@@ -950,8 +946,8 @@ class StudentProgressService
                     }
 
                     if ($lastH && $lastU) {
-                        $hDate = Carbon::parse($lastH->submitted_at);
-                        $uDate = Carbon::parse($lastU->tanggal);
+                        $hDate = \Carbon\Carbon::parse($lastH->submitted_at);
+                        $uDate = \Carbon\Carbon::parse($lastU->tanggal);
                         $termLast = $hDate->gte($uDate) ? $formatH($lastH) : $formatU($lastU);
                     } elseif ($lastH) {
                         $termLast = $formatH($lastH);
@@ -973,15 +969,15 @@ class StudentProgressService
                     $termTarget = null;
                     if ($firstTarget = $targetsInTerm->first()) {
                         if ($firstTarget->ummi_jilid || $gNum === 10) {
-                            $tStr = '📗 '.($firstTarget->ummi_jilid ?? 'Target Ummi');
+                            $tStr = '📗 ' . ($firstTarget->ummi_jilid ?? 'Target Ummi');
                             if ($firstTarget->halaman_peraga || $firstTarget->halaman_buku) {
-                                $tStr .= ' (Peraga: '.($firstTarget->halaman_peraga ?? '-').', Buku: '.($firstTarget->halaman_buku ?? '-').')';
+                                $tStr .= ' (Peraga: ' . ($firstTarget->halaman_peraga ?? '-') . ', Buku: ' . ($firstTarget->halaman_buku ?? '-') . ')';
                             }
                             if ($firstTarget->surah) {
-                                $tStr .= ' · Surah '.$firstTarget->surah->name_latin;
+                                $tStr .= ' · Surah ' . $firstTarget->surah->name_latin;
                             }
                         } else {
-                            $tStr = '📘 '.($firstTarget->surah?->name_latin ?? 'Target Reguler').' (Ayat '.$firstTarget->ayah_start.'-'.$firstTarget->ayah_end.')';
+                            $tStr = '📘 ' . ($firstTarget->surah?->name_latin ?? 'Target Reguler') . ' (Ayat ' . $firstTarget->ayah_start . '-' . $firstTarget->ayah_end . ')';
                         }
 
                         $termTarget = [

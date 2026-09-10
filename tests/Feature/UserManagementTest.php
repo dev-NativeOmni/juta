@@ -2,8 +2,6 @@
 
 namespace Tests\Feature;
 
-use App\Models\ClassRoom;
-use App\Models\Program;
 use App\Models\Role;
 use App\Models\User;
 use Database\Seeders\RoleSeeder;
@@ -115,8 +113,8 @@ class UserManagementTest extends TestCase
         $teacherRole = Role::where('name', 'teacher')->first();
         $pendampingRole = Role::where('name', 'pendamping_adab')->first();
 
-        $program = Program::create(['name' => 'Program Test', 'status' => 'active']);
-        $classRoom = ClassRoom::create([
+        $program = \App\Models\Program::create(['name' => 'Program Test', 'status' => 'active']);
+        $classRoom = \App\Models\ClassRoom::create([
             'program_id' => $program->id,
             'name' => 'Kelas Test Pendamping',
         ]);

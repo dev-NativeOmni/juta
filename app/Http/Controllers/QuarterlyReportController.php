@@ -2,13 +2,8 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Attendance;
 use App\Models\ClassRoom;
-use App\Models\HafalanRecord;
-use App\Models\HafalanTarget;
 use App\Models\Student;
-use App\Models\StudentPoint;
-use Carbon\Carbon;
 use Illuminate\Http\Request;
 
 class QuarterlyReportController extends Controller
@@ -18,26 +13,15 @@ class QuarterlyReportController extends Controller
         if (empty($score)) {
             return 'A';
         }
-        if (is_string($score) && ! is_numeric($score)) {
+        if (is_string($score) && !is_numeric($score)) {
             return $score;
         }
-        $scoreVal = (float) $score;
-        if ($scoreVal >= 90) {
-            return 'A+';
-        }
-        if ($scoreVal >= 80) {
-            return 'A';
-        }
-        if ($scoreVal >= 70) {
-            return 'B+';
-        }
-        if ($scoreVal >= 60) {
-            return 'B';
-        }
-        if ($scoreVal >= 50) {
-            return 'B-';
-        }
-
+        $scoreVal = (float)$score;
+        if ($scoreVal >= 90) return 'A+';
+        if ($scoreVal >= 80) return 'A';
+        if ($scoreVal >= 70) return 'B+';
+        if ($scoreVal >= 60) return 'B';
+        if ($scoreVal >= 50) return 'B-';
         return 'C';
     }
 
@@ -49,28 +33,28 @@ class QuarterlyReportController extends Controller
         $selectedClass = $classRooms->firstWhere('id', $selectedClassId);
 
         // Auto-detect defaults from latest database record to ensure the dashboard works on seeded data
-        $latestRecord = HafalanRecord::query()->latest('submitted_at')->first();
+        $latestRecord = \App\Models\HafalanRecord::query()->latest('submitted_at')->first();
         $detectedYearString = '2025/2026';
         $detectedTerm = '1';
         $detectedMonth = '09';
 
         if ($latestRecord) {
-            $latestDate = Carbon::parse($latestRecord->submitted_at);
+            $latestDate = \Carbon\Carbon::parse($latestRecord->submitted_at);
             $detectedMonth = $latestDate->format('m');
             $yearVal = $latestDate->year;
 
             if (in_array($detectedMonth, ['07', '08', '09'])) {
                 $detectedTerm = '1';
-                $detectedYearString = "{$yearVal}/".($yearVal + 1);
+                $detectedYearString = "{$yearVal}/" . ($yearVal + 1);
             } elseif (in_array($detectedMonth, ['10', '11', '12'])) {
                 $detectedTerm = '2';
-                $detectedYearString = "{$yearVal}/".($yearVal + 1);
+                $detectedYearString = "{$yearVal}/" . ($yearVal + 1);
             } elseif (in_array($detectedMonth, ['01', '02', '03'])) {
                 $detectedTerm = '3';
-                $detectedYearString = ($yearVal - 1)."/{$yearVal}";
+                $detectedYearString = ($yearVal - 1) . "/{$yearVal}";
             } else {
                 $detectedTerm = '4';
-                $detectedYearString = ($yearVal - 1)."/{$yearVal}";
+                $detectedYearString = ($yearVal - 1) . "/{$yearVal}";
             }
         }
 
@@ -90,14 +74,14 @@ class QuarterlyReportController extends Controller
         }
 
         $selectedMonth = $request->input('month');
-        if (! $selectedMonth || ! isset($monthsMap[$selectedMonth])) {
-            $selectedMonth = (string) array_key_last($monthsMap);
+        if (!$selectedMonth || !isset($monthsMap[$selectedMonth])) {
+            $selectedMonth = (string)array_key_last($monthsMap);
         }
 
         // Parse start and end years
         $years = explode('/', $academicYear);
-        $startYear = (int) $years[0];
-        $endYear = isset($years[1]) ? (int) $years[1] : ($startYear + 1);
+        $startYear = (int)$years[0];
+        $endYear = isset($years[1]) ? (int)$years[1] : ($startYear + 1);
 
         // Calculate selected month year
         $monthYear = in_array($selectedMonth, ['01', '02', '03', '04', '05', '06']) ? $endYear : $startYear;
@@ -138,43 +122,43 @@ class QuarterlyReportController extends Controller
         $studentIds = $students->pluck('id')->toArray();
 
         // 1. Fetch real monthly data (column is 'tanggal', not 'date')
-        $attendances = Attendance::query()
+        $attendances = \App\Models\Attendance::query()
             ->whereIn('student_id', $studentIds)
             ->whereBetween('tanggal', [$startDate, $endDate])
             ->get();
 
-        $hafalanRecords = HafalanRecord::query()
+        $hafalanRecords = \App\Models\HafalanRecord::query()
             ->with('surah')
             ->whereIn('student_id', $studentIds)
             ->whereBetween('submitted_at', [$startDate, $endDate])
             ->orderBy('submitted_at')
             ->get();
 
-        $violations = StudentPoint::query()
+        $violations = \App\Models\StudentPoint::query()
             ->whereIn('student_id', $studentIds)
             ->where('type', 'violation')
             ->whereBetween('date', [$startDate, $endDate])
             ->get();
 
         // 2. Fetch real term-wide data
-        $termHafalanRecords = HafalanRecord::query()
+        $termHafalanRecords = \App\Models\HafalanRecord::query()
             ->with('surah')
             ->whereIn('student_id', $studentIds)
             ->whereBetween('submitted_at', [$termStartDate, $termEndDate])
             ->get();
 
-        $termAttendances = Attendance::query()
+        $termAttendances = \App\Models\Attendance::query()
             ->whereIn('student_id', $studentIds)
             ->whereBetween('tanggal', [$termStartDate, $termEndDate])
             ->get();
 
-        $termViolations = StudentPoint::query()
+        $termViolations = \App\Models\StudentPoint::query()
             ->whereIn('student_id', $studentIds)
             ->where('type', 'violation')
             ->whereBetween('date', [$termStartDate, $termEndDate])
             ->get();
 
-        $latestTargets = HafalanTarget::query()
+        $latestTargets = \App\Models\HafalanTarget::query()
             ->with('surah')
             ->whereIn('student_id', $studentIds)
             ->where('target_date', '<=', $termEndDate)
@@ -182,7 +166,7 @@ class QuarterlyReportController extends Controller
             ->get()
             ->groupBy('student_id');
 
-        $latestHafalans = HafalanRecord::query()
+        $latestHafalans = \App\Models\HafalanRecord::query()
             ->with('surah')
             ->whereIn('student_id', $studentIds)
             ->where('status', 'passed')
@@ -192,14 +176,14 @@ class QuarterlyReportController extends Controller
             ->groupBy('student_id');
 
         // Group students by their Musyrif
-        $studentsByHalaqah = $students->groupBy(function ($student) {
+        $studentsByHalaqah = $students->groupBy(function($student) {
             return $student->teacher?->user?->name ?? 'Ust. Fuad Faris Ghazi';
         });
 
         // Determine unique dates for harian jurnal / tatap muka
         $uniqueDates = $attendances->pluck('tanggal')
-            ->map(fn ($d) => $d instanceof Carbon ? $d->toDateString() : Carbon::parse($d)->toDateString())
-            ->merge($hafalanRecords->pluck('submitted_at')->map(fn ($d) => $d instanceof Carbon ? $d->toDateString() : Carbon::parse($d)->toDateString()))
+            ->map(fn($d) => $d instanceof \Carbon\Carbon ? $d->toDateString() : \Carbon\Carbon::parse($d)->toDateString())
+            ->merge($hafalanRecords->pluck('submitted_at')->map(fn($d) => $d instanceof \Carbon\Carbon ? $d->toDateString() : \Carbon\Carbon::parse($d)->toDateString()))
             ->unique()
             ->sort()
             ->values()
@@ -238,8 +222,8 @@ class QuarterlyReportController extends Controller
 
                         // Compute unique meeting dates for this month
                         $mUniqueDates = $termAttendances->whereBetween('tanggal', [$mStart, $mEnd])->pluck('tanggal')
-                            ->map(fn ($d) => $d instanceof Carbon ? $d->toDateString() : Carbon::parse($d)->toDateString())
-                            ->merge($termHafalanRecords->whereBetween('submitted_at', [$mStart, $mEnd])->pluck('submitted_at')->map(fn ($d) => $d instanceof Carbon ? $d->toDateString() : Carbon::parse($d)->toDateString()))
+                            ->map(fn($d) => $d instanceof \Carbon\Carbon ? $d->toDateString() : \Carbon\Carbon::parse($d)->toDateString())
+                            ->merge($termHafalanRecords->whereBetween('submitted_at', [$mStart, $mEnd])->pluck('submitted_at')->map(fn($d) => $d instanceof \Carbon\Carbon ? $d->toDateString() : \Carbon\Carbon::parse($d)->toDateString()))
                             ->unique()
                             ->sort()
                             ->values()
@@ -248,11 +232,11 @@ class QuarterlyReportController extends Controller
 
                         $mDays = [];
                         for ($i = 1; $i <= 12; $i++) {
-                            $date = $mMeetings[$i - 1] ?? null;
+                            $date = $mMeetings[$i-1] ?? null;
                             if ($date) {
-                                $att = $mAtt->first(fn ($a) => ($a->tanggal instanceof Carbon ? $a->tanggal->toDateString() : $a->tanggal) === $date);
+                                $att = $mAtt->first(fn($a) => ($a->tanggal instanceof \Carbon\Carbon ? $a->tanggal->toDateString() : $a->tanggal) === $date);
                                 if ($att) {
-                                    $mDays[$i] = match ($att->status) {
+                                    $mDays[$i] = match($att->status) {
                                         'hadir' => 'H',
                                         'sakit' => 'S',
                                         'izin' => 'I',
@@ -260,7 +244,7 @@ class QuarterlyReportController extends Controller
                                         default => 'H'
                                     };
                                 } else {
-                                    $hasSetoran = $mHaf->contains(fn ($h) => $h->submitted_at->toDateString() === $date);
+                                    $hasSetoran = $mHaf->contains(fn($h) => $h->submitted_at->toDateString() === $date);
                                     $mDays[$i] = $hasSetoran ? 'H' : 'H';
                                 }
                             } else {
@@ -288,14 +272,13 @@ class QuarterlyReportController extends Controller
                         $pStart = 1 + ($p - 1) * 7;
                         $pEnd = $p === 5 ? 31 : $p * 7;
 
-                        $att = $sAtt->first(function ($a) use ($pStart, $pEnd) {
-                            $dayNum = (int) date('d', strtotime($a->tanggal));
-
+                        $att = $sAtt->first(function($a) use ($pStart, $pEnd) {
+                            $dayNum = (int)date('d', strtotime($a->tanggal));
                             return $dayNum >= $pStart && $dayNum <= $pEnd;
                         });
 
                         if ($att) {
-                            $pekan[$p] = match ($att->status) {
+                            $pekan[$p] = match($att->status) {
                                 'hadir' => 'Hadir',
                                 'sakit' => 'Sakit',
                                 'izin' => 'Izin',
@@ -303,9 +286,8 @@ class QuarterlyReportController extends Controller
                                 default => 'Hadir'
                             };
                         } else {
-                            $hasSetoran = $sHaf->contains(function ($h) use ($pStart, $pEnd) {
-                                $dayNum = (int) $h->submitted_at->format('d');
-
+                            $hasSetoran = $sHaf->contains(function($h) use ($pStart, $pEnd) {
+                                $dayNum = (int)$h->submitted_at->format('d');
                                 return $dayNum >= $pStart && $dayNum <= $pEnd;
                             });
                             $pekan[$p] = $hasSetoran ? 'Hadir' : 'Hadir';
@@ -326,16 +308,14 @@ class QuarterlyReportController extends Controller
             $jurnalData = [];
             if ($isTahfizhProgram) {
                 foreach ($uniqueDates as $date) {
-                    if (! $date) {
-                        continue;
-                    }
+                    if (!$date) continue;
                     $materi = "Muroja'ah & Ziyadah Hafalan";
 
                     $jurnalData[] = [
                         'tanggal' => date('d-m-Y', strtotime($date)),
                         'materi' => $materi,
-                        'jumlah_murid' => $gAttendances->filter(fn ($a) => ($a->tanggal instanceof Carbon ? $a->tanggal->toDateString() : $a->tanggal) === $date)->where('status', 'hadir')->count() ?: count($groupStudents),
-                        'paraf' => '✓',
+                        'jumlah_murid' => $gAttendances->filter(fn($a) => ($a->tanggal instanceof \Carbon\Carbon ? $a->tanggal->toDateString() : $a->tanggal) === $date)->where('status', 'hadir')->count() ?: count($groupStudents),
+                        'paraf' => '✓'
                     ];
                 }
                 if (empty($jurnalData)) {
@@ -343,7 +323,7 @@ class QuarterlyReportController extends Controller
                         'tanggal' => 'Belum ada kegiatan',
                         'materi' => "Muroja'ah & Ziyadah Hafalan",
                         'jumlah_murid' => 0,
-                        'paraf' => '-',
+                        'paraf' => '-'
                     ];
                 }
             } else {
@@ -354,7 +334,7 @@ class QuarterlyReportController extends Controller
                         'tanggal' => "Pekan $p",
                         'materi' => $materi,
                         'jumlah_murid' => count($groupStudents),
-                        'paraf' => '✓',
+                        'paraf' => '✓'
                     ];
                 }
             }
@@ -375,9 +355,8 @@ class QuarterlyReportController extends Controller
                         $pStart = 1 + ($p - 1) * 7;
                         $pEnd = $p === 5 ? 31 : $p * 7;
 
-                        $pRecords = $sHaf->filter(function ($h) use ($pStart, $pEnd) {
-                            $dayNum = (int) $h->submitted_at->format('d');
-
+                        $pRecords = $sHaf->filter(function($h) use ($pStart, $pEnd) {
+                            $dayNum = (int)$h->submitted_at->format('d');
                             return $dayNum >= $pStart && $dayNum <= $pEnd;
                         });
 
@@ -385,9 +364,8 @@ class QuarterlyReportController extends Controller
                         $dayMap = [1 => 'Senin', 2 => 'Selasa', 3 => 'Rabu', 4 => 'Kamis', 5 => 'Jumat'];
 
                         foreach ($days as $dayName) {
-                            $record = $pRecords->first(function ($r) use ($dayName, $dayMap) {
-                                $wDay = (int) date('w', strtotime($r->submitted_at));
-
+                            $record = $pRecords->first(function($r) use ($dayName, $dayMap) {
+                                $wDay = (int)date('w', strtotime($r->submitted_at));
                                 return isset($dayMap[$wDay]) && $dayMap[$wDay] === $dayName;
                             });
 
@@ -398,17 +376,14 @@ class QuarterlyReportController extends Controller
                                     'ayat_start' => $record->ayah_start,
                                     'ayat_end' => $record->ayah_end,
                                     'baris' => $lines,
-                                    'nilai' => self::mapScoreToGrade($record->score),
+                                    'nilai' => self::mapScoreToGrade($record->score)
                                 ];
                                 $weekLines += $lines;
                             } else {
-                                $attRecord = $sAtt->first(function ($a) use ($dayName, $dayMap, $pStart, $pEnd) {
-                                    $dayNum = (int) date('d', strtotime($a->tanggal));
-                                    if ($dayNum < $pStart || $dayNum > $pEnd) {
-                                        return false;
-                                    }
-                                    $wDay = (int) date('w', strtotime($a->tanggal));
-
+                                $attRecord = $sAtt->first(function($a) use ($dayName, $dayMap, $pStart, $pEnd) {
+                                    $dayNum = (int)date('d', strtotime($a->tanggal));
+                                    if ($dayNum < $pStart || $dayNum > $pEnd) return false;
+                                    $wDay = (int)date('w', strtotime($a->tanggal));
                                     return isset($dayMap[$wDay]) && $dayMap[$wDay] === $dayName;
                                 });
 
@@ -418,7 +393,7 @@ class QuarterlyReportController extends Controller
                                         'ayat_start' => '',
                                         'ayat_end' => '',
                                         'baris' => 0,
-                                        'nilai' => '-',
+                                        'nilai' => '-'
                                     ];
                                 } else {
                                     $dailyLogs[$dayName] = [
@@ -426,7 +401,7 @@ class QuarterlyReportController extends Controller
                                         'ayat_start' => '',
                                         'ayat_end' => '',
                                         'baris' => 0,
-                                        'nilai' => '-',
+                                        'nilai' => '-'
                                     ];
                                 }
                             }
@@ -434,7 +409,7 @@ class QuarterlyReportController extends Controller
 
                         $pekanRecords[$p] = [
                             'days' => $dailyLogs,
-                            'week_lines' => $weekLines,
+                            'week_lines' => $weekLines
                         ];
                         $totalCapaianLines += $weekLines;
                     }
@@ -462,7 +437,7 @@ class QuarterlyReportController extends Controller
                     $tahfizhRecords[] = [
                         'student_id' => $student->id,
                         'name' => $student->name,
-                        'nis' => $student->student_number ?? '4407-2526'.sprintf('%03d', $student->id),
+                        'nis' => $student->student_number ?? '4407-2526' . sprintf('%03d', $student->id),
                         'level' => ucfirst($student->tahfizh_level ?? 'reguler'),
                         'pekan' => $pekanRecords,
                         'target_lines' => $targetLines,
@@ -485,9 +460,8 @@ class QuarterlyReportController extends Controller
                         $pStart = 1 + ($p - 1) * 7;
                         $pEnd = $p === 5 ? 31 : $p * 7;
 
-                        $record = $sHaf->first(function ($h) use ($pStart, $pEnd) {
-                            $dayNum = (int) $h->submitted_at->format('d');
-
+                        $record = $sHaf->first(function($h) use ($pStart, $pEnd) {
+                            $dayNum = (int)$h->submitted_at->format('d');
                             return $dayNum >= $pStart && $dayNum <= $pEnd;
                         });
 
@@ -498,7 +472,7 @@ class QuarterlyReportController extends Controller
                                 'ayat' => "{$record->ayah_start}-{$record->ayah_end}",
                                 'baris' => $lines,
                                 'nilai' => self::mapScoreToGrade($record->score),
-                                'kehadiran' => 'Hadir',
+                                'kehadiran' => 'Hadir'
                             ];
                             $totalCapaianLines += $lines;
                         } else {
@@ -508,7 +482,7 @@ class QuarterlyReportController extends Controller
                                 'ayat' => '-',
                                 'baris' => 0,
                                 'nilai' => '-',
-                                'kehadiran' => $status,
+                                'kehadiran' => $status
                             ];
                         }
                     }
@@ -536,7 +510,7 @@ class QuarterlyReportController extends Controller
                     $regulerRecords[] = [
                         'student_id' => $student->id,
                         'name' => $student->name,
-                        'nis' => $student->student_number ?? '4407-2526'.sprintf('%03d', $student->id),
+                        'nis' => $student->student_number ?? '4407-2526' . sprintf('%03d', $student->id),
                         'level' => ucfirst($student->tahfizh_level ?? 'reguler'),
                         'pekan' => $pekanRecords,
                         'target_lines' => $targetLines,
@@ -564,7 +538,7 @@ class QuarterlyReportController extends Controller
                 'total_students' => count($groupStudents),
                 'tuntas_count' => $isTahfizhProgram
                     ? collect($tahfizhRecords)->where('is_tuntas', true)->count()
-                    : collect($regulerRecords)->where('is_tuntas', true)->count(),
+                    : collect($regulerRecords)->where('is_tuntas', true)->count()
             ];
         }
 
@@ -577,7 +551,7 @@ class QuarterlyReportController extends Controller
             'selectedMonth' => $selectedMonth,
             'monthsMap' => $monthsMap,
             'halaqahData' => $halaqahData,
-            'months' => array_values($monthsMap),
+            'months' => array_values($monthsMap)
         ]);
     }
 }
