@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Models\MurajaahRecord;
+use App\Models\Surah;
 use App\Models\TeacherProfile;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -326,7 +327,7 @@ class MurajaahRecordTest extends TestCase
     #[Test]
     public function fast_store_splits_cross_surah_murajaah(): void
     {
-        $surah2 = \App\Models\Surah::create([
+        $surah2 = Surah::create([
             'number' => 2,
             'name_arabic' => 'البقرة',
             'name_latin' => 'Al-Baqarah',

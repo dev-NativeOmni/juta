@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Models\User;
+use Illuminate\Contracts\Debug\ExceptionHandler;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Request;
 use Illuminate\Session\TokenMismatchException;
@@ -38,7 +39,7 @@ class SessionKeepAliveTest extends TestCase
         $request = Request::create('/test', 'POST');
         $request->headers->set('Accept', 'application/json');
 
-        $response = $this->app->make(\Illuminate\Contracts\Debug\ExceptionHandler::class)->render($request, $exception);
+        $response = $this->app->make(ExceptionHandler::class)->render($request, $exception);
 
         $this->assertEquals(419, $response->getStatusCode());
     }

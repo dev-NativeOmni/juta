@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Models\ClassRoom;
 use App\Models\Role;
 use App\Models\Setting;
 use App\Models\Student;
@@ -265,7 +266,7 @@ class AdabTest extends TestCase
     public function test_authorized_user_can_fetch_class_data_for_fast_mentor_input(): void
     {
         $admin = User::where('username', 'superadmin')->first();
-        $classRoom = \App\Models\ClassRoom::first();
+        $classRoom = ClassRoom::first();
 
         $response = $this->actingAs($admin)->getJson(route('adab.mentor-class-data', [
             'class_room_id' => $classRoom->id,
@@ -285,8 +286,8 @@ class AdabTest extends TestCase
     public function test_authorized_user_can_batch_store_mentor_scores(): void
     {
         $admin = User::where('username', 'superadmin')->first();
-        $classRoom = \App\Models\ClassRoom::first();
-        
+        $classRoom = ClassRoom::first();
+
         $students = [
             Student::create(['name' => 'Murid Test 1', 'student_number' => 'M1', 'class_room_id' => $classRoom->id]),
             Student::create(['name' => 'Murid Test 2', 'student_number' => 'M2', 'class_room_id' => $classRoom->id]),
@@ -331,7 +332,7 @@ class AdabTest extends TestCase
         $mentor1 = User::factory()->create(['role_id' => $mentorRole->id, 'status' => 'active']);
         $mentor2 = User::factory()->create(['role_id' => $mentorRole->id, 'status' => 'active']);
 
-        $classRoom = \App\Models\ClassRoom::first();
+        $classRoom = ClassRoom::first();
         $classRoom->pendampingAdabList()->sync([$mentor1->id, $mentor2->id]);
 
         $student = Student::create([
