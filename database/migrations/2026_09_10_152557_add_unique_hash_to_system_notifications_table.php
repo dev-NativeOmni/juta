@@ -9,16 +9,16 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('system_notifications', function (Blueprint $table) {
-            if (!Schema::hasColumn('system_notifications', 'unique_hash')) {
+            if (! Schema::hasColumn('system_notifications', 'unique_hash')) {
                 $table->string('unique_hash')->nullable()->after('created_by')->unique();
             }
-            if (!Schema::hasColumn('system_notifications', 'severity')) {
+            if (! Schema::hasColumn('system_notifications', 'severity')) {
                 $table->string('severity')->nullable()->after('type');
             }
-            if (!Schema::hasColumn('system_notifications', 'source_type')) {
+            if (! Schema::hasColumn('system_notifications', 'source_type')) {
                 $table->string('source_type')->nullable()->after('message');
             }
-            if (!Schema::hasColumn('system_notifications', 'source_id')) {
+            if (! Schema::hasColumn('system_notifications', 'source_id')) {
                 $table->unsignedBigInteger('source_id')->nullable()->after('source_type');
             }
         });

@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Http\Controllers\ReportController;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -48,7 +49,7 @@ class HafalanRecord extends Model
             return 0.0;
         }
         try {
-            return \App\Http\Controllers\ReportController::calculateLines(
+            return ReportController::calculateLines(
                 $this->surah->number,
                 $this->ayah_start ?? 1,
                 $this->ayah_end ?? 1,
@@ -106,10 +107,19 @@ class HafalanRecord extends Model
         }
 
         $val = (float) $this->score;
-        if ($val >= 90) return 'A';
-        if ($val >= 80) return 'B';
-        if ($val >= 70) return 'C';
-        if ($val >= 60) return 'D';
+        if ($val >= 90) {
+            return 'A';
+        }
+        if ($val >= 80) {
+            return 'B';
+        }
+        if ($val >= 70) {
+            return 'C';
+        }
+        if ($val >= 60) {
+            return 'D';
+        }
+
         return 'E';
     }
 }

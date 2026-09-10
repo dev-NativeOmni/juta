@@ -2,8 +2,10 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\ClassRoom;
 use App\Models\Setting;
 use Illuminate\Http\Request;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Storage;
 
 class SettingController extends Controller
@@ -126,10 +128,10 @@ class SettingController extends Controller
 
     public function calendarIndex(Request $request)
     {
-        $year = $request->integer('year', (int)date('Y'));
-        $month = $request->integer('month', (int)date('m'));
+        $year = $request->integer('year', (int) date('Y'));
+        $month = $request->integer('month', (int) date('m'));
 
-        $startDate = \Illuminate\Support\Carbon::create($year, $month, 1)->startOfMonth();
+        $startDate = Carbon::create($year, $month, 1)->startOfMonth();
         $endDate = $startDate->copy()->endOfMonth();
 
         // 0 = Sunday, 1 = Monday, ..., 6 = Saturday
@@ -176,8 +178,8 @@ class SettingController extends Controller
         $nextYear = $nextCarbon->year;
 
         $holidays = Setting::getNationalHolidays($year);
-        $classRooms = \App\Models\ClassRoom::query()->orderBy('name')->get();
-        
+        $classRooms = ClassRoom::query()->orderBy('name')->get();
+
         $classHolidaysRaw = Setting::get("class_holidays_{$year}");
         $classHolidays = $classHolidaysRaw ? json_decode($classHolidaysRaw, true) : [];
 
@@ -189,8 +191,8 @@ class SettingController extends Controller
 
     public function calendarUpdate(Request $request)
     {
-        $year = $request->integer('year', (int)date('Y'));
-        $month = $request->integer('month', (int)date('m'));
+        $year = $request->integer('year', (int) date('Y'));
+        $month = $request->integer('month', (int) date('m'));
         $submittedHolidays = $request->input('holidays', []);
         $submittedClassHolidays = $request->input('class_holidays', []);
 
@@ -217,7 +219,7 @@ class SettingController extends Controller
 
         $filteredNewClassHolidays = [];
         foreach ($submittedClassHolidays as $dateStr => $classIds) {
-            if (!empty($classIds)) {
+            if (! empty($classIds)) {
                 $filteredNewClassHolidays[$dateStr] = array_map('intval', $classIds);
             }
         }
