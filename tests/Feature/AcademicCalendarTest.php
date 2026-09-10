@@ -17,7 +17,9 @@ class AcademicCalendarTest extends TestCase
     use RefreshDatabase;
 
     private User $adminUser;
+
     private User $teacherUser;
+
     private ClassRoom $classRoom;
 
     protected function setUp(): void
@@ -81,8 +83,8 @@ class AcademicCalendarTest extends TestCase
                 "{$year}-08-17",
             ],
             'class_holidays' => [
-                "{$year}-08-20" => [$this->classRoom->id]
-            ]
+                "{$year}-08-20" => [$this->classRoom->id],
+            ],
         ];
 
         $response = $this->actingAs($this->adminUser)->post(route('academic-calendar.update'), $payload);

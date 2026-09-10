@@ -24,39 +24,58 @@ class HafalanTargetPolicyTest extends TestCase
 
     // Roles
     private Role $superAdminRole;
+
     private Role $adminRole;
+
     private Role $teacherRole;
+
     private Role $parentRole;
+
     private Role $studentRole;
+
     private Role $headmasterRole;
+
     private Role $coordinatorRole;
+
     private Role $tanseRole;
+
     private Role $supervisorRole;
 
     // Users
     private User $superAdmin;
+
     private User $admin;
+
     private User $headmaster;
+
     private User $coordinator;
+
     private User $supervisor;
+
     private User $tanse;
 
     // specific users
     private User $teacherUserLinked;
+
     private User $teacherUserUnlinked;
+
     private User $parentUserLinked;
+
     private User $parentUserUnlinked;
+
     private User $studentUserLinked;
+
     private User $studentUserUnlinked;
 
     private Student $student;
+
     private HafalanTarget $hafalanTarget;
 
     protected function setUp(): void
     {
         parent::setUp();
 
-        $this->policy = new HafalanTargetPolicy();
+        $this->policy = new HafalanTargetPolicy;
 
         // Seed roles
         $this->superAdminRole = Role::firstOrCreate(['name' => 'super_admin'], ['display_name' => 'Super Admin']);
