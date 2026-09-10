@@ -457,7 +457,7 @@ class QuickInputController extends Controller
                     $hafalans[] = [
                         'surah_id' => (int) $sid,
                         'ayah' => $ayahs[$idx] ?? null,
-                        'baris' => isset($baris[$idx]) && $baris[$idx] !== '' ? (float)$baris[$idx] : null,
+                        'baris' => isset($baris[$idx]) && $baris[$idx] !== '' ? (float) $baris[$idx] : null,
                     ];
                 }
             }
@@ -465,7 +465,7 @@ class QuickInputController extends Controller
             $hafalans[] = [
                 'surah_id' => (int) $request->input('hafalan_surah_id'),
                 'ayah' => $request->input('hafalan_ayah'),
-                'baris' => $request->filled('hafalan_baris') ? (float)$request->input('hafalan_baris') : null,
+                'baris' => $request->filled('hafalan_baris') ? (float) $request->input('hafalan_baris') : null,
             ];
         }
 
@@ -479,8 +479,8 @@ class QuickInputController extends Controller
                     continue; // Skip student without teacher profile
                 }
 
-                $individualScore = !empty($studentScores[$student->id]) ? $studentScores[$student->id] : ($validated['nilai'] ?? null);
-                $individualNote = !empty($studentNotes[$student->id]) ? $studentNotes[$student->id] : ($validated['keterangan'] ?? null);
+                $individualScore = ! empty($studentScores[$student->id]) ? $studentScores[$student->id] : ($validated['nilai'] ?? null);
+                $individualNote = ! empty($studentNotes[$student->id]) ? $studentNotes[$student->id] : ($validated['keterangan'] ?? null);
 
                 if (empty($hafalans)) {
                     UmmiRecord::query()->create([

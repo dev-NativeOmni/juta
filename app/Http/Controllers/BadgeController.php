@@ -36,14 +36,14 @@ class BadgeController extends Controller
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'key'          => 'required|string|unique:badges,key|regex:/^[a-z0-9_]+$/',
-            'title'        => 'required|string|max:100',
-            'description'  => 'nullable|string|max:500',
-            'icon'         => 'required|string|max:50',
-            'type'         => 'required|in:count_hafalan,passed_hafalan,percent_quran,count_murajaah,completed_targets,clean_target,score_quality,completed_juz',
+            'key' => 'required|string|unique:badges,key|regex:/^[a-z0-9_]+$/',
+            'title' => 'required|string|max:100',
+            'description' => 'nullable|string|max:500',
+            'icon' => 'required|string|max:50',
+            'type' => 'required|in:count_hafalan,passed_hafalan,percent_quran,count_murajaah,completed_targets,clean_target,score_quality,completed_juz',
             'target_value' => 'required|numeric|min:0',
-            'target_juz'   => 'nullable|integer|min:1|max:30',
-            'sort_order'   => 'required|integer|min:0',
+            'target_juz' => 'nullable|integer|min:1|max:30',
+            'sort_order' => 'required|integer|min:0',
         ]);
 
         $badge = Badge::create($validated + ['is_active' => true]);
@@ -58,13 +58,13 @@ class BadgeController extends Controller
     public function update(Request $request, Badge $badge)
     {
         $validated = $request->validate([
-            'title'        => 'required|string|max:100',
-            'description'  => 'nullable|string|max:500',
-            'icon'         => 'required|string|max:50',
-            'type'         => 'required|in:count_hafalan,passed_hafalan,percent_quran,count_murajaah,completed_targets,clean_target,score_quality,completed_juz',
+            'title' => 'required|string|max:100',
+            'description' => 'nullable|string|max:500',
+            'icon' => 'required|string|max:50',
+            'type' => 'required|in:count_hafalan,passed_hafalan,percent_quran,count_murajaah,completed_targets,clean_target,score_quality,completed_juz',
             'target_value' => 'required|numeric|min:0',
-            'target_juz'   => 'nullable|integer|min:1|max:30',
-            'sort_order'   => 'required|integer|min:0',
+            'target_juz' => 'nullable|integer|min:1|max:30',
+            'sort_order' => 'required|integer|min:0',
         ]);
 
         $badge->update($validated);

@@ -79,7 +79,7 @@ return new class extends Migration
                     ]);
                 }
             }
-        } catch (\Throwable $e) {
+        } catch (Throwable $e) {
             // Ignore if table not present in current env
         }
     }
