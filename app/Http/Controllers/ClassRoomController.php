@@ -5,14 +5,10 @@ namespace App\Http\Controllers;
 use App\Http\Requests\StoreClassRoomRequest;
 use App\Http\Requests\UpdateClassRoomRequest;
 use App\Models\ClassRoom;
-use App\Models\HafalanRecord;
 use App\Models\Program;
-use App\Models\UmmiRecord;
 use App\Models\User;
 use App\Services\SimpleXlsxReader;
 use App\Services\SimpleXlsxWriter;
-use App\Services\StudentProgressService;
-use Carbon\Carbon;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -96,43 +92,37 @@ class ClassRoomController extends Controller
         $year = (int) $request->input('year', now()->year);
 
         $currentDay = now()->day;
-        if ($currentDay <= 7) {
-            $defaultWeek = 1;
-        } elseif ($currentDay <= 14) {
-            $defaultWeek = 2;
-        } elseif ($currentDay <= 21) {
-            $defaultWeek = 3;
-        } elseif ($currentDay <= 28) {
-            $defaultWeek = 4;
-        } else {
-            $defaultWeek = 5;
-        }
+        if ($currentDay <= 7) $defaultWeek = 1;
+        elseif ($currentDay <= 14) $defaultWeek = 2;
+        elseif ($currentDay <= 21) $defaultWeek = 3;
+        elseif ($currentDay <= 28) $defaultWeek = 4;
+        else $defaultWeek = 5;
 
         $week = (int) $request->input('week', $defaultWeek);
 
         // Date ranges for weeks
         if ($week === 1) {
-            $startDate = Carbon::create($year, $month, 1)->startOfDay();
-            $endDate = Carbon::create($year, $month, 7)->endOfDay();
+            $startDate = \Carbon\Carbon::create($year, $month, 1)->startOfDay();
+            $endDate = \Carbon\Carbon::create($year, $month, 7)->endOfDay();
         } elseif ($week === 2) {
-            $startDate = Carbon::create($year, $month, 8)->startOfDay();
-            $endDate = Carbon::create($year, $month, 14)->endOfDay();
+            $startDate = \Carbon\Carbon::create($year, $month, 8)->startOfDay();
+            $endDate = \Carbon\Carbon::create($year, $month, 14)->endOfDay();
         } elseif ($week === 3) {
-            $startDate = Carbon::create($year, $month, 15)->startOfDay();
-            $endDate = Carbon::create($year, $month, 21)->endOfDay();
+            $startDate = \Carbon\Carbon::create($year, $month, 15)->startOfDay();
+            $endDate = \Carbon\Carbon::create($year, $month, 21)->endOfDay();
         } elseif ($week === 4) {
-            $startDate = Carbon::create($year, $month, 22)->startOfDay();
-            $endDate = Carbon::create($year, $month, 28)->endOfDay();
+            $startDate = \Carbon\Carbon::create($year, $month, 22)->startOfDay();
+            $endDate = \Carbon\Carbon::create($year, $month, 28)->endOfDay();
         } else {
-            $startDate = Carbon::create($year, $month, 29)->startOfDay();
-            $endDate = Carbon::create($year, $month, 1)->endOfMonth()->endOfDay();
+            $startDate = \Carbon\Carbon::create($year, $month, 29)->startOfDay();
+            $endDate = \Carbon\Carbon::create($year, $month, 1)->endOfMonth()->endOfDay();
         }
 
         $capaianData = [];
         $allStudents = $classRoom->students()->with(['teacher.user'])->orderBy('name')->get();
 
         foreach ($allStudents as $index => $std) {
-            $records = HafalanRecord::with('surah')
+            $records = \App\Models\HafalanRecord::with('surah')
                 ->where('student_id', $std->id)
                 ->whereBetween('submitted_at', [$startDate, $endDate])
                 ->where('status', 'passed')
@@ -146,7 +136,7 @@ class ClassRoomController extends Controller
             foreach ($records as $rec) {
                 if ($rec->surah) {
                     $surahNames[] = $rec->surah->name_latin;
-                    $ayatRanges[] = $rec->ayah_start.'-'.$rec->ayah_end;
+                    $ayatRanges[] = $rec->ayah_start . '-' . $rec->ayah_end;
                     $totalLines += $rec->lines_count;
                 }
                 if ($rec->score !== null) {
@@ -155,7 +145,7 @@ class ClassRoomController extends Controller
             }
 
             $avgScoreLetter = '-';
-            if (! empty($scores)) {
+            if (!empty($scores)) {
                 $avgScoreLetter = implode(', ', array_unique($scores));
             }
 
@@ -168,7 +158,7 @@ class ClassRoomController extends Controller
                 'ayat' => implode(', ', $ayatRanges) ?: '-',
                 'baris' => $totalLines,
                 'nilai' => $avgScoreLetter,
-                'kehadiran' => $records->isNotEmpty() ? 'Hadir' : '-',
+                'kehadiran' => $records->isNotEmpty() ? 'Hadir' : '-'
             ];
         }
 
@@ -190,20 +180,20 @@ class ClassRoomController extends Controller
 
         // Date ranges for weeks
         if ($week === 1) {
-            $startDate = Carbon::create($year, $month, 1)->startOfDay();
-            $endDate = Carbon::create($year, $month, 7)->endOfDay();
+            $startDate = \Carbon\Carbon::create($year, $month, 1)->startOfDay();
+            $endDate = \Carbon\Carbon::create($year, $month, 7)->endOfDay();
         } elseif ($week === 2) {
-            $startDate = Carbon::create($year, $month, 8)->startOfDay();
-            $endDate = Carbon::create($year, $month, 14)->endOfDay();
+            $startDate = \Carbon\Carbon::create($year, $month, 8)->startOfDay();
+            $endDate = \Carbon\Carbon::create($year, $month, 14)->endOfDay();
         } elseif ($week === 3) {
-            $startDate = Carbon::create($year, $month, 15)->startOfDay();
-            $endDate = Carbon::create($year, $month, 21)->endOfDay();
+            $startDate = \Carbon\Carbon::create($year, $month, 15)->startOfDay();
+            $endDate = \Carbon\Carbon::create($year, $month, 21)->endOfDay();
         } elseif ($week === 4) {
-            $startDate = Carbon::create($year, $month, 22)->startOfDay();
-            $endDate = Carbon::create($year, $month, 28)->endOfDay();
+            $startDate = \Carbon\Carbon::create($year, $month, 22)->startOfDay();
+            $endDate = \Carbon\Carbon::create($year, $month, 28)->endOfDay();
         } else {
-            $startDate = Carbon::create($year, $month, 29)->startOfDay();
-            $endDate = Carbon::create($year, $month, 1)->endOfMonth()->endOfDay();
+            $startDate = \Carbon\Carbon::create($year, $month, 29)->startOfDay();
+            $endDate = \Carbon\Carbon::create($year, $month, 1)->endOfMonth()->endOfDay();
         }
 
         $headers = [
@@ -215,14 +205,14 @@ class ClassRoomController extends Controller
             'Setoran Ayat',
             'Jumlah Baris',
             'Nilai',
-            'Kehadiran',
+            'Kehadiran'
         ];
 
         $data = [];
         $allStudents = $classRoom->students()->with(['teacher.user'])->orderBy('name')->get();
 
         foreach ($allStudents as $index => $std) {
-            $records = HafalanRecord::with('surah')
+            $records = \App\Models\HafalanRecord::with('surah')
                 ->where('student_id', $std->id)
                 ->whereBetween('submitted_at', [$startDate, $endDate])
                 ->where('status', 'passed')
@@ -236,7 +226,7 @@ class ClassRoomController extends Controller
             foreach ($records as $rec) {
                 if ($rec->surah) {
                     $surahNames[] = $rec->surah->name_latin;
-                    $ayatRanges[] = $rec->ayah_start.'-'.$rec->ayah_end;
+                    $ayatRanges[] = $rec->ayah_start . '-' . $rec->ayah_end;
                     $totalLines += $rec->lines_count;
                 }
                 if ($rec->score !== null) {
@@ -245,7 +235,7 @@ class ClassRoomController extends Controller
             }
 
             $avgScoreLetter = '-';
-            if (! empty($scores)) {
+            if (!empty($scores)) {
                 $avgScoreLetter = implode(', ', array_unique($scores));
             }
 
@@ -258,7 +248,7 @@ class ClassRoomController extends Controller
                 implode(', ', $ayatRanges) ?: '-',
                 $totalLines,
                 $avgScoreLetter,
-                $records->isNotEmpty() ? 'Hadir' : '-',
+                $records->isNotEmpty() ? 'Hadir' : '-'
             ];
         }
 
@@ -267,10 +257,10 @@ class ClassRoomController extends Controller
         $monthsIndo = [
             1 => 'Januari', 2 => 'Februari', 3 => 'Maret', 4 => 'April',
             5 => 'Mei', 6 => 'Juni', 7 => 'Juli', 8 => 'Agustus',
-            9 => 'September', 10 => 'Oktobers', 11 => 'November', 12 => 'Desember',
+            9 => 'September', 10 => 'Oktobers', 11 => 'November', 12 => 'Desember'
         ];
         $monthName = $monthsIndo[$month] ?? 'Bulan';
-        $fileName = 'Capaian_Hafalan_'.str_replace(' ', '_', $classRoom->name).'_'.$monthName.'_Pekan_'.$week.'.xlsx';
+        $fileName = 'Capaian_Hafalan_' . str_replace(' ', '_', $classRoom->name) . '_' . $monthName . '_Pekan_' . $week . '.xlsx';
 
         SimpleXlsxWriter::write($tempFile, $headers, $data);
 
@@ -497,7 +487,7 @@ class ClassRoomController extends Controller
         abort_if($user->hasAnyRole(['student', 'parent']), 403, 'Akses cetak kartu UMMI kelas tidak diperbolehkan untuk akun murid dan orang tua.');
 
         // Get visible students to ensure access control
-        $visibleStudentIds = app(StudentProgressService::class)
+        $visibleStudentIds = app(\App\Services\StudentProgressService::class)
             ->visibleStudentQuery($user)
             ->pluck('id');
 
@@ -505,14 +495,14 @@ class ClassRoomController extends Controller
             ->where('status', 'active')
             ->orderBy('name')
             ->get()
-            ->filter(fn ($std) => $visibleStudentIds->contains($std->id))
+            ->filter(fn($std) => $visibleStudentIds->contains($std->id))
             ->values();
 
         abort_if($students->isEmpty(), 403, 'Akses tidak diperbolehkan atau tidak ada murid aktif di kelas ini.');
 
         $studentsData = [];
         foreach ($students as $student) {
-            $records = UmmiRecord::with('surah')
+            $records = \App\Models\UmmiRecord::with('surah')
                 ->where('student_id', $student->id)
                 ->orderBy('tanggal')
                 ->orderBy('tatap_muka')
@@ -523,7 +513,7 @@ class ClassRoomController extends Controller
             $studentsData[] = [
                 'student' => $student,
                 'records' => $records,
-                'latestUmmiRecord' => $latestUmmiRecord,
+                'latestUmmiRecord' => $latestUmmiRecord
             ];
         }
 
@@ -553,7 +543,7 @@ class ClassRoomController extends Controller
                 'name' => $dayName,
                 'classRooms' => $classRooms->filter(function ($class) use ($dayNum) {
                     return in_array($dayNum, $class->tahfizh_days, true);
-                })->values(),
+                })->values()
             ];
         }
 
@@ -569,7 +559,7 @@ class ClassRoomController extends Controller
         foreach ($allClassrooms as $class) {
             $days = [];
             for ($day = 1; $day <= 7; $day++) {
-                $isActive = isset($schedules[$day][$class->id]) && (int) $schedules[$day][$class->id] === 1;
+                $isActive = isset($schedules[$day][$class->id]) && (int)$schedules[$day][$class->id] === 1;
                 if ($isActive) {
                     $days[] = $day;
                 }

@@ -216,4 +216,5 @@ class CrossSurahSetoranTest extends TestCase
         $response->assertSessionHasErrors(['surah_end_id']);
         $this->assertDatabaseEmpty('hafalan_records');
     }
+
 }

@@ -47,82 +47,82 @@ class DashboardService
                     'inactive_students' => Student::query()->where('status', 'inactive')->count(),
                     'graduated_students' => Student::query()->where('status', 'graduated')->count(),
 
-                    'total_teachers' => TeacherProfile::query()->count(),
-                    'total_parents' => ParentProfile::query()->count(),
-                    'total_programs' => Program::query()->count(),
-                    'total_class_rooms' => ClassRoom::query()->count(),
+                'total_teachers' => TeacherProfile::query()->count(),
+                'total_parents' => ParentProfile::query()->count(),
+                'total_programs' => Program::query()->count(),
+                'total_class_rooms' => ClassRoom::query()->count(),
 
-                    'hafalan_today' => HafalanRecord::query()
-                        ->whereDate('submitted_at', $today)
-                        ->count(),
+                'hafalan_today' => HafalanRecord::query()
+                    ->whereDate('submitted_at', $today)
+                    ->count(),
 
-                    'murajaah_today' => MurajaahRecord::query()
-                        ->whereDate('reviewed_at', $today)
-                        ->count(),
+                'murajaah_today' => MurajaahRecord::query()
+                    ->whereDate('reviewed_at', $today)
+                    ->count(),
 
-                    'active_targets' => HafalanTarget::query()
-                        ->where('status', 'active')
-                        ->count(),
+                'active_targets' => HafalanTarget::query()
+                    ->where('status', 'active')
+                    ->count(),
 
-                    'overdue_targets' => HafalanTarget::query()
-                        ->where('status', 'active')
-                        ->whereDate('target_date', '<', $today)
-                        ->count(),
+                'overdue_targets' => HafalanTarget::query()
+                    ->where('status', 'active')
+                    ->whereDate('target_date', '<', $today)
+                    ->count(),
 
-                    'completed_targets' => HafalanTarget::query()
-                        ->where('status', 'completed')
-                        ->count(),
+                'completed_targets' => HafalanTarget::query()
+                    ->where('status', 'completed')
+                    ->count(),
 
-                    'hafalan_need_attention' => HafalanRecord::query()
-                        ->whereIn('status', [
-                            'repeat',
-                            'needs_improvement',
-                        ])
-                        ->count(),
+                'hafalan_need_attention' => HafalanRecord::query()
+                    ->whereIn('status', [
+                        'repeat',
+                        'needs_improvement',
+                    ])
+                    ->count(),
 
-                    'murajaah_need_attention' => MurajaahRecord::query()
-                        ->whereIn('status', [
-                            'repeat',
-                            'needs_improvement',
-                        ])
-                        ->count(),
+                'murajaah_need_attention' => MurajaahRecord::query()
+                    ->whereIn('status', [
+                        'repeat',
+                        'needs_improvement',
+                    ])
+                    ->count(),
 
-                    'latest_hafalan_records' => HafalanRecord::query()
-                        ->with([
-                            'student.classRoom.program',
-                            'teacher.user',
-                            'surah',
-                        ])
-                        ->latest('submitted_at')
-                        ->latest()
-                        ->limit(8)
-                        ->get(),
+                'latest_hafalan_records' => HafalanRecord::query()
+                    ->with([
+                        'student.classRoom.program',
+                        'teacher.user',
+                        'surah',
+                    ])
+                    ->latest('submitted_at')
+                    ->latest()
+                    ->limit(8)
+                    ->get(),
 
-                    'latest_murajaah_records' => MurajaahRecord::query()
-                        ->with([
-                            'student.classRoom.program',
-                            'teacher.user',
-                            'surah',
-                        ])
-                        ->latest('reviewed_at')
-                        ->latest()
-                        ->limit(8)
-                        ->get(),
+                'latest_murajaah_records' => MurajaahRecord::query()
+                    ->with([
+                        'student.classRoom.program',
+                        'teacher.user',
+                        'surah',
+                    ])
+                    ->latest('reviewed_at')
+                    ->latest()
+                    ->limit(8)
+                    ->get(),
 
-                    'latest_targets' => HafalanTarget::query()
-                        ->with([
-                            'student.classRoom.program',
-                            'teacher.user',
-                            'surah',
-                        ])
-                        ->orderBy('target_date')
-                        ->latest()
-                        ->limit(8)
-                        ->get(),
+                'latest_targets' => HafalanTarget::query()
+                    ->with([
+                        'student.classRoom.program',
+                        'teacher.user',
+                        'surah',
+                    ])
+                    ->orderBy('target_date')
+                    ->latest()
+                    ->limit(8)
+                    ->get(),
 
-                    'students_progress' => $this->studentsProgress($activeStudents)->take(10),
-                ];
-            });
+                'students_progress' => $this->studentsProgress($activeStudents)->take(10),
+            ];
+        });
         } catch (\Throwable $e) {
             return [];
         }
@@ -138,7 +138,7 @@ class DashboardService
                 $teacher = TeacherProfile::query()
                     ->whereHas('user', function ($q) use ($user) {
                         $q->where('name', 'like', '%'.$user->name.'%')
-                            ->orWhere('username', $user->username);
+                          ->orWhere('username', $user->username);
                     })
                     ->first();
 

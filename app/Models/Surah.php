@@ -5,7 +5,6 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-use Illuminate\Support\Facades\Cache;
 
 class Surah extends Model
 {
@@ -32,15 +31,15 @@ class Surah extends Model
 
     public static function getAllCached()
     {
-        return Cache::remember('all_surahs_cached', 86400, function () {
+        return \Illuminate\Support\Facades\Cache::remember('all_surahs_cached', 86400, function () {
             return static::orderBy('number')->get();
         });
     }
 
     protected static function booted(): void
     {
-        static::saved(fn () => Cache::forget('all_surahs_cached'));
-        static::deleted(fn () => Cache::forget('all_surahs_cached'));
+        static::saved(fn () => \Illuminate\Support\Facades\Cache::forget('all_surahs_cached'));
+        static::deleted(fn () => \Illuminate\Support\Facades\Cache::forget('all_surahs_cached'));
     }
 
     public function ayahs(): HasMany

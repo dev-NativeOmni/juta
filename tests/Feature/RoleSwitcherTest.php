@@ -2,7 +2,6 @@
 
 namespace Tests\Feature;
 
-use App\Models\ClassRoom;
 use App\Models\Role;
 use App\Models\User;
 use Database\Seeders\CoreDataSeeder;
@@ -134,7 +133,7 @@ class RoleSwitcherTest extends TestCase
         $response->assertSee($teacher->name);
 
         // Assign teacher as pendamping_adab for class
-        $classRoom = ClassRoom::first();
+        $classRoom = \App\Models\ClassRoom::first();
         $classRoom->update(['pendamping_adab_id' => $teacher->id]);
 
         // Teacher switches to pendamping_adab role
