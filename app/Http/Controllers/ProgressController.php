@@ -8,6 +8,7 @@ use App\Models\HafalanTarget;
 use App\Models\MurajaahRecord;
 use App\Models\Student;
 use App\Models\Surah;
+use App\Models\TeacherProfile;
 use App\Services\StudentMotivationService;
 use App\Services\StudentProgressService;
 use Carbon\Carbon;
@@ -15,6 +16,7 @@ use Illuminate\Contracts\View\View;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Log;
 
 class ProgressController extends Controller
 {
@@ -65,7 +67,7 @@ class ProgressController extends Controller
                 ->orderBy('name')
                 ->get();
 
-            $teachers = \App\Models\TeacherProfile::with('user')->get();
+            $teachers = TeacherProfile::with('user')->get();
 
             $studentsQuery = $this->studentProgressService
                 ->visibleStudentQuery($user)
@@ -81,7 +83,7 @@ class ProgressController extends Controller
                 ->when($request->filled('student_id'), function (Builder $query) use ($request) {
                     $query->where('id', (int) $request->input('student_id'));
                 })
-                ->when($request->filled('class_room_id') && !$user->hasRole('teacher'), function (Builder $query) use ($request) {
+                ->when($request->filled('class_room_id') && ! $user->hasRole('teacher'), function (Builder $query) use ($request) {
                     $query->where('class_room_id', (int) $request->input('class_room_id'));
                 })
                 ->when($request->filled('teacher_id'), function (Builder $query) use ($request) {
@@ -128,13 +130,13 @@ class ProgressController extends Controller
             $selectedClassLevel = $selectedClass?->level ?? '';
 
             $isGrade10 = (bool) (
-                (preg_match('/\bX\b/i', $selectedClassName) && !preg_match('/\b(XI|XII)\b/i', $selectedClassName))
+                (preg_match('/\bX\b/i', $selectedClassName) && ! preg_match('/\b(XI|XII)\b/i', $selectedClassName))
                 || preg_match('/\b10\b/i', $selectedClassName)
                 || preg_match('/^X[-_\s]?E/i', $selectedClassName)
                 || preg_match('/kelas\s*(X|10)/i', $selectedClassName)
-                || (preg_match('/\bX\b/i', $selectedClassLevel) && !preg_match('/\b(XI|XII)\b/i', $selectedClassLevel))
+                || (preg_match('/\bX\b/i', $selectedClassLevel) && ! preg_match('/\b(XI|XII)\b/i', $selectedClassLevel))
                 || preg_match('/\b10\b/i', $selectedClassLevel)
-            ) && !preg_match('/\b(XI|XII|11|12)\b/i', $selectedClassName);
+            ) && ! preg_match('/\b(XI|XII|11|12)\b/i', $selectedClassName);
 
             $summary = $this->studentProgressService->summaryFromRows($progressRows);
 
@@ -148,7 +150,7 @@ class ProgressController extends Controller
                 'isGrade10'
             ));
         } catch (\Throwable $e) {
-            \Illuminate\Support\Facades\Log::error('ProgressController index error: '.$e->getMessage(), [
+            Log::error('ProgressController index error: '.$e->getMessage(), [
                 'exception' => $e,
             ]);
 
@@ -157,7 +159,7 @@ class ProgressController extends Controller
             $filterStudents = $students;
             $classRoomIds = $students->pluck('class_room_id')->filter()->unique()->values();
             $classRooms = ClassRoom::query()->with('program')->whereIn('id', $classRoomIds)->orderBy('name')->get();
-            $teachers = \App\Models\TeacherProfile::with('user')->get();
+            $teachers = TeacherProfile::with('user')->get();
 
             $progressRows = $students->map(function ($s) {
                 return [
@@ -282,7 +284,7 @@ class ProgressController extends Controller
             $recMonth = $rec->submitted_at
                 ? $rec->submitted_at->format('Y-m')
                 : $rec->created_at->format('Y-m');
-            
+
             if ($recMonth < $firstMonth) {
                 $tempCumulative += (float) $rec->lines_count;
             }
@@ -295,7 +297,7 @@ class ProgressController extends Controller
         $indonesianMonths = [
             '01' => 'Jan', '02' => 'Feb', '03' => 'Mar', '04' => 'Apr',
             '05' => 'Mei', '06' => 'Jun', '07' => 'Jul', '08' => 'Agt',
-            '09' => 'Sep', '10' => 'Okt', '11' => 'Nov', '12' => 'Des'
+            '09' => 'Sep', '10' => 'Okt', '11' => 'Nov', '12' => 'Des',
         ];
 
         $mostActiveMonth = '';
@@ -309,12 +311,12 @@ class ProgressController extends Controller
         $mostActiveMonthLabel = '';
         if ($maxLines > 0) {
             [$y, $mon] = explode('-', $mostActiveMonth);
-            $mostActiveMonthLabel = $indonesianMonths[$mon] . ' ' . $y;
+            $mostActiveMonthLabel = $indonesianMonths[$mon].' '.$y;
         }
 
         foreach ($months as $m) {
             [$y, $mon] = explode('-', $m);
-            $chartLabels[] = $indonesianMonths[$mon] . ' ' . $y;
+            $chartLabels[] = $indonesianMonths[$mon].' '.$y;
             $tempCumulative += $monthlyData[$m];
             $monthlyValues[] = round($monthlyData[$m], 1);
             $cumulativeValues[] = round($tempCumulative, 1);
