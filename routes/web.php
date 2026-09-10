@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\AdabController;
 use App\Http\Controllers\AdabMaterialController;
+use App\Http\Controllers\AttendanceController;
 use App\Http\Controllers\AuditLogController;
 use App\Http\Controllers\BadgeController;
 use App\Http\Controllers\ClassRoomController;
@@ -9,16 +10,20 @@ use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\DatabaseBackupController;
 use App\Http\Controllers\HafalanRecordController;
 use App\Http\Controllers\HafalanTargetController;
+use App\Http\Controllers\ImpersonateController;
 use App\Http\Controllers\MurajaahRecordController;
 use App\Http\Controllers\ParentController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ProgramController;
 use App\Http\Controllers\ProgressController;
+use App\Http\Controllers\QuarterlyReportController;
 use App\Http\Controllers\QuickInputController;
 use App\Http\Controllers\QuranMushafController;
 use App\Http\Controllers\QuranPdfController;
 use App\Http\Controllers\ReportController;
+use App\Http\Controllers\RoleSwitchController;
 use App\Http\Controllers\SettingController;
+use App\Http\Controllers\SpreadsheetInputController;
 use App\Http\Controllers\StudentController;
 use App\Http\Controllers\StudentPointController;
 use App\Http\Controllers\StudentReportController;
@@ -27,9 +32,6 @@ use App\Http\Controllers\SystemNotificationController;
 use App\Http\Controllers\TahfizhExamController;
 use App\Http\Controllers\TeacherController;
 use App\Http\Controllers\UserController;
-use App\Http\Controllers\ImpersonateController;
-use App\Http\Controllers\RoleSwitchController;
-use App\Http\Controllers\SpreadsheetInputController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
@@ -346,15 +348,15 @@ Route::middleware(['auth'])->group(function () {
             ->middleware('role:super_admin,admin,teacher,headmaster,coordinator_tahfizh,supervisor')
             ->name('reports.whatsapp');
 
-        Route::get('/attendances/check', [\App\Http\Controllers\AttendanceController::class, 'check'])
+        Route::get('/attendances/check', [AttendanceController::class, 'check'])
             ->middleware('role:super_admin,admin,teacher,coordinator_tahfizh,supervisor')
             ->name('attendances.check');
 
-        Route::post('/attendances/save', [\App\Http\Controllers\AttendanceController::class, 'save'])
+        Route::post('/attendances/save', [AttendanceController::class, 'save'])
             ->middleware('role:super_admin,admin,teacher,coordinator_tahfizh,supervisor')
             ->name('attendances.save');
 
-        Route::get('/admin/reports/quarterly', [\App\Http\Controllers\QuarterlyReportController::class, 'index'])
+        Route::get('/admin/reports/quarterly', [QuarterlyReportController::class, 'index'])
             ->middleware('role:super_admin,admin')
             ->name('reports.quarterly');
 
@@ -486,7 +488,7 @@ if (app()->environment('local', 'testing')) {
 }
 
 Route::get('/storage/{path}', function (string $path) {
-    $filePath = storage_path('app/public/' . $path);
+    $filePath = storage_path('app/public/'.$path);
 
     if (! file_exists($filePath)) {
         abort(404);

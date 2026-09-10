@@ -26,7 +26,7 @@ class HafalanTargetAutoCompletionServiceTest extends TestCase
 
         $this->setUpHafizPlusData();
 
-        $this->service = new HafalanTargetAutoCompletionService();
+        $this->service = new HafalanTargetAutoCompletionService;
     }
 
     #[Test]
