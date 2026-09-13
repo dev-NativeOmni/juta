@@ -34,4 +34,28 @@ return [
         ))),
     ],
 
+    /*
+    |--------------------------------------------------------------------------
+    | Two-Factor Authentication
+    |--------------------------------------------------------------------------
+    |
+    | Role-role di bawah ini wajib mengaktifkan 2FA sebelum bisa mengakses
+    | halaman lain di aplikasi. `enforce` dimatikan secara default di
+    | environment testing (lihat .env.testing) supaya test suite yang ada
+    | tidak perlu mengaktifkan 2FA di setiap fixture user super admin;
+    | perilaku wajib-2FA sendiri diuji secara eksplisit di
+    | tests/Feature/TwoFactorAuthenticationTest.php dengan meng-override
+    | config ini di dalam test tersebut.
+    |
+    */
+
+    'two_factor' => [
+        'enforce' => (bool) env('HAFIZPLUS_2FA_ENFORCE', true),
+
+        'required_roles' => array_values(array_filter(array_map(
+            'trim',
+            explode(',', (string) env('HAFIZPLUS_2FA_REQUIRED_ROLES', 'super_admin'))
+        ))),
+    ],
+
 ];

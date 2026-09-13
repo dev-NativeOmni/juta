@@ -2,6 +2,7 @@
 
 use App\Http\Middleware\CheckRole;
 use App\Http\Middleware\EnsureApiTokenIsNotExpired;
+use App\Http\Middleware\EnsureTwoFactorIsEnabled;
 use App\Support\ApiExceptionRenderer;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
@@ -32,6 +33,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->alias([
             'role' => CheckRole::class,
             'api.token.not_expired' => EnsureApiTokenIsNotExpired::class,
+            'two_factor.enrolled' => EnsureTwoFactorIsEnabled::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

@@ -67,6 +67,10 @@ SESSION_SECURE_COOKIE=true # Hanya kirim cookies via HTTPS
 # API Rate Limits
 HAFIZPLUS_API_RATE_LIMIT_PER_MINUTE=60
 HAFIZPLUS_API_LOGIN_RATE_LIMIT_PER_MINUTE=5
+
+# Two-Factor Authentication (wajib aktif di produksi)
+HAFIZPLUS_2FA_ENFORCE=true
+HAFIZPLUS_2FA_REQUIRED_ROLES=super_admin
 ```
 Jangan lupa jalankan perintah berikut di folder root aplikasi:
 ```bash

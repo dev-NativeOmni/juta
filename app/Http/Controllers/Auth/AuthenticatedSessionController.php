@@ -14,8 +14,10 @@ class AuthenticatedSessionController extends Controller
     /**
      * Display the login view.
      */
-    public function create(): View
+    public function create(Request $request): View
     {
+        $request->session()->forget(['two_factor.user_id', 'two_factor.remember']);
+
         return view('auth.login');
     }
 
@@ -25,6 +27,19 @@ class AuthenticatedSessionController extends Controller
     public function store(LoginRequest $request): RedirectResponse
     {
         $request->authenticate();
+
+        $user = Auth::user();
+
+        if ($user->hasEnabledTwoFactorAuthentication()) {
+            $remember = $request->has('remember') ? $request->boolean('remember') : true;
+
+            Auth::logout();
+
+            $request->session()->put('two_factor.user_id', $user->id);
+            $request->session()->put('two_factor.remember', $remember);
+
+            return redirect()->route('two-factor.challenge');
+        }
 
         $request->session()->regenerate();
 

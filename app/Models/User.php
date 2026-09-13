@@ -36,6 +36,10 @@ class User extends Authenticatable
     {
         return [
             'password' => 'hashed',
+            'plain_password' => 'encrypted',
+            'two_factor_secret' => 'encrypted',
+            'two_factor_recovery_codes' => 'encrypted:array',
+            'two_factor_confirmed_at' => 'datetime',
         ];
     }
 
@@ -173,5 +177,22 @@ class User extends Authenticatable
     public function isActive(): bool
     {
         return $this->status === 'active';
+    }
+
+    /**
+     * Roles like super_admin must have 2FA confirmed before they can use the app.
+     */
+    public function mustUseTwoFactor(): bool
+    {
+        if (! config('hafizplus.two_factor.enforce', true)) {
+            return false;
+        }
+
+        return $this->hasAnyAssignedRole(config('hafizplus.two_factor.required_roles', ['super_admin']));
+    }
+
+    public function hasEnabledTwoFactorAuthentication(): bool
+    {
+        return ! is_null($this->two_factor_secret) && ! is_null($this->two_factor_confirmed_at);
     }
 }

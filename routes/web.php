@@ -38,7 +38,7 @@ Route::get('/', function () {
     return view('welcome');
 });
 
-Route::middleware(['auth'])->group(function () {
+Route::middleware(['auth', 'two_factor.enrolled'])->group(function () {
     /*
     |--------------------------------------------------------------------------
     | Role Switcher Route
