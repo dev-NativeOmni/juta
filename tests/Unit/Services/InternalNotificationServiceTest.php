@@ -80,6 +80,31 @@ class InternalNotificationServiceTest extends TestCase
     }
 
     #[Test]
+    public function it_persists_severity_and_source_for_generated_notifications(): void
+    {
+        $target = HafalanTarget::create([
+            'student_id' => $this->student->id,
+            'teacher_id' => $this->teacherProfile->id,
+            'surah_id' => $this->surah->id,
+            'ayah_start' => 1,
+            'ayah_end' => 7,
+            'target_date' => today()->subDays(2),
+            'status' => 'active',
+        ]);
+
+        $this->service->generateForAllActiveUsers();
+
+        $notification = SystemNotification::where('user_id', $this->teacherUser->id)
+            ->where('type', 'target_overdue')
+            ->firstOrFail();
+
+        $this->assertEquals('warning', $notification->severity);
+        $this->assertEquals(HafalanTarget::class, $notification->source_type);
+        $this->assertEquals($target->id, $notification->source_id);
+        $this->assertEquals('bg-amber-100 text-amber-800', $notification->type_badge_class);
+    }
+
+    #[Test]
     public function it_does_not_create_duplicate_notifications(): void
     {
         // Add an overdue target

@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Str;
 
@@ -20,6 +21,9 @@ class SystemNotification extends Model
         'title',
         'message',
         'type',
+        'severity',
+        'source_type',
+        'source_id',
         'target_role',
         'action_url',
         'is_read',
@@ -33,6 +37,7 @@ class SystemNotification extends Model
         return [
             'user_id' => 'integer',
             'created_by' => 'integer',
+            'source_id' => 'integer',
             'is_read' => 'boolean',
             'read_at' => 'datetime',
             'published_at' => 'datetime',
@@ -57,6 +62,15 @@ class SystemNotification extends Model
     public function creator(): BelongsTo
     {
         return $this->belongsTo(User::class, 'created_by');
+    }
+
+    /**
+     * The record (HafalanTarget, HafalanRecord, MurajaahRecord, ...) that
+     * triggered this notification, when it was generated internally.
+     */
+    public function source(): MorphTo
+    {
+        return $this->morphTo();
     }
 
     public function scopeUnread(Builder $query): Builder
@@ -111,7 +125,7 @@ class SystemNotification extends Model
 
     public function getTypeLabelAttribute(): string
     {
-        return match ($this->type) {
+        return match ($this->severity ?? $this->type) {
             'success' => 'Sukses',
             'warning' => 'Peringatan',
             'danger' => 'Bahaya',
@@ -123,7 +137,7 @@ class SystemNotification extends Model
 
     public function getTypeBadgeClassAttribute(): string
     {
-        return match ($this->type) {
+        return match ($this->severity ?? $this->type) {
             'success' => 'bg-emerald-100 text-emerald-800',
             'warning' => 'bg-amber-100 text-amber-800',
             'danger', 'error' => 'bg-red-100 text-red-800',
