@@ -55,6 +55,11 @@ class AuditLog extends Model
             'deleted' => 'Dihapus',
             'restored' => 'Dipulihkan',
             'force_deleted' => 'Dihapus Permanen',
+            'backup_requested' => 'Backup Dijadwalkan',
+            'backup_downloaded' => 'Backup Diunduh',
+            'backup_deleted' => 'Backup Dihapus',
+            'impersonation_started' => 'Impersonasi Dimulai',
+            'impersonation_stopped' => 'Impersonasi Diakhiri',
             default => ucfirst((string) $this->action),
         };
     }
@@ -90,6 +95,14 @@ class AuditLog extends Model
             TeacherProfile::class => 'Guru',
             ParentProfile::class => 'Orangtua',
             User::class => 'User',
+            TahfizhExam::class => 'Ujian Tahfizh',
+            Attendance::class => 'Absensi',
+            StudentPoint::class => 'Poin Siswa',
+            StudentReport::class => 'Rapor Siswa',
+            AdabRecord::class => 'Catatan Adab',
+            AdabMentorAssessment::class => 'Penilaian Pendamping Adab',
+            Badge::class => 'Lencana',
+            Setting::class => 'Pengaturan',
             default => class_basename((string) $this->auditable_type),
         };
     }

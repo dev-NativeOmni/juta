@@ -2,13 +2,21 @@
 
 namespace App\Providers;
 
+use App\Models\AdabMentorAssessment;
+use App\Models\AdabRecord;
+use App\Models\Attendance;
+use App\Models\Badge;
 use App\Models\ClassRoom;
 use App\Models\HafalanRecord;
 use App\Models\HafalanTarget;
 use App\Models\MurajaahRecord;
 use App\Models\ParentProfile;
 use App\Models\Program;
+use App\Models\Setting;
 use App\Models\Student;
+use App\Models\StudentPoint;
+use App\Models\StudentReport;
+use App\Models\TahfizhExam;
 use App\Models\TeacherProfile;
 use App\Models\User;
 use App\Observers\HafalanRecordObserver;
@@ -17,6 +25,7 @@ use App\Policies\HafalanRecordPolicy;
 use App\Policies\HafalanTargetPolicy;
 use App\Policies\MurajaahRecordPolicy;
 use App\Policies\StudentPolicy;
+use App\Policies\TahfizhExamPolicy;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
@@ -64,6 +73,14 @@ class AppServiceProvider extends ServiceProvider
         Student::observe(ModelAuditObserver::class);
         MurajaahRecord::observe(ModelAuditObserver::class);
         HafalanTarget::observe(ModelAuditObserver::class);
+        TahfizhExam::observe(ModelAuditObserver::class);
+        Attendance::observe(ModelAuditObserver::class);
+        StudentPoint::observe(ModelAuditObserver::class);
+        StudentReport::observe(ModelAuditObserver::class);
+        AdabRecord::observe(ModelAuditObserver::class);
+        AdabMentorAssessment::observe(ModelAuditObserver::class);
+        Badge::observe(ModelAuditObserver::class);
+        Setting::observe(ModelAuditObserver::class);
 
         /*
         |--------------------------------------------------------------------------
@@ -74,6 +91,7 @@ class AppServiceProvider extends ServiceProvider
         Gate::policy(HafalanRecord::class, HafalanRecordPolicy::class);
         Gate::policy(MurajaahRecord::class, MurajaahRecordPolicy::class);
         Gate::policy(HafalanTarget::class, HafalanTargetPolicy::class);
+        Gate::policy(TahfizhExam::class, TahfizhExamPolicy::class);
     }
 
     private function configureRateLimiting(): void
@@ -145,6 +163,12 @@ class AppServiceProvider extends ServiceProvider
                         ], 429, $headers);
                     }),
             ];
+        });
+
+        RateLimiter::for('two-factor-challenge', function (Request $request) {
+            $userId = $request->session()->get('two_factor.user_id', 'guest');
+
+            return Limit::perMinute(5)->by('two-factor:'.$userId.'|'.$request->ip());
         });
     }
 }

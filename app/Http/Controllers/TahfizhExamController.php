@@ -56,11 +56,15 @@ class TahfizhExamController extends Controller
 
     public function create(Request $request): View
     {
+        $this->authorize('create', TahfizhExam::class);
+
         return view('tahfizh-exams.create', $this->formData($request->user()));
     }
 
     public function store(Request $request): RedirectResponse
     {
+        $this->authorize('create', TahfizhExam::class);
+
         $validated = $request->validate([
             'student_id' => 'required|exists:students,id',
             'teacher_id' => 'required|exists:teacher_profiles,id',
@@ -120,6 +124,8 @@ class TahfizhExamController extends Controller
 
     public function edit(Request $request, TahfizhExam $tahfizhExam): View
     {
+        $this->authorize('update', $tahfizhExam);
+
         return view('tahfizh-exams.edit', array_merge(
             [
                 'exam' => $tahfizhExam,
@@ -130,6 +136,8 @@ class TahfizhExamController extends Controller
 
     public function update(Request $request, TahfizhExam $tahfizhExam): RedirectResponse
     {
+        $this->authorize('update', $tahfizhExam);
+
         $validated = $request->validate([
             'student_id' => 'required|exists:students,id',
             'teacher_id' => 'required|exists:teacher_profiles,id',
@@ -188,6 +196,8 @@ class TahfizhExamController extends Controller
 
     public function destroy(TahfizhExam $tahfizhExam): RedirectResponse
     {
+        $this->authorize('delete', $tahfizhExam);
+
         $tahfizhExam->delete();
 
         return redirect()

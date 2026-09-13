@@ -168,9 +168,13 @@ class UserManagementTest extends TestCase
             'name' => 'Guru Baru Tahfidz',
             'username' => 'gurubaru',
             'role_id' => $teacherRole->id,
-            'plain_password' => 'secretpwd123',
             'status' => 'active',
         ]);
+
+        // plain_password is encrypted at rest, so compare it through the
+        // model's cast rather than the raw DB column.
+        $newUser = User::where('username', 'gurubaru')->firstOrFail();
+        $this->assertEquals('secretpwd123', $newUser->plain_password);
     }
 
     public function test_non_super_admin_cannot_create_new_user(): void

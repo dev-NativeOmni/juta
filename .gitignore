@@ -48,4 +48,9 @@ Thumbs.db
 !/bootstrap/cache/.gitignore
 
 /database/*.sql
+/database/*.sqlite
+/database/*.sqlite3
+*.sqlite
+*.sqlite3
+/juta
 /.agents/

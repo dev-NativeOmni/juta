@@ -2,14 +2,22 @@
 
 namespace App\Services;
 
+use App\Models\AdabMentorAssessment;
+use App\Models\AdabRecord;
+use App\Models\Attendance;
 use App\Models\AuditLog;
+use App\Models\Badge;
 use App\Models\ClassRoom;
 use App\Models\HafalanRecord;
 use App\Models\HafalanTarget;
 use App\Models\MurajaahRecord;
 use App\Models\ParentProfile;
 use App\Models\Program;
+use App\Models\Setting;
 use App\Models\Student;
+use App\Models\StudentPoint;
+use App\Models\StudentReport;
+use App\Models\TahfizhExam;
 use App\Models\TeacherProfile;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Model;
@@ -83,6 +91,38 @@ class AuditLogService
             oldValues: $this->safeAttributes($model->getAttributes()),
             newValues: null
         );
+    }
+
+    /**
+     * Log an action that isn't tied to an Eloquent model change,
+     * e.g. downloading/deleting a backup file or starting an impersonation session.
+     */
+    public function logAction(string $action, string $description, ?array $context = null): void
+    {
+        $actor = auth()->user();
+
+        AuditLog::create([
+            'user_id' => $actor?->id,
+            'user_name' => $actor?->name,
+            'role_name' => $actor?->role?->name,
+
+            'action' => $action,
+
+            'auditable_type' => null,
+            'auditable_id' => null,
+            'auditable_label' => null,
+            'auditable_name' => null,
+
+            'description' => $description,
+
+            'old_values' => null,
+            'new_values' => $context,
+
+            'ip_address' => request()?->ip(),
+            'user_agent' => request()?->userAgent(),
+            'url' => request()?->fullUrl(),
+            'method' => request()?->method(),
+        ]);
     }
 
     private function write(
@@ -162,6 +202,14 @@ class AuditLogService
             HafalanRecord::class => 'Setoran Hafalan',
             MurajaahRecord::class => 'Murajaah',
             HafalanTarget::class => 'Target Hafalan',
+            TahfizhExam::class => 'Ujian Tahfizh',
+            Attendance::class => 'Absensi',
+            StudentPoint::class => 'Poin Siswa',
+            StudentReport::class => 'Rapor Siswa',
+            AdabRecord::class => 'Catatan Adab',
+            AdabMentorAssessment::class => 'Penilaian Pendamping Adab',
+            Badge::class => 'Lencana',
+            Setting::class => 'Pengaturan',
             default => class_basename($model),
         };
     }

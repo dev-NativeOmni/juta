@@ -3,12 +3,15 @@
 namespace App\Http\Controllers;
 
 use App\Models\User;
+use App\Services\AuditLogService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
 class ImpersonateController extends Controller
 {
+    public function __construct(private readonly AuditLogService $auditLog) {}
+
     /**
      * Start impersonating a user (Super Admin only).
      */
@@ -34,6 +37,15 @@ class ImpersonateController extends Controller
             session(['impersonated_by' => $currentUser->id]);
         }
 
+        $this->auditLog->logAction(
+            action: 'impersonation_started',
+            description: $currentUser->name.' mulai impersonasi sebagai '.$user->name.' ('.($user->role?->display_name ?? $user->role?->name).').',
+            context: [
+                'admin_id' => $currentUser->id,
+                'target_user_id' => $user->id,
+            ],
+        );
+
         Auth::login($user);
 
         return redirect()->route('dashboard')->with('success', 'Berhasil masuk sebagai '.$user->name.' ('.$user->role?->display_name.').');
@@ -48,12 +60,22 @@ class ImpersonateController extends Controller
             return redirect()->route('dashboard');
         }
 
+        $impersonatedUser = Auth::user();
         $originalUserId = session('impersonated_by');
         session()->forget('impersonated_by');
 
         $originalUser = User::find($originalUserId);
 
         if ($originalUser) {
+            $this->auditLog->logAction(
+                action: 'impersonation_stopped',
+                description: $originalUser->name.' mengakhiri impersonasi sebagai '.($impersonatedUser?->name ?? 'pengguna #'.$originalUserId).'.',
+                context: [
+                    'admin_id' => $originalUser->id,
+                    'target_user_id' => $impersonatedUser?->id,
+                ],
+            );
+
             Auth::login($originalUser);
 
             return redirect()->route('users.index')->with('success', 'Kembali ke sesi Super Admin ('.$originalUser->name.').');
