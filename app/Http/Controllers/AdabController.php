@@ -95,10 +95,12 @@ class AdabController extends Controller
             ->get()
             ->keyBy('student_id');
 
+        $scoresByStudent = Setting::calculateAdabScoresForStudents($studentIds->all(), $year, $month);
+
         foreach ($students as $student) {
             $student->today_record = $todayRecords->get($student->id);
 
-            $adabScoreData = Setting::calculateAdabScore($student->id, $year, $month);
+            $adabScoreData = $scoresByStudent[$student->id] ?? Setting::calculateAdabScore($student->id, $year, $month);
             $student->adab_attendance_rate = $adabScoreData['attendance_rate'];
             $student->mentor_score = $adabScoreData['mentor_score'];
             $student->average_adab_score = $adabScoreData['final_score'];
@@ -134,21 +136,25 @@ class AdabController extends Controller
                 $classRankings = collect();
             } else {
                 $classRankings = Cache::remember("adab_class_rankings_{$year}_{$month}", 180, function () use ($year, $month) {
-                    return ClassRoom::query()
+                    $classRooms = ClassRoom::query()
                         ->with(['students' => fn ($q) => $q->where('status', 'active')])
-                        ->get()
-                        ->map(function ($classRoom) use ($year, $month) {
+                        ->get();
+
+                    $allStudentIds = $classRooms->flatMap(fn ($classRoom) => $classRoom->students->pluck('id'))->all();
+
+                    try {
+                        $scoresByStudent = Setting::calculateAdabScoresForStudents($allStudentIds, $year, $month);
+                    } catch (\Throwable $e) {
+                        $scoresByStudent = [];
+                    }
+
+                    return $classRooms
+                        ->map(function ($classRoom) use ($scoresByStudent) {
                             $st = $classRoom->students;
                             if ($st->isEmpty()) {
                                 return ['name' => $classRoom->name, 'avg_score' => 0];
                             }
-                            $scores = $st->map(function ($s) use ($year, $month) {
-                                try {
-                                    return Setting::calculateAdabScore($s->id, $year, $month)['final_score'] ?? 0;
-                                } catch (\Throwable $e) {
-                                    return 0;
-                                }
-                            });
+                            $scores = $st->map(fn ($s) => $scoresByStudent[$s->id]['final_score'] ?? 0);
 
                             return [
                                 'name' => $classRoom->name,

@@ -216,7 +216,8 @@ class DashboardController extends Controller
         $fillPercentage = $totalStudents > 0 ? round(($filledToday / $totalStudents) * 100, 1) : 0;
 
         $students = $studentQuery->get();
-        $monthlyScores = $students->map(fn ($s) => Setting::calculateAdabScore($s->id, $year, $month)['final_score']);
+        $scoresByStudent = Setting::calculateAdabScoresForStudents($students->pluck('id')->all(), $year, $month);
+        $monthlyScores = $students->map(fn ($s) => $scoresByStudent[$s->id]['final_score'] ?? 0);
         $avgScoreMonth = $monthlyScores->isNotEmpty() ? round($monthlyScores->avg(), 1) : 0;
         $adabGradeMonth = Setting::getAdabGrade($avgScoreMonth);
 
@@ -227,14 +228,18 @@ class DashboardController extends Controller
                 $classRoomQuery->whereIn('id', $assignedClassIds);
             }
 
-            return $classRoomQuery
-                ->get()
-                ->map(function ($classRoom) use ($year, $month) {
+            $classRooms = $classRoomQuery->get();
+
+            $allStudentIds = $classRooms->flatMap(fn ($classRoom) => $classRoom->students->pluck('id'))->all();
+            $scoresByStudent = Setting::calculateAdabScoresForStudents($allStudentIds, $year, $month);
+
+            return $classRooms
+                ->map(function ($classRoom) use ($scoresByStudent) {
                     $st = $classRoom->students;
                     if ($st->isEmpty()) {
                         return ['name' => $classRoom->name, 'avg_score' => 0];
                     }
-                    $sc = $st->map(fn ($s) => Setting::calculateAdabScore($s->id, $year, $month)['final_score']);
+                    $sc = $st->map(fn ($s) => $scoresByStudent[$s->id]['final_score'] ?? 0);
 
                     return ['name' => $classRoom->name, 'avg_score' => round($sc->avg(), 1)];
                 })
@@ -334,6 +339,9 @@ class DashboardController extends Controller
             ];
             $allScores = [];
 
+            $allStudentIds = $classRooms->flatMap(fn ($cr) => $cr->students->pluck('id'))->all();
+            $scoresByStudent = Setting::calculateAdabScoresForStudents($allStudentIds, $year, $month);
+
             foreach ($classRooms as $cr) {
                 $key = null;
                 if (preg_match('/^XII\b/i', $cr->name)) {
@@ -345,7 +353,7 @@ class DashboardController extends Controller
                 }
 
                 foreach ($cr->students as $st) {
-                    $sc = Setting::calculateAdabScore($st->id, $year, $month)['final_score'] ?? 0;
+                    $sc = $scoresByStudent[$st->id]['final_score'] ?? 0;
                     $allScores[] = $sc;
                     if ($key) {
                         $adabByLevel[$key] += $sc;

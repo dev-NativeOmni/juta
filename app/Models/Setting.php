@@ -280,6 +280,112 @@ class Setting extends Model
     }
 
     /**
+     * Batch variant of calculateAdabScore() for many students at once.
+     *
+     * Dashboards that loop over every active student calling
+     * calculateAdabScore() individually turn into 2-3 queries PER STUDENT
+     * (hundreds of queries for a school of any real size). This computes
+     * the same result with at most 2 queries total, regardless of how many
+     * students are passed in.
+     *
+     * @param  array<int>  $studentIds
+     * @return array<int, array> keyed by student_id, same shape as calculateAdabScore()
+     */
+    public static function calculateAdabScoresForStudents(array $studentIds, int $year, int $month): array
+    {
+        $studentIds = array_values(array_unique(array_map('intval', $studentIds)));
+
+        if ($studentIds === []) {
+            return [];
+        }
+
+        $startDate = Carbon::createFromDate($year, $month, 1)->toDateString();
+        $endDate = Carbon::createFromDate($year, $month, 1)->endOfMonth()->toDateString();
+
+        $effectiveDaysTotal = self::getEffectiveDaysCount($year, $month);
+        $effectiveDatesSet = self::getEffectiveDatesSet($year, $month);
+
+        $filledDatesByStudent = AdabRecord::whereIn('student_id', $studentIds)
+            ->whereBetween('assessment_date', [$startDate, $endDate])
+            ->get(['student_id', 'assessment_date'])
+            ->groupBy('student_id');
+
+        $currentMonthAssessments = AdabMentorAssessment::whereIn('student_id', $studentIds)
+            ->where('year', $year)
+            ->where('month', $month)
+            ->get(['student_id', 'mentor_score'])
+            ->keyBy(fn ($assessment) => (int) $assessment->student_id);
+
+        $missingIds = array_values(array_diff(
+            $studentIds,
+            $currentMonthAssessments->keys()->all()
+        ));
+
+        $latestFallbackByStudent = [];
+
+        if ($missingIds !== []) {
+            AdabMentorAssessment::whereIn('student_id', $missingIds)
+                ->get(['student_id', 'mentor_score', 'year', 'month'])
+                ->groupBy(fn ($assessment) => (int) $assessment->student_id)
+                ->each(function ($assessments, $studentId) use (&$latestFallbackByStudent) {
+                    $latestFallbackByStudent[$studentId] = $assessments
+                        ->sortByDesc(fn ($a) => sprintf('%04d%02d', $a->year, $a->month))
+                        ->first();
+                });
+        }
+
+        $results = [];
+
+        foreach ($studentIds as $studentId) {
+            $cacheKey = "{$studentId}_{$year}_{$month}";
+
+            if (isset(self::$studentAdabScoreCache[$cacheKey])) {
+                $results[$studentId] = self::$studentAdabScoreCache[$cacheKey];
+
+                continue;
+            }
+
+            $filledDates = ($filledDatesByStudent->get($studentId) ?? collect())
+                ->pluck('assessment_date')
+                ->unique();
+
+            $effectiveDaysFilled = 0;
+            foreach ($filledDates as $dateStr) {
+                $d = is_string($dateStr) ? substr($dateStr, 0, 10) : (is_object($dateStr) ? $dateStr->format('Y-m-d') : '');
+                if (isset($effectiveDatesSet[$d])) {
+                    $effectiveDaysFilled++;
+                }
+            }
+
+            $attendanceRate = min(100.0, round(($effectiveDaysFilled / $effectiveDaysTotal) * 100, 1));
+
+            $mentorAssessment = $currentMonthAssessments->get($studentId) ?? ($latestFallbackByStudent[$studentId] ?? null);
+            $mentorScore = $mentorAssessment ? (float) $mentorAssessment->mentor_score : null;
+
+            $finalScore = $mentorScore !== null
+                ? round(($attendanceRate * 0.40) + ($mentorScore * 0.60), 1)
+                : $attendanceRate;
+
+            $grade = self::getAdabGrade($finalScore);
+
+            $result = [
+                'attendance_rate' => $attendanceRate,
+                'effective_days_filled' => $effectiveDaysFilled,
+                'effective_days_total' => $effectiveDaysTotal,
+                'mentor_score' => $mentorScore,
+                'final_score' => $finalScore,
+                'grade' => $grade,
+                'grade_label' => self::getAdabGradeLabel($grade),
+            ];
+
+            self::$studentAdabScoreCache[$cacheKey] = $result;
+            $results[$studentId] = $result;
+        }
+
+        return $results;
+    }
+
+    /**
      * Convert a 0-100 percentage score to a letter grade.
      */
     public static function getAdabGrade(float $score): string
