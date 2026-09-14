@@ -51,8 +51,13 @@ return new class extends Migration
 
         if (Schema::hasTable('murajaah_records')) {
             try {
+                // murajaah_records has no submitted_at column — it's reviewed_at.
+                // This previously failed on every run; on Postgres a failed
+                // statement poisons the rest of the transaction, so
+                // subsequent queries in the same request/test would also
+                // fail even though the error itself was swallowed here.
                 Schema::table('murajaah_records', function (Blueprint $table) {
-                    $table->index(['student_id', 'submitted_at'], 'idx_murajaah_std_subdate');
+                    $table->index(['student_id', 'reviewed_at'], 'idx_murajaah_std_subdate');
                 });
             } catch (Throwable $e) {
                 // Index already exists, ignore

@@ -98,7 +98,7 @@ class SurahController extends Controller
                     $query->orderBy('ayah_number');
                 },
             ])
-            ->whereKey((int) $surah)
+            ->where('number', (int) $surah)
             ->first();
 
         if (! $surahModel) {
@@ -126,7 +126,7 @@ class SurahController extends Controller
         }
 
         $surahModel = Surah::query()
-            ->whereKey((int) $surah)
+            ->where('number', (int) $surah)
             ->first();
 
         if (! $surahModel) {

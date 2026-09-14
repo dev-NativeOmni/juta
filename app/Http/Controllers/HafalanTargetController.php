@@ -670,18 +670,24 @@ class HafalanTargetController extends Controller
 
     private function targetStatuses(): array
     {
-        try {
-            $column = DB::selectOne("SHOW COLUMNS FROM hafalan_targets LIKE 'status'");
+        // "SHOW COLUMNS" is MySQL-only syntax. On Postgres it doesn't just
+        // throw — a failed statement poisons the rest of the current
+        // transaction, so every later query in the same request/test would
+        // fail too. Only attempt it when actually connected to MySQL.
+        if (DB::connection()->getDriverName() === 'mysql') {
+            try {
+                $column = DB::selectOne("SHOW COLUMNS FROM hafalan_targets LIKE 'status'");
 
-            if ($column && isset($column->Type)) {
-                preg_match_all("/'([^']+)'/", (string) $column->Type, $matches);
+                if ($column && isset($column->Type)) {
+                    preg_match_all("/'([^']+)'/", (string) $column->Type, $matches);
 
-                if (! empty($matches[1])) {
-                    return $matches[1];
+                    if (! empty($matches[1])) {
+                        return $matches[1];
+                    }
                 }
+            } catch (Throwable) {
+                // Fallback di bawah sengaja dibiarkan.
             }
-        } catch (Throwable) {
-            // Fallback di bawah sengaja dibiarkan.
         }
 
         return [
