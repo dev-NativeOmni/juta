@@ -129,14 +129,16 @@ class TeacherPerformanceTest extends TestCase
 
         // Create 15 Hafalan Records and 15 Murajaah Records (Total 30 inputs -> Keaktifan score should be max 40 points)
         for ($i = 0; $i < 15; $i++) {
-            HafalanRecord::create([
+            $hafalanRecord = HafalanRecord::create([
                 'student_id' => $student->id,
                 'teacher_id' => $teacherProfile->id,
+                'submitted_at' => now(),
+            ]);
+            $hafalanRecord->surahs()->create([
                 'surah_id' => $surah->id,
                 'ayah_start' => 1,
                 'ayah_end' => 7,
                 'score' => 90, // points
-                'submitted_at' => now(),
                 'status' => 'passed',
             ]);
             MurajaahRecord::create([
@@ -160,8 +162,7 @@ class TeacherPerformanceTest extends TestCase
                 'student_id' => $student->id,
                 'teacher_id' => $teacherProfile->id,
                 'surah_id' => $surah->id,
-                'ayah_start' => 1,
-                'ayah_end' => 7,
+                'ayah' => 7,
                 'status' => 'completed',
                 'target_date' => now(),
             ]);
@@ -170,8 +171,7 @@ class TeacherPerformanceTest extends TestCase
             'student_id' => $student->id,
             'teacher_id' => $teacherProfile->id,
             'surah_id' => $surah->id,
-            'ayah_start' => 1,
-            'ayah_end' => 7,
+            'ayah' => 7,
             'status' => 'active',
             'target_date' => now(),
         ]);

@@ -3,7 +3,8 @@
         <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
             <div>
                 <h2 class="font-bold text-xl sm:text-2xl text-gray-900 dark:text-white leading-tight flex items-center gap-2">
-                    <span>⚡ Input Murajaah Cepat per-Halaqah</span>
+                    <x-heroicon-o-bolt class="w-6 h-6 text-emerald-600 dark:text-emerald-400" />
+                    <span>Input Murajaah Cepat per-Halaqah</span>
                 </h2>
                 <p class="text-xs sm:text-sm text-gray-600 dark:text-zinc-400">
                     Input data murajaah harian murid secara efisien dalam 1 layar per-kelas.
@@ -12,8 +13,9 @@
 
             <div class="flex items-center gap-2">
                 <a href="{{ route('murajaah-records.index') }}"
-                   class="inline-flex items-center justify-center px-3.5 py-2 bg-gray-100 dark:bg-zinc-800 text-gray-700 dark:text-zinc-300 rounded-xl font-bold text-xs hover:bg-gray-200 dark:hover:bg-zinc-700 transition">
-                    ← Kembali ke List
+                   class="inline-flex items-center gap-1.5 justify-center px-3.5 py-2 bg-gray-100 dark:bg-zinc-800 text-gray-700 dark:text-zinc-300 rounded-xl font-bold text-xs hover:bg-gray-200 dark:hover:bg-zinc-700 transition">
+                    <x-heroicon-o-arrow-left class="w-3.5 h-3.5" />
+                    <span>Kembali ke List</span>
                 </a>
             </div>
         </div>
@@ -57,7 +59,7 @@
                         :class="filledCount > 0 ? 'bg-indigo-600 hover:bg-indigo-700 text-white shadow-md cursor-pointer' : 'bg-gray-200 dark:bg-zinc-800 text-gray-400 dark:text-zinc-600 cursor-not-allowed'"
                         class="inline-flex items-center justify-center px-5 py-2.5 rounded-xl font-bold text-xs sm:text-sm transition-all"
                     >
-                        <span x-show="!isSubmitting">💾 Simpan Semua (<span x-text="filledCount">0</span>)</span>
+                        <span x-show="!isSubmitting" class="inline-flex items-center gap-1.5"><x-heroicon-o-check class="w-4 h-4" /> Simpan Semua (<span x-text="filledCount">0</span>)</span>
                         <span x-show="isSubmitting" x-cloak>Menyimpan...</span>
                     </button>
                 </div>
@@ -165,7 +167,8 @@
                                                 :class="row.score == 90 ? 'bg-indigo-600 text-white border-indigo-600 shadow-sm' : 'bg-gray-100 dark:bg-zinc-800 text-gray-700 dark:text-zinc-300 border-gray-200 dark:border-zinc-700 hover:bg-gray-200 dark:hover:bg-zinc-700'"
                                                 class="px-2.5 py-1 rounded-lg text-[11px] font-bold border transition-all cursor-pointer flex items-center gap-1"
                                             >
-                                                <span>🏆 90</span>
+                                                <x-heroicon-o-trophy class="w-3.5 h-3.5 shrink-0" />
+                                                <span>90</span>
                                                 <span class="text-[9px] opacity-80 hidden sm:inline">Lancar</span>
                                             </button>
 
@@ -176,7 +179,8 @@
                                                 :class="row.score == 80 ? 'bg-amber-600 text-white border-amber-600 shadow-sm' : 'bg-gray-100 dark:bg-zinc-800 text-gray-700 dark:text-zinc-300 border-gray-200 dark:border-zinc-700 hover:bg-gray-200 dark:hover:bg-zinc-700'"
                                                 class="px-2.5 py-1 rounded-lg text-[11px] font-bold border transition-all cursor-pointer flex items-center gap-1"
                                             >
-                                                <span>⭐ 80</span>
+                                                <x-heroicon-o-star class="w-3.5 h-3.5 shrink-0" />
+                                                <span>80</span>
                                                 <span class="text-[9px] opacity-80 hidden sm:inline">Cukup</span>
                                             </button>
 
@@ -187,7 +191,8 @@
                                                 :class="row.score == 70 ? 'bg-rose-600 text-white border-rose-600 shadow-sm' : 'bg-gray-100 dark:bg-zinc-800 text-gray-700 dark:text-zinc-300 border-gray-200 dark:border-zinc-700 hover:bg-gray-200 dark:hover:bg-zinc-700'"
                                                 class="px-2.5 py-1 rounded-lg text-[11px] font-bold border transition-all cursor-pointer flex items-center gap-1"
                                             >
-                                                <span>🔄 70</span>
+                                                <x-heroicon-o-arrow-path class="w-3.5 h-3.5 shrink-0" />
+                                                <span>70</span>
                                                 <span class="text-[9px] opacity-80 hidden sm:inline">Ulang</span>
                                             </button>
 

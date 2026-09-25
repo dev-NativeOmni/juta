@@ -10,7 +10,7 @@ class GenerateInternalNotifications extends Command
 {
     protected $signature = 'notifications:generate {--user= : Generate notifications for a specific user ID}';
 
-    protected $description = 'Generate internal IMS notifications for overdue targets and records that need attention.';
+    protected $description = 'Generate internal TAD notifications for overdue targets and records that need attention.';
 
     public function handle(InternalNotificationService $notificationService): int
     {

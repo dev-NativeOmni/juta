@@ -24,13 +24,14 @@
                             id="search"
                             value="{{ request('search') }}"
                             placeholder="Cari nama murid..."
+                            x-on:input.debounce.600ms="$el.form.submit()"
                             class="block w-full rounded-xl border-gray-300 dark:border-zinc-700 dark:bg-[#09090b]/40 dark:text-white shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm"
                         />
                     </div>
 
                     <div class="w-full sm:w-48">
                         <label for="class_room_id" class="block text-xs font-semibold uppercase text-zinc-400 dark:text-zinc-500 mb-2">Kelas</label>
-                        <select name="class_room_id" id="class_room_id" class="block w-full rounded-xl border-gray-300 dark:border-zinc-700 dark:bg-[#09090b]/40 dark:text-white shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm">
+                        <select name="class_room_id" id="class_room_id" onchange="this.form.submit()" class="block w-full rounded-xl border-gray-300 dark:border-zinc-700 dark:bg-[#09090b]/40 dark:text-white shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm">
                             <option value="">Semua Kelas</option>
                             @foreach ($classRooms as $classRoom)
                                 <option value="{{ $classRoom->id }}" {{ request('class_room_id') == $classRoom->id ? 'selected' : '' }}>
@@ -49,9 +50,9 @@
                                 Reset
                             </a>
                         @endif
-                        @if (request('class_room_id') && $students->isNotEmpty())
-                            <a href="{{ route('digital-reports.class-print', ['classRoom' => request('class_room_id')] + request()->only(['academic_year', 'semester'])) }}" target="_blank" class="inline-flex items-center justify-center px-4 py-2.5 border border-transparent rounded-xl text-sm font-semibold text-white bg-emerald-600 hover:bg-emerald-700 shadow-sm transition-colors min-h-[42px] gap-1">
-                                <span>🖨️</span>
+                        @if (request('class_room_id') && $students->isNotEmpty() && \App\Http\Controllers\StudentReportController::canPrint(auth()->user()))
+                            <a href="{{ route('digital-reports.class-print', ['classRoom' => request('class_room_id')] + request()->only(['academic_year', 'semester'])) }}" target="_blank" class="inline-flex items-center justify-center px-4 py-2.5 border border-transparent rounded-xl text-sm font-semibold text-white bg-emerald-600 hover:bg-emerald-700 shadow-sm transition-colors min-h-[42px] gap-1.5">
+                                <x-heroicon-o-printer class="w-4 h-4" />
                                 <span>Cetak Rapor Satu Kelas</span>
                             </a>
                         @endif

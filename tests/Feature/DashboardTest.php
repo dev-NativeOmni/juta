@@ -2,6 +2,8 @@
 
 namespace Tests\Feature;
 
+use App\Models\HafalanRecord;
+use App\Models\UmmiRecord;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\Feature\Concerns\SetsUpHafizPlusData;
@@ -15,6 +17,25 @@ class DashboardTest extends TestCase
     {
         parent::setUp();
         $this->setUpHafizPlusData();
+    }
+
+    private function createHafalanRecord(array $overrides = []): HafalanRecord
+    {
+        $record = HafalanRecord::create([
+            'student_id' => $overrides['student_id'] ?? $this->student->id,
+            'teacher_id' => $overrides['teacher_id'] ?? $this->teacherProfile->id,
+            'submitted_at' => $overrides['submitted_at'] ?? now(),
+        ]);
+
+        $record->surahs()->create([
+            'surah_id' => $overrides['surah_id'] ?? $this->surah->id,
+            'ayah_start' => $overrides['ayah_start'] ?? 1,
+            'ayah_end' => $overrides['ayah_end'] ?? 7,
+            'status' => $overrides['status'] ?? 'passed',
+            'score' => $overrides['score'] ?? null,
+        ]);
+
+        return $record;
     }
 
     // =========================================================================
@@ -113,12 +134,79 @@ class DashboardTest extends TestCase
     }
 
     #[Test]
+    public function parent_dashboard_displays_child_latest_memorized_surahs_at_top_with_dates(): void
+    {
+        $this->createHafalanRecord([
+            'ayah_start' => 1,
+            'ayah_end' => 10,
+            'status' => 'passed',
+            'score' => 95.0,
+            'submitted_at' => '2026-09-08',
+        ]);
+
+        $response = $this->actingAs($this->parentUser)->get(route('parent.dashboard'));
+
+        $response->assertStatus(200);
+        $response->assertSee('Daftar Surah Terakhir yang Dihafal Ananda');
+        $response->assertSee('QS. '.$this->surah->name_latin);
+        $response->assertSee('Ayat 1 - 10');
+        $response->assertSee('08 September 2026');
+    }
+
+    #[Test]
     public function student_dashboard_renders_successfully(): void
     {
         $response = $this->actingAs($this->studentUser)->get(route('student.dashboard'));
 
         $response->assertStatus(200);
         $response->assertViewIs('dashboards.student');
+    }
+
+    #[Test]
+    public function student_dashboard_displays_latest_memorized_surahs_at_top_with_dates(): void
+    {
+        $this->createHafalanRecord([
+            'ayah_start' => 1,
+            'ayah_end' => 10,
+            'status' => 'passed',
+            'score' => 95.0,
+            'submitted_at' => '2026-09-08',
+        ]);
+
+        $response = $this->actingAs($this->studentUser)->get(route('student.dashboard'));
+
+        $response->assertStatus(200);
+        $response->assertSee('Daftar Surah Terakhir yang Dihafal');
+        $response->assertSee('QS. '.$this->surah->name_latin);
+        $response->assertSee('Ayat 1 - 10');
+        $response->assertSee('08 September 2026');
+    }
+
+    #[Test]
+    public function student_dashboard_displays_ummi_memorized_surahs_at_top_when_hafalan_records_empty(): void
+    {
+        $ummiRecord = UmmiRecord::create([
+            'student_id' => $this->student->id,
+            'teacher_id' => $this->teacherProfile->id,
+            'tatap_muka' => 1,
+            'tanggal' => '2026-09-07',
+            'ummi_jilid' => 'Jilid 1',
+            'ummi_halaman' => '10',
+            'nilai' => '90',
+        ]);
+
+        $ummiRecord->surahs()->create([
+            'surah_id' => $this->surah->id,
+            'hafalan_ayah' => '1-15',
+        ]);
+
+        $response = $this->actingAs($this->studentUser)->get(route('student.dashboard'));
+
+        $response->assertStatus(200);
+        $response->assertSee('Daftar Surah Terakhir yang Dihafal');
+        $response->assertSee('QS. '.$this->surah->name_latin);
+        $response->assertSee('Ayat 1 - 15');
+        $response->assertSee('07 September 2026');
     }
 
     // =========================================================================

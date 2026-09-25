@@ -13,7 +13,9 @@
         "laravel/framework": "^12.0",
         "laravel/sanctum": "^4.0",
         "laravel/tinker": "^2.10.1",
-        "pragmarx/google2fa": "^8.0"
+        "maatwebsite/excel": "^3.1",
+        "pragmarx/google2fa": "^8.0",
+        "sentry/sentry-laravel": "^4.27"
     },
     "require-dev": {
         "fakerphp/faker": "^1.23",
@@ -82,6 +84,9 @@
         "optimize-autoloader": true,
         "preferred-install": "dist",
         "sort-packages": true,
+        "platform": {
+            "php": "8.2.0"
+        },
         "allow-plugins": {
             "pestphp/pest-plugin": true,
             "php-http/discovery": true

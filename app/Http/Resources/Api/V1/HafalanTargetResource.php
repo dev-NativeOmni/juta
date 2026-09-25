@@ -18,9 +18,8 @@ class HafalanTargetResource extends JsonResource
             'teacher_id' => $this->teacher_id,
             'surah_id' => $this->surah_id,
 
-            'ayah_start' => $this->ayah_start,
-            'ayah_end' => $this->ayah_end,
-            'ayah_range' => $this->ayah_start.' - '.$this->ayah_end,
+            'ayah' => $this->ayah,
+            'ayah_range' => $this->ayah_range,
 
             'target_date' => optional($this->target_date)->format('Y-m-d'),
             'status' => $this->status,

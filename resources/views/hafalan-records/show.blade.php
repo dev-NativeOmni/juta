@@ -49,40 +49,37 @@
                             {{ $hafalanRecord->teacher?->user?->name ?: '-' }}
                         </p>
                     </div>
+                </div>
 
-                    <div>
-                        <p class="text-sm text-gray-500">Surah</p>
-                        <p class="font-semibold text-gray-900">
-                            {{ $hafalanRecord->surah?->number }}. {{ $hafalanRecord->surah?->name_latin }}
-                        </p>
-                    </div>
-
-                    <div>
-                        <p class="text-sm text-gray-500">Rentang Ayat</p>
-                        <p class="font-semibold text-gray-900">
-                            {{ $hafalanRecord->ayah_start }} - {{ $hafalanRecord->ayah_end }}
-                        </p>
-                    </div>
-
-                    <div>
-                        <p class="text-sm text-gray-500">Jenis Setoran</p>
-                        <p class="font-semibold text-gray-900">
-                            {{ $hafalanRecord->submission_type_label }}
-                        </p>
-                    </div>
-
-                    <div>
-                        <p class="text-sm text-gray-500">Nilai</p>
-                        <p class="font-semibold text-gray-900">
-                            {{ $hafalanRecord->score !== null ? number_format((float) $hafalanRecord->score, 2) : '-' }}
-                        </p>
-                    </div>
-
-                    <div>
-                        <p class="text-sm text-gray-500">Status</p>
-                        <p class="font-semibold text-gray-900">
-                            {{ $hafalanRecord->status_label }}
-                        </p>
+                <div class="mt-6">
+                    <p class="text-sm text-gray-500 mb-2">Daftar Setoran</p>
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full divide-y divide-gray-200 text-sm">
+                            <thead>
+                                <tr class="text-left text-xs font-semibold text-gray-500 uppercase">
+                                    <th class="px-3 py-2">Surah</th>
+                                    <th class="px-3 py-2">Ayat</th>
+                                    <th class="px-3 py-2">Jenis</th>
+                                    <th class="px-3 py-2">Nilai</th>
+                                    <th class="px-3 py-2">Status</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-gray-100">
+                                @forelse ($hafalanRecord->surahs as $surahEntry)
+                                    <tr>
+                                        <td class="px-3 py-2 font-semibold text-gray-900">{{ $surahEntry->surah?->number }}. {{ $surahEntry->surah?->name_latin }}</td>
+                                        <td class="px-3 py-2">{{ $surahEntry->ayah_start }} - {{ $surahEntry->ayah_end }}</td>
+                                        <td class="px-3 py-2">{{ $surahEntry->submission_type_label }}</td>
+                                        <td class="px-3 py-2">{{ $surahEntry->score !== null ? number_format((float) $surahEntry->score, 2) : '-' }}</td>
+                                        <td class="px-3 py-2">{{ $surahEntry->status_label }}</td>
+                                    </tr>
+                                @empty
+                                    <tr>
+                                        <td colspan="5" class="px-3 py-4 text-center text-gray-400">Belum ada surah tercatat.</td>
+                                    </tr>
+                                @endforelse
+                            </tbody>
+                        </table>
                     </div>
                 </div>
 

@@ -82,15 +82,23 @@ class SpreadsheetInputTest extends TestCase
             'status' => 'hadir',
         ]);
 
-        // Assert HafalanRecord was saved
+        // Assert HafalanRecord header + child line were saved
         $this->assertDatabaseHas('hafalan_records', [
             'student_id' => $this->student->id,
+            'submitted_at' => $date.' 00:00:00',
+        ]);
+
+        $hafalanRecord = HafalanRecord::where('student_id', $this->student->id)
+            ->whereDate('submitted_at', $date)
+            ->firstOrFail();
+
+        $this->assertDatabaseHas('hafalan_record_surahs', [
+            'hafalan_record_id' => $hafalanRecord->id,
             'surah_id' => $this->surah->id,
             'ayah_start' => 1,
             'ayah_end' => 5,
             'score' => 95,
             'status' => 'passed',
-            'submitted_at' => $date.' 00:00:00',
         ]);
     }
 
@@ -138,7 +146,7 @@ class SpreadsheetInputTest extends TestCase
             'status' => 'hadir',
         ]);
 
-        // Assert UmmiRecord was saved
+        // Assert UmmiRecord header was saved
         $this->assertDatabaseHas('ummi_records', [
             'student_id' => $this->student->id,
             'tatap_muka' => 3,
@@ -147,7 +155,13 @@ class SpreadsheetInputTest extends TestCase
             'ummi_halaman' => '25',
             'materi' => 'Ghoroib',
             'nilai' => 'A',
-            'hafalan_surah_id' => $this->surah->id,
+        ]);
+
+        $ummiRecord = UmmiRecord::where('student_id', $this->student->id)->whereDate('tanggal', $date)->firstOrFail();
+
+        $this->assertDatabaseHas('ummi_record_surahs', [
+            'ummi_record_id' => $ummiRecord->id,
+            'surah_id' => $this->surah->id,
             'hafalan_ayah' => '1-5',
         ]);
     }
@@ -255,6 +269,11 @@ class SpreadsheetInputTest extends TestCase
         $this->assertCount(5, $columns);
         $this->assertEquals('Pekan 1', $columns[0]['label']);
         $this->assertEquals('03/08 - 07/08', $columns[0]['sub_label']);
+
+        // Toggle "Tanggal Aktif" harus tetap tampil untuk program mingguan (Reguler),
+        // supaya guru bisa pilih pekan mana yang mau diisi -- sebelumnya sengaja
+        // disembunyikan untuk isWeekly, membuat guru terjebak di tanggal default saja.
+        $response->assertSee('Tanggal Aktif', false);
     }
 
     #[Test]
@@ -294,8 +313,9 @@ class SpreadsheetInputTest extends TestCase
 
         $this->assertEquals(1, HafalanRecord::where('student_id', $this->student->id)->where('submitted_at', $date.' 00:00:00')->count());
         $record = HafalanRecord::where('student_id', $this->student->id)->where('submitted_at', $date.' 00:00:00')->first();
+        $surahLine = $record->surahs()->first();
 
-        // 2. Second Save (submit with the created record ID)
+        // 2. Second Save (submit with the created surah line ID)
         $payload2 = [
             'class_room_id' => $classRoom->id,
             'month' => '2026-08',
@@ -307,7 +327,7 @@ class SpreadsheetInputTest extends TestCase
                             'attendance' => 'hadir',
                             'hafalans' => [
                                 [
-                                    'id' => $record->id,
+                                    'id' => $surahLine->id,
                                     'surah_id' => $this->surah->id,
                                     'ayah_start' => 1,
                                     'ayah_end' => 5,

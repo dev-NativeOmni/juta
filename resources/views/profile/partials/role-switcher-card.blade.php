@@ -65,8 +65,9 @@
                             </button>
                         </form>
                     @else
-                        <div class="text-[11px] font-semibold text-emerald-700 dark:text-emerald-400 flex items-center gap-1">
-                            ✓ Anda sedang bekerja sebagai {{ $r->display_name }}
+                        <div class="text-[11px] font-semibold text-emerald-700 dark:text-emerald-400 flex items-center gap-1.5">
+                            <x-heroicon-m-check class="w-4 h-4 shrink-0" />
+                            <span>Anda sedang bekerja sebagai {{ $r->display_name }}</span>
                         </div>
                     @endif
                 </div>

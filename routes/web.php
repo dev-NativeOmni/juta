@@ -32,11 +32,38 @@ use App\Http\Controllers\SystemNotificationController;
 use App\Http\Controllers\TahfizhExamController;
 use App\Http\Controllers\TeacherController;
 use App\Http\Controllers\UserController;
+use App\Http\Controllers\WaliKelasController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
     return view('welcome');
 });
+
+Route::get('/panduan-video-orangtua', function () {
+    return response()->file(public_path('downloads/panduan_video_orangtua.html'));
+})->name('tutorial.parent');
+
+Route::get('/panduan-video-orangtua/download-vo', function () {
+    $filePath = public_path('downloads/NASKAH_VO_ORANGTUA.txt');
+    if (! file_exists($filePath)) {
+        abort(404);
+    }
+
+    return response()->download($filePath, 'NASKAH_VO_ORANGTUA.txt', [
+        'Content-Type' => 'text/plain; charset=UTF-8',
+    ]);
+})->name('tutorial.parent.download-vo');
+
+Route::get('/panduan-video-orangtua/download-script', function () {
+    $filePath = public_path('downloads/SKRIP_VIDEO_TUTORIAL_ORANGTUA.md');
+    if (! file_exists($filePath)) {
+        abort(404);
+    }
+
+    return response()->download($filePath, 'SKRIP_VIDEO_TUTORIAL_ORANGTUA.md', [
+        'Content-Type' => 'text/markdown; charset=UTF-8',
+    ]);
+})->name('tutorial.parent.download-script');
 
 Route::middleware(['auth', 'two_factor.enrolled'])->group(function () {
     /*
@@ -167,19 +194,28 @@ Route::middleware(['auth', 'two_factor.enrolled'])->group(function () {
         Route::post('class-rooms/import', [ClassRoomController::class, 'import'])->name('class-rooms.import');
         Route::get('class-rooms/{class_room}/export-capaian', [ClassRoomController::class, 'exportCapaian'])->name('class-rooms.export-capaian');
         Route::resource('class-rooms', ClassRoomController::class);
-        // Badges Management (Super Admin / Admin / Koordinator Tahfizh)
     });
 
-    Route::middleware(['role:super_admin,admin,coordinator_tahfizh'])->group(function () {
+    // Badges Management (Super Admin only)
+    Route::middleware(['role:super_admin'])->group(function () {
         Route::resource('badges', BadgeController::class);
         Route::post('badges/{badge}/toggle', [BadgeController::class, 'toggleActive'])->name('badges.toggle');
+    });
+
+    // Kalender Akademik: Koordinator Keagamaan/Adab (supervisor) ikut masuk, tapi hanya bisa
+    // mengatur & mengunci cakupan Adab (dibatasi di SettingController::calendarPermissions()).
+    Route::middleware(['role:super_admin,admin,supervisor'])->group(function () {
+        Route::get('academic-calendar', [SettingController::class, 'calendarIndex'])->name('academic-calendar.index');
+        Route::post('academic-calendar/update', [SettingController::class, 'calendarUpdate'])->name('academic-calendar.update');
+        Route::post('academic-calendar/lock', [SettingController::class, 'calendarLock'])->name('academic-calendar.lock');
+        Route::post('academic-calendar/adab-days', [SettingController::class, 'calendarAdabDays'])->name('academic-calendar.adab-days');
     });
 
     Route::middleware(['role:super_admin,admin'])->group(function () {
         Route::get('class-schedules', [ClassRoomController::class, 'scheduleIndex'])->name('class-schedules.index');
         Route::post('class-schedules/update', [ClassRoomController::class, 'scheduleUpdate'])->name('class-schedules.update');
-        Route::get('academic-calendar', [SettingController::class, 'calendarIndex'])->name('academic-calendar.index');
-        Route::post('academic-calendar/update', [SettingController::class, 'calendarUpdate'])->name('academic-calendar.update');
+        Route::post('class-schedules/week', [ClassRoomController::class, 'scheduleWeekUpdate'])->name('class-schedules.week.update');
+        Route::post('class-schedules/week/lock', [ClassRoomController::class, 'scheduleWeekLock'])->name('class-schedules.week.lock');
 
         // Teachers
         Route::get('teachers/export', [TeacherController::class, 'export'])->name('teachers.export');
@@ -236,6 +272,16 @@ Route::middleware(['auth', 'two_factor.enrolled'])->group(function () {
         Route::post('/hafalan-target-settings/reset', [SettingController::class, 'hafalanTargetsReset'])->name('settings.hafalan-targets.reset');
     });
 
+    Route::middleware(['role:super_admin,admin,coordinator_tahfizh'])->group(function () {
+        Route::post('/hafalan-target-settings/aturan', [SettingController::class, 'targetRulesUpdate'])->name('settings.target-rules.update');
+    });
+
+    Route::middleware(['role:super_admin,admin'])->group(function () {
+        Route::get('/pengaturan-penilaian-tahfizh', [SettingController::class, 'tahfizhScoringIndex'])->name('settings.tahfizh-scoring');
+        Route::post('/pengaturan-penilaian-tahfizh', [SettingController::class, 'tahfizhScoringUpdate'])->name('settings.tahfizh-scoring.update');
+        Route::post('/pengaturan-penilaian-tahfizh/reset', [SettingController::class, 'tahfizhScoringReset'])->name('settings.tahfizh-scoring.reset');
+    });
+
     // Super Admin user management routes
     Route::prefix('superadmin')->name('superadmin.')->middleware(['role:super_admin'])->group(function () {
         Route::get('users', [UserManagementController::class, 'index'])->name('users.index');
@@ -275,12 +321,22 @@ Route::middleware(['auth', 'two_factor.enrolled'])->group(function () {
         Route::patch('/hafalan-targets/{hafalanTarget}/mark-missed', [HafalanTargetController::class, 'markMissed'])
             ->name('hafalan-targets.mark-missed');
 
+        // Target Triwulan: dihitung otomatis dari pertemuan aktif (tidak disimpan).
+        Route::get('/hafalan-targets/triwulan', [HafalanTargetController::class, 'term'])
+            ->name('hafalan-targets.term');
+        Route::patch('/hafalan-targets/arah/{student}', [HafalanTargetController::class, 'updateDirection'])
+            ->name('hafalan-targets.direction');
+        Route::patch('/hafalan-targets/urutan-juz/{student}', [HafalanTargetController::class, 'updateJuzOrder'])
+            ->name('hafalan-targets.juz-order');
+        Route::get('/hafalan-targets/urutan/{student}', [HafalanTargetController::class, 'juzOrders'])
+            ->name('hafalan-targets.juz-orders');
+
         Route::resource('hafalan-targets', HafalanTargetController::class);
 
+        Route::get('/ummi-records/tatap-muka-suggestion', [HafalanRecordController::class, 'suggestTatapMuka'])
+            ->name('ummi-records.tatap-muka-suggestion');
         Route::post('/ummi-records', [QuickInputController::class, 'storeUmmi'])
             ->name('ummi-records.store');
-        Route::get('/ummi-records/{ummiRecord}/edit', [HafalanRecordController::class, 'editUmmi'])
-            ->name('ummi-records.edit');
         Route::put('/ummi-records/{ummiRecord}', [HafalanRecordController::class, 'updateUmmi'])
             ->name('ummi-records.update');
         Route::delete('/ummi-records/{ummiRecord}', [HafalanRecordController::class, 'destroyUmmi'])
@@ -302,7 +358,7 @@ Route::middleware(['auth', 'two_factor.enrolled'])->group(function () {
     |--------------------------------------------------------------------------
     */
 
-    Route::middleware(['role:super_admin,admin,teacher,parent,student,headmaster,tanse'])->group(function () {
+    Route::middleware(['role:super_admin,admin,teacher,parent,student,headmaster,tanse,wali_kelas'])->group(function () {
         Route::get('/student-points', [StudentPointController::class, 'index'])->name('student-points.index');
         Route::get('/student-points/chart', [StudentPointController::class, 'chart'])->name('student-points.chart');
     });
@@ -317,7 +373,7 @@ Route::middleware(['auth', 'two_factor.enrolled'])->group(function () {
     |--------------------------------------------------------------------------
     */
 
-    Route::middleware(['role:super_admin,admin,teacher,parent,student,headmaster,supervisor,coordinator_tahfizh'])->group(function () {
+    Route::middleware(['role:super_admin,admin,teacher,parent,student,headmaster,supervisor,coordinator_tahfizh,wali_kelas'])->group(function () {
         Route::get('/hafalan-records/student/{student}/ummi-card', [HafalanRecordController::class, 'ummiCard'])
             ->name('hafalan-records.student.ummi-card');
 
@@ -341,7 +397,7 @@ Route::middleware(['auth', 'two_factor.enrolled'])->group(function () {
             ->name('reports.export.csv');
 
         Route::get('/reports/periodic', [ReportController::class, 'periodicProgress'])
-            ->middleware('role:super_admin,admin,teacher,headmaster,coordinator_tahfizh,supervisor')
+            ->middleware('role:super_admin,admin,teacher,headmaster,coordinator_tahfizh,supervisor,wali_kelas')
             ->name('reports.periodic');
 
         Route::get('/reports/whatsapp', [ReportController::class, 'whatsappDaily'])
@@ -357,8 +413,21 @@ Route::middleware(['auth', 'two_factor.enrolled'])->group(function () {
             ->name('attendances.save');
 
         Route::get('/admin/reports/quarterly', [QuarterlyReportController::class, 'index'])
-            ->middleware('role:super_admin,admin')
+            ->middleware('role:super_admin,admin,teacher')
             ->name('reports.quarterly');
+
+        // Guru boleh export, tapi dibatasi ke kelas & murid yang dia ampu (lihat teacherScope()).
+        Route::get('/admin/reports/quarterly/export', [QuarterlyReportController::class, 'export'])
+            ->middleware('role:super_admin,admin,teacher')
+            ->name('reports.quarterly.export');
+
+        Route::get('/admin/reports/quarterly/export-mine', [QuarterlyReportController::class, 'exportMine'])
+            ->middleware('role:super_admin,admin,teacher')
+            ->name('reports.quarterly.export.mine');
+
+        Route::get('/wali-kelas', [WaliKelasController::class, 'index'])
+            ->middleware('role:wali_kelas,super_admin,admin')
+            ->name('wali-kelas.index');
 
         Route::get('/reports/periodic/print', [ReportController::class, 'periodicProgressPrint'])
             ->middleware('role:super_admin,admin,teacher,headmaster,coordinator_tahfizh,supervisor')
@@ -386,6 +455,12 @@ Route::middleware(['auth', 'two_factor.enrolled'])->group(function () {
     Route::delete('/profile', [ProfileController::class, 'destroy'])
         ->name('profile.destroy');
 
+    Route::post('/profile/signature', [ProfileController::class, 'updateSignature'])
+        ->name('profile.signature.update');
+
+    Route::delete('/profile/signature', [ProfileController::class, 'destroySignature'])
+        ->name('profile.signature.destroy');
+
     Route::get('/quran-pdf', [QuranPdfController::class, 'index'])
         ->name('quran.pdf');
 
@@ -401,10 +476,13 @@ Route::middleware(['auth', 'two_factor.enrolled'])->group(function () {
     | Adab
     |--------------------------------------------------------------------------
     */
-    Route::middleware(['role:super_admin,admin,supervisor,teacher,parent,student,pendamping_adab,headmaster'])->group(function () {
-        Route::get('/adab', [AdabController::class, 'index'])->name('adab.index');
+    Route::middleware(['role:super_admin,admin,supervisor,teacher,parent,student,pendamping_adab,headmaster,wali_kelas'])->group(function () {
         Route::get('/adab/chart', [AdabController::class, 'monthlyChart'])->name('adab.chart');
         Route::get('/adab/student/{student}', [AdabController::class, 'show'])->name('adab.show');
+    });
+
+    Route::middleware(['role:super_admin,admin,supervisor,teacher,parent,student,pendamping_adab,headmaster'])->group(function () {
+        Route::get('/adab', [AdabController::class, 'index'])->name('adab.index');
         Route::get('/adab/student/{student}/create', [AdabController::class, 'create'])->name('adab.create');
         Route::post('/adab/student/{student}', [AdabController::class, 'store'])->name('adab.store');
         Route::post('/adab/student/{student}/mentor-score', [AdabController::class, 'storeMentorScore'])->name('adab.store-mentor-score');
@@ -421,14 +499,22 @@ Route::middleware(['auth', 'two_factor.enrolled'])->group(function () {
     | Rapor Digital Terpadu
     |--------------------------------------------------------------------------
     */
-    Route::middleware(['role:super_admin,admin,teacher,coordinator_tahfizh,tanse'])->group(function () {
+    // Lihat rapor + edit catatan per murid (edit-nya sendiri masih dibatasi di controller
+    // ke super_admin/admin/teacher, lihat StudentReportController::update()).
+    Route::middleware(['role:super_admin,admin,teacher,coordinator_tahfizh,supervisor,pendamping_adab,tanse,headmaster,wali_kelas'])->group(function () {
         Route::get('/digital-reports', [StudentReportController::class, 'index'])->name('digital-reports.index');
         Route::get('/digital-reports/student/{student}', [StudentReportController::class, 'show'])->name('digital-reports.show');
         Route::get('/digital-reports/student/{student}/print', [StudentReportController::class, 'print'])->name('digital-reports.print');
         Route::get('/digital-reports/class/{classRoom}/print', [StudentReportController::class, 'printClass'])->name('digital-reports.class-print');
+        Route::post('/digital-reports/student/{student}', [StudentReportController::class, 'update'])->name('digital-reports.update');
+    });
+
+    // Pengaturan global rapor (tahun ajaran, judul template, nama kepala sekolah dst.) --
+    // khusus super_admin & admin. settings()/updateSettings() tidak punya pengecekan
+    // role sendiri di controller, murni mengandalkan middleware ini.
+    Route::middleware(['role:super_admin,admin'])->group(function () {
         Route::get('/digital-reports/settings', [StudentReportController::class, 'settings'])->name('digital-reports.settings');
         Route::post('/digital-reports/settings', [StudentReportController::class, 'updateSettings'])->name('digital-reports.settings.update');
-        Route::post('/digital-reports/student/{student}', [StudentReportController::class, 'update'])->name('digital-reports.update');
     });
 
     /*

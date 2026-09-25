@@ -125,7 +125,7 @@
                             <input type="hidden" name="tab" value="capaian">
                             <div class="w-44">
                                 <label for="month" class="block text-xs font-semibold text-gray-500 uppercase mb-1">Bulan</label>
-                                <select id="month" name="month" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm">
+                                <select id="month" name="month" onchange="this.form.submit()" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm">
                                     @foreach ($months as $num => $name)
                                         <option value="{{ $num }}" @selected($month == $num)>{{ $name }}</option>
                                     @endforeach
@@ -133,7 +133,7 @@
                             </div>
                             <div class="w-32">
                                 <label for="year" class="block text-xs font-semibold text-gray-500 uppercase mb-1">Tahun</label>
-                                <select id="year" name="year" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm">
+                                <select id="year" name="year" onchange="this.form.submit()" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm">
                                     @for ($y = now()->year - 2; $y <= now()->year + 2; $y++)
                                         <option value="{{ $y }}" @selected($year == $y)>{{ $y }}</option>
                                     @endfor
@@ -141,7 +141,7 @@
                             </div>
                             <div class="w-36">
                                 <label for="week" class="block text-xs font-semibold text-gray-500 uppercase mb-1">Pekan</label>
-                                <select id="week" name="week" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm">
+                                <select id="week" name="week" onchange="this.form.submit()" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm">
                                     @for ($w = 1; $w <= 5; $w++)
                                         <option value="{{ $w }}" @selected($week == $w)>Pekan {{ $w }}</option>
                                     @endfor

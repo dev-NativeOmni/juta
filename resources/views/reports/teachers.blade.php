@@ -45,66 +45,66 @@
         }
     </style>
 
-    <div class="py-8">
-        <div class="max-w-7xl mx-auto sm:px-6 lg:px-8 space-y-6">
+    <div class="py-4 sm:py-6 lg:py-8">
+        <div class="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 space-y-4 sm:space-y-6">
 
             <!-- Filter Form (no-print) -->
-            <div class="no-print bg-white dark:bg-zinc-900 rounded-2xl border border-gray-200 dark:border-zinc-800 p-5 shadow-sm transition-colors duration-200">
-                <form method="GET" action="{{ route('reports.teachers') }}" class="flex flex-wrap items-end gap-4">
-                    <div class="flex-1 min-w-[200px]">
-                        <label for="month" class="block text-xs font-semibold text-gray-700 dark:text-zinc-300 uppercase tracking-wider mb-2">Bulan</label>
-                        <select name="month" id="month" class="block w-full rounded-xl border-gray-300 dark:border-zinc-700 dark:bg-[#09090b]/40 dark:text-white shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm">
+            <div class="no-print bg-white dark:bg-zinc-900 rounded-xl sm:rounded-2xl border border-zinc-200/80 dark:border-zinc-800 p-3.5 sm:p-5 shadow-xs transition-colors duration-200">
+                <form method="GET" action="{{ route('reports.teachers') }}" class="flex flex-wrap items-end gap-3 sm:gap-4">
+                    <div class="flex-1 min-w-[160px] sm:min-w-[200px]">
+                        <label for="month" class="block text-xs font-semibold text-gray-700 dark:text-zinc-300 uppercase tracking-wider mb-1.5 sm:mb-2">Bulan</label>
+                        <select name="month" id="month" onchange="this.form.submit()" class="block w-full rounded-xl border-gray-300 dark:border-zinc-700 dark:bg-[#09090b]/40 dark:text-white shadow-xs focus:border-indigo-500 focus:ring-indigo-500 text-xs sm:text-sm">
                             @foreach ($months as $key => $name)
                                 <option value="{{ $key }}" {{ $selectedMonth == $key ? 'selected' : '' }}>{{ $name }}</option>
                             @endforeach
                         </select>
                     </div>
 
-                    <div class="flex-1 min-w-[150px]">
-                        <label for="year" class="block text-xs font-semibold text-gray-700 dark:text-zinc-300 uppercase tracking-wider mb-2">Tahun</label>
-                        <select name="year" id="year" class="block w-full rounded-xl border-gray-300 dark:border-zinc-700 dark:bg-[#09090b]/40 dark:text-white shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm">
+                    <div class="flex-1 min-w-[120px] sm:min-w-[150px]">
+                        <label for="year" class="block text-xs font-semibold text-gray-700 dark:text-zinc-300 uppercase tracking-wider mb-1.5 sm:mb-2">Tahun</label>
+                        <select name="year" id="year" onchange="this.form.submit()" class="block w-full rounded-xl border-gray-300 dark:border-zinc-700 dark:bg-[#09090b]/40 dark:text-white shadow-xs focus:border-indigo-500 focus:ring-indigo-500 text-xs sm:text-sm">
                             @foreach ($years as $yr)
                                 <option value="{{ $yr }}" {{ $selectedYear == $yr ? 'selected' : '' }}>{{ $yr }}</option>
                             @endforeach
                         </select>
                     </div>
 
-                    <button type="submit" class="inline-flex items-center justify-center px-4 py-2.5 border border-transparent rounded-xl text-sm font-semibold text-white bg-indigo-600 hover:bg-indigo-700 shadow-sm transition-colors min-h-[42px]">
+                    <button type="submit" class="inline-flex items-center justify-center px-4 py-2 sm:py-2.5 border border-transparent rounded-xl text-xs sm:text-sm font-semibold text-white bg-indigo-600 hover:bg-indigo-700 shadow-xs transition-colors min-h-[38px] sm:min-h-[42px]">
                         Terapkan Filter
                     </button>
                 </form>
             </div>
 
             <!-- Formula / Metric Information Box -->
-            <div class="bg-gradient-to-r from-indigo-50 to-purple-50 dark:from-indigo-950/20 dark:to-purple-950/20 border border-indigo-100 dark:border-indigo-900/40 rounded-2xl p-6 shadow-sm print-card">
-                <h3 class="text-sm font-bold text-indigo-900 dark:text-indigo-300 flex items-center gap-1.5">
-                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-5 h-5 text-indigo-700 dark:text-indigo-400">
+            <div class="bg-gradient-to-r from-indigo-50 to-purple-50 dark:from-indigo-950/20 dark:to-purple-950/20 border border-indigo-100 dark:border-indigo-900/40 rounded-xl sm:rounded-2xl p-4 sm:p-6 shadow-xs print-card">
+                <h3 class="text-xs sm:text-sm font-bold text-indigo-900 dark:text-indigo-300 flex items-center gap-1.5">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-4 h-4 sm:w-5 sm:h-5 text-indigo-700 dark:text-indigo-400">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M9.879 7.519c1.171-1.025 3.071-1.025 4.242 0 1.172 1.025 1.172 2.687 0 3.712-.203.179-.43.326-.67.442-.745.361-1.45.999-1.45 1.827v.75M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9 5.25h.008v.008H12v-.008z" />
                     </svg>
                     Rumusan Penilaian Kinerja Guru Bulanan (Skala 100)
                 </h3>
-                <p class="mt-1.5 text-xs text-indigo-800 dark:text-indigo-400 leading-relaxed">
+                <p class="mt-1 sm:mt-1.5 text-[11px] sm:text-xs text-indigo-800 dark:text-indigo-400 leading-relaxed">
                     Penilaian kinerja dirumuskan menggunakan pembobotan gabungan dari keaktifan, pencapaian target hafalan, dan kualitas setoran murid:
                 </p>
-                <div class="mt-4 grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
-                    <div class="bg-white/80 dark:bg-zinc-900/60 backdrop-blur-sm rounded-xl p-3 border border-indigo-100/50 dark:border-zinc-800">
-                        <span class="font-bold text-indigo-950 dark:text-zinc-200 block mb-1">1. Keaktifan Input (Bobot 40%)</span>
+                <div class="mt-3 sm:mt-4 grid grid-cols-1 sm:grid-cols-3 gap-2.5 sm:gap-4 text-xs">
+                    <div class="bg-white/80 dark:bg-zinc-900/60 backdrop-blur-sm rounded-xl p-2.5 sm:p-3 border border-indigo-100/50 dark:border-zinc-800">
+                        <span class="font-bold text-indigo-950 dark:text-zinc-200 block mb-0.5 sm:mb-1">1. Keaktifan Input (Bobot 40%)</span>
                         Kekerapan input setoran & murajaah. Target minimum <span class="font-semibold text-indigo-700 dark:text-indigo-400">30 input/bulan</span> untuk poin maksimal (40).
                     </div>
-                    <div class="bg-white/80 dark:bg-zinc-900/60 backdrop-blur-sm rounded-xl p-3 border border-indigo-100/50 dark:border-zinc-800">
-                        <span class="font-bold text-indigo-950 dark:text-zinc-200 block mb-1">2. Ketercapaian Target (Bobot 40%)</span>
+                    <div class="bg-white/80 dark:bg-zinc-900/60 backdrop-blur-sm rounded-xl p-2.5 sm:p-3 border border-indigo-100/50 dark:border-zinc-800">
+                        <span class="font-bold text-indigo-950 dark:text-zinc-200 block mb-0.5 sm:mb-1">2. Ketercapaian Target (Bobot 40%)</span>
                         Persentase target hafalan murid bimbingan yang selesai (`completed`) dibagi total target pada bulan tersebut (maksimal 40 poin).
                     </div>
-                    <div class="bg-white/80 dark:bg-zinc-900/60 backdrop-blur-sm rounded-xl p-3 border border-indigo-100/50 dark:border-zinc-800">
-                        <span class="font-bold text-indigo-950 dark:text-zinc-200 block mb-1">3. Kualitas Hafalan Murid (Bobot 20%)</span>
+                    <div class="bg-white/80 dark:bg-zinc-900/60 backdrop-blur-sm rounded-xl p-2.5 sm:p-3 border border-indigo-100/50 dark:border-zinc-800">
+                        <span class="font-bold text-indigo-950 dark:text-zinc-200 block mb-0.5 sm:mb-1">3. Kualitas Hafalan Murid (Bobot 20%)</span>
                         Rerata nilai kelulusan setoran dan murajaah murid dalam skala 100 (maksimal 20 poin).
                     </div>
                 </div>
             </div>
 
             <!-- Performance Table Card -->
-            <div class="bg-white dark:bg-zinc-900 rounded-2xl border border-gray-200 dark:border-zinc-800 shadow-sm overflow-hidden print-card transition-colors duration-200">
-                <div class="border-b border-gray-200 dark:border-zinc-800 px-6 py-4 bg-gray-50/50 dark:bg-[#09090b]/40 flex justify-between items-center">
+            <div class="bg-white dark:bg-zinc-900 rounded-xl sm:rounded-2xl border border-zinc-200/80 dark:border-zinc-800 shadow-xs overflow-hidden print-card transition-colors duration-200">
+                <div class="border-b border-zinc-100 dark:border-zinc-800 px-4 py-3 sm:px-6 sm:py-4 bg-gray-50/50 dark:bg-[#09090b]/40 flex justify-between items-center">
                     <div>
                         <h3 class="text-lg font-bold text-gray-900 dark:text-white">
                             Peringkat Kinerja Guru
@@ -227,7 +227,7 @@
             <!-- Print Footer Info -->
             <div class="hidden print:block text-right text-xs text-gray-505 dark:text-zinc-500 mt-12">
                 <p>Dicetak pada: {{ date('d F Y H:i:s') }}</p>
-                <p>Oleh: {{ auth()->user()->name }} · IMS</p>
+                <p>Oleh: {{ auth()->user()->name }} · TAD</p>
             </div>
 
         </div>

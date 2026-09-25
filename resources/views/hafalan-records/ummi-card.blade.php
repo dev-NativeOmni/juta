@@ -60,8 +60,9 @@
             <p class="text-xs text-zinc-500">Gunakan pintasan Ctrl+P atau tombol di samping untuk mencetak kartu ini.</p>
         </div>
         <div class="flex items-center gap-3">
-            <button onclick="window.print()" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-sm font-semibold shadow-sm transition">
-                🖨️ Cetak Kartu
+            <button onclick="window.print()" class="inline-flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-sm font-semibold shadow-sm transition">
+                <x-heroicon-o-printer class="w-4 h-4" />
+                <span>Cetak Kartu</span>
             </button>
             <button onclick="window.close()" class="px-4 py-2 border border-zinc-300 text-zinc-700 rounded-lg text-sm font-semibold hover:bg-zinc-50 transition">
                 Tutup Halaman
@@ -117,7 +118,7 @@
                         <div class="flex items-center">
                             <span class="font-bold w-16">Tempat</span>
                             <span class="mr-1">:</span>
-                            <span class="border-b border-dotted border-gray-400 flex-1 font-semibold">IMS / Sekolah</span>
+                            <span class="border-b border-dotted border-gray-400 flex-1 font-semibold">TAD / Sekolah</span>
                         </div>
                     </div>
                 </div>
@@ -154,8 +155,8 @@
                             <tr>
                                 <td class="text-center font-semibold">{{ $record->tatap_muka }}</td>
                                 <td class="text-center">{{ $record->tanggal?->format('d/m/y') }}</td>
-                                <td>{{ $record->surah?->name_latin ?? '-' }}</td>
-                                <td class="text-center">{{ $record->hafalan_ayah ?? '-' }}</td>
+                                <td>{{ $record->surahs->map(fn ($s) => $s->surah?->name_latin ?? '-')->implode(', ') ?: '-' }}</td>
+                                <td class="text-center">{{ $record->surahs->pluck('hafalan_ayah')->filter()->implode(', ') ?: '-' }}</td>
                                 <td>{{ $record->ummi_jilid ?? '-' }}</td>
                                 <td class="text-center">{{ $record->ummi_halaman ?? '-' }}</td>
                                 <td>{{ $record->materi ?? '-' }}</td>

@@ -251,13 +251,16 @@
                             </div>
                             <div class="flex items-center gap-2 flex-wrap">
                                 <button type="button" onclick="downloadUmmiCard()" class="inline-flex items-center gap-1.5 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl shadow transition cursor-pointer">
-                                    📥 Unduh PNG
+                                    <x-heroicon-o-arrow-down-tray class="w-4 h-4" />
+                                    <span>Unduh PNG</span>
                                 </button>
                                 <button type="button" onclick="printUmmiCard('landscape')" class="inline-flex items-center gap-1.5 px-3.5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-xl shadow transition cursor-pointer">
-                                    🖨️ Cetak Landscape
+                                    <x-heroicon-o-printer class="w-4 h-4" />
+                                    <span>Cetak Landscape</span>
                                 </button>
                                 <button type="button" onclick="printUmmiCard('portrait')" class="inline-flex items-center gap-1.5 px-3.5 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-xl shadow transition cursor-pointer">
-                                    🖨️ Cetak Portrait
+                                    <x-heroicon-o-printer class="w-4 h-4" />
+                                    <span>Cetak Portrait</span>
                                 </button>
                             </div>
                         </div>
@@ -278,10 +281,12 @@
                                     </div>
                                     <div class="flex items-center gap-2">
                                         <button type="button" onclick="downloadChart('capaianChart', '{{ $titleCapaian }}')" class="inline-flex items-center gap-1 px-3 py-1.5 bg-teal-50 hover:bg-teal-100 dark:bg-zinc-800 text-teal-700 dark:text-teal-400 text-xs font-bold rounded-lg border border-teal-200 dark:border-zinc-700 transition cursor-pointer">
-                                            📥 Unduh PNG
+                                            <x-heroicon-o-arrow-down-tray class="w-3.5 h-3.5" />
+                                            <span>Unduh PNG</span>
                                         </button>
                                         <button type="button" onclick="printChart('capaianChart', '{{ $titleCapaian }}')" class="inline-flex items-center gap-1 px-3 py-1.5 bg-indigo-50 hover:bg-indigo-100 dark:bg-zinc-800 text-indigo-700 dark:text-indigo-400 text-xs font-bold rounded-lg border border-indigo-200 dark:border-zinc-700 transition cursor-pointer">
-                                            🖨️ Cetak F4
+                                            <x-heroicon-o-printer class="w-3.5 h-3.5" />
+                                            <span>Cetak F4</span>
                                         </button>
                                     </div>
                                 </div>
@@ -305,15 +310,17 @@
                                     </div>
                                     <div class="flex items-center gap-2">
                                         <button type="button" onclick="downloadChart('ketuntasanChart', '{{ $titleKetuntasan }}')" class="inline-flex items-center gap-1 px-3 py-1.5 bg-teal-50 hover:bg-teal-100 dark:bg-zinc-800 text-teal-700 dark:text-teal-400 text-xs font-bold rounded-lg border border-teal-200 dark:border-zinc-700 transition cursor-pointer">
-                                            📥 Unduh PNG
+                                            <x-heroicon-o-arrow-down-tray class="w-3.5 h-3.5" />
+                                            <span>Unduh PNG</span>
                                         </button>
                                         <button type="button" onclick="printChart('ketuntasanChart', '{{ $titleKetuntasan }}')" class="inline-flex items-center gap-1 px-3 py-1.5 bg-indigo-50 hover:bg-indigo-100 dark:bg-zinc-800 text-indigo-700 dark:text-indigo-400 text-xs font-bold rounded-lg border border-indigo-200 dark:border-zinc-700 transition cursor-pointer">
-                                            🖨️ Cetak F4
+                                            <x-heroicon-o-printer class="w-3.5 h-3.5" />
+                                            <span>Cetak F4</span>
                                         </button>
                                     </div>
                                 </div>
                                 <div class="relative w-full flex justify-center items-center" style="height: 380px;">
-                                    <div style="width: 280px; height: 280px;" class="relative flex items-center justify-center">
+                                    <div style="width: min(280px, 100%); aspect-ratio: 1 / 1;" class="relative flex items-center justify-center">
                                         <canvas id="ketuntasanChart"></canvas>
                                         <!-- Center Metric Summary Overlay inside Donut Hole -->
                                         <div class="absolute inset-0 flex flex-col items-center justify-center pointer-events-none text-center pb-4">
@@ -453,10 +460,20 @@
     </div>
 
     @if ($selectedClass)
-        <!-- ChartJS & DataLabels script & html-to-image -->
-        <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-        <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0"></script>
-        <script src="https://cdnjs.cloudflare.com/ajax/libs/html-to-image/1.11.11/html-to-image.min.js"></script>
+        @push('scripts')
+        <!-- Fallback CDN in case local bundle is delayed or blocked -->
+        <script>
+            if (typeof Chart === 'undefined') {
+                const s = document.createElement('script');
+                s.src = 'https://cdn.jsdelivr.net/npm/chart.js';
+                document.head.appendChild(s);
+            }
+            if (typeof htmlToImage === 'undefined') {
+                const s = document.createElement('script');
+                s.src = 'https://cdnjs.cloudflare.com/ajax/libs/html-to-image/1.11.11/html-to-image.min.js';
+                document.head.appendChild(s);
+            }
+        </script>
         <script>
             function downloadUmmiCard() {
                 const cardEl = document.getElementById('ummiGrade10ReportCard');
@@ -506,15 +523,14 @@
             }
 
             function printUmmiCard(orientation = 'landscape') {
-                const url = new URL(@json(route('reports.periodic.print', array_merge(request()->query(), ['class_room_id' => $selectedClassId]))));
-                url.searchParams.set('orientation', orientation);
-                const printUrl = url.toString();
+                const printUrl = "{!! route('reports.periodic.print', array_merge(request()->query(), ['class_room_id' => $selectedClassId])) !!}&orientation=" + orientation;
                 window.open(printUrl, '_blank');
             }
 
             // Global functions for download and print
             function downloadChart(chartId, title) {
                 const canvas = document.getElementById(chartId);
+                if (!canvas) return;
                 const tempCanvas = document.createElement('canvas');
 
                 const bannerHeight = 70;
@@ -535,7 +551,7 @@
 
                 tempCtx.fillStyle = '#6B7280';
                 tempCtx.font = '13px Arial, sans-serif';
-                tempCtx.fillText("IMS-SMAIA7", tempCanvas.width / 2, 54);
+                tempCtx.fillText("TAD-SMAIA7", tempCanvas.width / 2, 54);
 
                 // Divider line
                 tempCtx.strokeStyle = '#E5E7EB';
@@ -559,6 +575,7 @@
 
             function printChart(chartId, title) {
                 const canvas = document.getElementById(chartId);
+                if (!canvas) return;
                 
                 // Draw on a temp white canvas with 2x resolution
                 const tempCanvas = document.createElement('canvas');
@@ -624,9 +641,24 @@
                 win.document.close();
             }
 
-            document.addEventListener('DOMContentLoaded', function() {
-                // Register datalabels plugin
-                Chart.register(ChartDataLabels);
+            // Expose action handlers to window for inline onclick attributes
+            window.downloadUmmiCard = downloadUmmiCard;
+            window.printUmmiCard = printUmmiCard;
+            window.downloadChart = downloadChart;
+            window.printChart = printChart;
+
+            function initPeriodicCharts() {
+                if (typeof Chart === 'undefined') {
+                    setTimeout(initPeriodicCharts, 100);
+                    return;
+                }
+
+                // Register datalabels plugin if loaded
+                if (typeof ChartDataLabels !== 'undefined') {
+                    try {
+                        Chart.register(ChartDataLabels);
+                    } catch (e) {}
+                }
 
                 const isDark = document.documentElement.classList.contains('dark');
                 const gridColor = isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.05)';
@@ -634,219 +666,233 @@
 
                 // --- CAPAIAN vs TARGET CHART (MODERN SAAS GLASSMORPHIC STYLE) ---
                 const capaianCanvas = document.getElementById('capaianChart');
-                const capaianCtx = capaianCanvas.getContext('2d');
+                if (capaianCanvas) {
+                    const capaianCtx = capaianCanvas.getContext('2d');
 
-                // Create sleek vertical gradient for bars
-                const barGradient = capaianCtx.createLinearGradient(0, 0, 0, 350);
-                barGradient.addColorStop(0, '#0ea5e9'); // Sky / Cyan top
-                barGradient.addColorStop(1, '#0284c7'); // Ocean Blue bottom
+                    // Create sleek vertical gradient for bars
+                    const barGradient = capaianCtx.createLinearGradient(0, 0, 0, 350);
+                    barGradient.addColorStop(0, '#0ea5e9'); // Sky / Cyan top
+                    barGradient.addColorStop(1, '#0284c7'); // Ocean Blue bottom
 
-                // Subtle orange amber area glow for target curve
-                const targetAreaGradient = capaianCtx.createLinearGradient(0, 0, 0, 350);
-                targetAreaGradient.addColorStop(0, 'rgba(249, 115, 22, 0.2)');
-                targetAreaGradient.addColorStop(1, 'rgba(249, 115, 22, 0.0)');
+                    // Subtle orange amber area glow for target curve
+                    const targetAreaGradient = capaianCtx.createLinearGradient(0, 0, 0, 350);
+                    targetAreaGradient.addColorStop(0, 'rgba(249, 115, 22, 0.2)');
+                    targetAreaGradient.addColorStop(1, 'rgba(249, 115, 22, 0.0)');
 
-                new Chart(capaianCtx, {
-                    type: 'bar',
-                    data: {
-                        labels: @json($names),
-                        datasets: [
-                            {
-                                label: 'CAPAIAN BARIS',
-                                type: 'bar',
-                                data: @json($capaians),
-                                backgroundColor: barGradient,
-                                hoverBackgroundColor: '#38bdf8',
-                                borderWidth: 0,
-                                borderRadius: {
-                                    topLeft: 8,
-                                    topRight: 8,
-                                    bottomLeft: 0,
-                                    bottomRight: 0
+                    new Chart(capaianCtx, {
+                        type: 'bar',
+                        data: {
+                            labels: @json($names),
+                            datasets: [
+                                {
+                                    label: 'CAPAIAN BARIS',
+                                    type: 'bar',
+                                    data: @json($capaians),
+                                    backgroundColor: barGradient,
+                                    hoverBackgroundColor: '#38bdf8',
+                                    borderWidth: 0,
+                                    borderRadius: {
+                                        topLeft: 8,
+                                        topRight: 8,
+                                        bottomLeft: 0,
+                                        bottomRight: 0
+                                    },
+                                    borderSkipped: 'bottom',
+                                    barPercentage: 0.65,
+                                    categoryPercentage: 0.85,
+                                    order: 2,
+                                    datalabels: {
+                                        anchor: 'end',
+                                        align: 'top',
+                                        offset: 2,
+                                        color: isDark ? '#38bdf8' : '#0284c7',
+                                        font: {
+                                            family: 'Outfit, Inter, sans-serif',
+                                            weight: 'bold',
+                                            size: 10
+                                        }
+                                    }
                                 },
-                                borderSkipped: 'bottom',
-                                barPercentage: 0.65,
-                                categoryPercentage: 0.85,
-                                order: 2,
-                                datalabels: {
-                                    anchor: 'end',
-                                    align: 'top',
-                                    offset: 2,
-                                    color: isDark ? '#38bdf8' : '#0284c7',
-                                    font: {
+                                {
+                                    label: 'TARGET BARIS',
+                                    type: 'line',
+                                    data: @json($targets),
+                                    borderColor: '#f97316', // Sunset Amber
+                                    borderWidth: 3,
+                                    tension: 0.38, // Smooth spline bezier curve
+                                    pointBackgroundColor: '#ffffff',
+                                    pointBorderColor: '#ea580c',
+                                    pointBorderWidth: 2.5,
+                                    pointRadius: 4.5,
+                                    pointHoverRadius: 7,
+                                    pointHoverBackgroundColor: '#ea580c',
+                                    pointHoverBorderColor: '#ffffff',
+                                    pointHoverBorderWidth: 2,
+                                    fill: true,
+                                    backgroundColor: targetAreaGradient,
+                                    order: 1,
+                                    datalabels: {
+                                        display: false
+                                    }
+                                }
+                            ]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            interaction: {
+                                mode: 'index',
+                                intersect: false
+                            },
+                            plugins: {
+                                legend: {
+                                    display: true,
+                                    position: 'top',
+                                    labels: {
+                                        usePointStyle: true,
+                                        pointStyle: 'circle',
+                                        boxWidth: 8,
+                                        padding: 20,
+                                        color: labelColor,
+                                        font: {
+                                            family: 'Inter, sans-serif',
+                                            weight: 'bold',
+                                            size: 11
+                                        }
+                                    }
+                                },
+                                tooltip: {
+                                    backgroundColor: isDark ? 'rgba(24, 24, 27, 0.95)' : 'rgba(255, 255, 255, 0.95)',
+                                    titleColor: isDark ? '#ffffff' : '#0f172a',
+                                    bodyColor: isDark ? '#cbd5e1' : '#334155',
+                                    borderColor: isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)',
+                                    borderWidth: 1,
+                                    padding: 12,
+                                    boxPadding: 6,
+                                    usePointStyle: true,
+                                    titleFont: {
                                         family: 'Outfit, Inter, sans-serif',
                                         weight: 'bold',
-                                        size: 10
+                                        size: 12
                                     }
                                 }
                             },
-                            {
-                                label: 'TARGET BARIS',
-                                type: 'line',
-                                data: @json($targets),
-                                borderColor: '#f97316', // Sunset Amber
-                                borderWidth: 3,
-                                tension: 0.38, // Smooth spline bezier curve
-                                pointBackgroundColor: '#ffffff',
-                                pointBorderColor: '#ea580c',
-                                pointBorderWidth: 2.5,
-                                pointRadius: 4.5,
-                                pointHoverRadius: 7,
-                                pointHoverBackgroundColor: '#ea580c',
-                                pointHoverBorderColor: '#ffffff',
-                                pointHoverBorderWidth: 2,
-                                fill: true,
-                                backgroundColor: targetAreaGradient,
-                                order: 1,
-                                datalabels: {
-                                    display: false
-                                }
-                            }
-                        ]
-                    },
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        interaction: {
-                            mode: 'index',
-                            intersect: false
-                        },
-                        plugins: {
-                            legend: {
-                                display: true,
-                                position: 'top',
-                                labels: {
-                                    usePointStyle: true,
-                                    pointStyle: 'circle',
-                                    boxWidth: 8,
-                                    padding: 20,
-                                    color: labelColor,
-                                    font: {
-                                        family: 'Inter, sans-serif',
-                                        weight: 'bold',
-                                        size: 11
-                                    }
-                                }
-                            },
-                            tooltip: {
-                                backgroundColor: isDark ? 'rgba(24, 24, 27, 0.95)' : 'rgba(255, 255, 255, 0.95)',
-                                titleColor: isDark ? '#ffffff' : '#0f172a',
-                                bodyColor: isDark ? '#cbd5e1' : '#334155',
-                                borderColor: isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)',
-                                borderWidth: 1,
-                                padding: 12,
-                                boxPadding: 6,
-                                usePointStyle: true,
-                                titleFont: {
-                                    family: 'Outfit, Inter, sans-serif',
-                                    weight: 'bold',
-                                    size: 12
-                                }
-                            }
-                        },
-                        scales: {
-                            y: {
-                                grid: {
-                                    color: gridColor,
-                                    borderDash: [4, 4]
-                                },
-                                ticks: {
-                                    color: labelColor,
-                                    stepSize: 10,
-                                    font: {
-                                        family: 'Inter, sans-serif',
-                                        size: 10
-                                    }
-                                },
-                                beginAtZero: true
-                            },
-                            x: {
-                                grid: {
-                                    display: false
-                                },
-                                ticks: {
-                                    color: labelColor,
-                                    font: {
-                                        family: 'Inter, sans-serif',
-                                        size: 9,
-                                        weight: '600'
+                            scales: {
+                                y: {
+                                    grid: {
+                                        color: gridColor,
+                                        borderDash: [4, 4]
                                     },
-                                    minRotation: 90,
-                                    maxRotation: 90
+                                    ticks: {
+                                        color: labelColor,
+                                        stepSize: 10,
+                                        font: {
+                                            family: 'Inter, sans-serif',
+                                            size: 10
+                                        }
+                                    },
+                                    beginAtZero: true
+                                },
+                                x: {
+                                    grid: {
+                                        display: false
+                                    },
+                                    ticks: {
+                                        color: labelColor,
+                                        font: {
+                                            family: 'Inter, sans-serif',
+                                            size: 9,
+                                            weight: '600'
+                                        },
+                                        minRotation: 90,
+                                        maxRotation: 90
+                                    }
                                 }
                             }
                         }
-                    }
-                });
+                    });
+                }
 
                 // --- KETUNTASAN MODERN DONUT CHART ---
-                const ketuntasanCtx = document.getElementById('ketuntasanChart').getContext('2d');
-                new Chart(ketuntasanCtx, {
-                    type: 'doughnut',
-                    data: {
-                        labels: ['TUNTAS', 'BELUM TUNTAS'],
-                        datasets: [{
-                            data: [{{ $tuntasCount }}, {{ $tidakTuntasCount }}],
-                            backgroundColor: [
-                                '#0d9488', // Emerald Teal
-                                '#f43f5e'  // Coral Rose
-                            ],
-                            hoverBackgroundColor: [
-                                '#14b8a6',
-                                '#fb7185'
-                            ],
-                            borderWidth: 4,
-                            borderColor: isDark ? '#18181b' : '#ffffff',
-                            borderRadius: 6,
-                            spacing: 2
-                        }]
-                    },
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        cutout: '74%', // Clean donut hole for central metric badge
-                        plugins: {
-                            legend: {
-                                display: true,
-                                position: 'bottom',
-                                labels: {
-                                    usePointStyle: true,
-                                    pointStyle: 'circle',
-                                    boxWidth: 8,
-                                    padding: 16,
-                                    color: labelColor,
-                                    font: {
-                                        family: 'Inter, sans-serif',
-                                        weight: '600',
-                                        size: 11
+                const ketuntasanCanvas = document.getElementById('ketuntasanChart');
+                if (ketuntasanCanvas) {
+                    const ketuntasanCtx = ketuntasanCanvas.getContext('2d');
+                    new Chart(ketuntasanCtx, {
+                        type: 'doughnut',
+                        data: {
+                            labels: ['TUNTAS', 'BELUM TUNTAS'],
+                            datasets: [{
+                                data: [{{ $tuntasCount }}, {{ $tidakTuntasCount }}],
+                                backgroundColor: [
+                                    '#0d9488', // Emerald Teal
+                                    '#f43f5e'  // Coral Rose
+                                ],
+                                hoverBackgroundColor: [
+                                    '#14b8a6',
+                                    '#fb7185'
+                                ],
+                                borderWidth: 4,
+                                borderColor: isDark ? '#18181b' : '#ffffff',
+                                borderRadius: 6,
+                                spacing: 2
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            cutout: '74%', // Clean donut hole for central metric badge
+                            plugins: {
+                                legend: {
+                                    display: true,
+                                    position: 'bottom',
+                                    labels: {
+                                        usePointStyle: true,
+                                        pointStyle: 'circle',
+                                        boxWidth: 8,
+                                        padding: 16,
+                                        color: labelColor,
+                                        font: {
+                                            family: 'Inter, sans-serif',
+                                            weight: '600',
+                                            size: 11
+                                        }
                                     }
-                                }
-                            },
-                            datalabels: {
-                                display: false
-                            },
-                            tooltip: {
-                                backgroundColor: isDark ? 'rgba(24, 24, 27, 0.95)' : 'rgba(255, 255, 255, 0.95)',
-                                titleColor: isDark ? '#ffffff' : '#0f172a',
-                                bodyColor: isDark ? '#cbd5e1' : '#334155',
-                                borderColor: isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)',
-                                borderWidth: 1,
-                                padding: 10,
-                                boxPadding: 4,
-                                usePointStyle: true,
-                                callbacks: {
-                                    label: function(context) {
-                                        const total = {{ $tuntasCount + $tidakTuntasCount }};
-                                        const val = context.raw || 0;
-                                        const pct = total > 0 ? ((val / total) * 100).toFixed(1) : 0;
-                                        return ` ${context.label}: ${val} Murid (${pct}%)`;
+                                },
+                                datalabels: {
+                                    display: false
+                                },
+                                tooltip: {
+                                    backgroundColor: isDark ? 'rgba(24, 24, 27, 0.95)' : 'rgba(255, 255, 255, 0.95)',
+                                    titleColor: isDark ? '#ffffff' : '#0f172a',
+                                    bodyColor: isDark ? '#cbd5e1' : '#334155',
+                                    borderColor: isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)',
+                                    borderWidth: 1,
+                                    padding: 10,
+                                    boxPadding: 4,
+                                    usePointStyle: true,
+                                    callbacks: {
+                                        label: function(context) {
+                                            const total = {{ $tuntasCount + $tidakTuntasCount }};
+                                            const val = context.raw || 0;
+                                            const pct = total > 0 ? ((val / total) * 100).toFixed(1) : 0;
+                                            return ` ${context.label}: ${val} Murid (${pct}%)`;
+                                        }
                                     }
                                 }
                             }
                         }
-                    }
-                });
-            });
+                    });
+                }
+            }
+
+            // Safe DOM Ready execution
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', initPeriodicCharts);
+            } else {
+                initPeriodicCharts();
+            }
         </script>
+        @endpush
     @endif
 </x-app-layout>
+

@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\ClassRoom;
 use App\Models\HafalanRecord;
+use App\Models\HafalanRecordSurah;
 use App\Models\HafalanTarget;
 use App\Models\MurajaahRecord;
 use App\Models\Student;
@@ -224,13 +225,17 @@ class ProgressController extends Controller
 
         $timelineRows = $this->buildTimelineRows($student);
 
-        $hafalanRecords = HafalanRecord::query()
-            ->with(['surah', 'teacher.user'])
-            ->where('student_id', $student->id)
-            ->latest('submitted_at')
-            ->latest()
+        $hafalanRecords = HafalanRecordSurah::query()
+            ->select('hafalan_record_surahs.*')
+            ->join('hafalan_records', 'hafalan_records.id', '=', 'hafalan_record_surahs.hafalan_record_id')
+            ->whereNull('hafalan_records.deleted_at')
+            ->with(['surah', 'hafalanRecord.teacher.user'])
+            ->where('hafalan_records.student_id', $student->id)
+            ->orderByDesc('hafalan_records.submitted_at')
+            ->orderByDesc('hafalan_record_surahs.id')
             ->paginate(20, ['*'], 'hafalan_page')
             ->withQueryString();
+        $hafalanRecords->getCollection()->transform(fn (HafalanRecordSurah $r) => $r->applyHeaderOverlay());
 
         $murajaahRecords = MurajaahRecord::query()
             ->with(['surah', 'teacher.user'])
@@ -255,11 +260,13 @@ class ProgressController extends Controller
             $months[] = Carbon::now()->subMonths($i)->format('Y-m');
         }
 
-        $allPassedRecords = HafalanRecord::query()
-            ->with('surah')
-            ->where('student_id', $student->id)
-            ->where('status', 'passed')
-            ->get();
+        $allPassedRecords = HafalanRecord::flattenSurahs(
+            HafalanRecord::query()
+                ->with(['surahs' => fn ($q) => $q->where('status', 'passed')->with('surah')])
+                ->where('student_id', $student->id)
+                ->whereHas('surahs', fn ($q) => $q->where('status', 'passed'))
+                ->get()
+        );
 
         $monthlyData = [];
         foreach ($months as $m) {
@@ -341,11 +348,10 @@ class ProgressController extends Controller
 
     private function buildSurahProgressRows(Student $student): Collection
     {
-        $records = HafalanRecord::query()
+        $records = HafalanRecordSurah::query()
             ->with('surah')
-            ->where('student_id', $student->id)
+            ->whereHas('hafalanRecord', fn ($q) => $q->where('student_id', $student->id))
             ->where('status', 'passed')
-            ->whereNotNull('surah_id')
             ->whereNotNull('ayah_start')
             ->whereNotNull('ayah_end')
             ->get();
@@ -378,7 +384,7 @@ class ProgressController extends Controller
                 $totalAyah = max(1, (int) $surah->total_ayah);
 
                 $intervals = $surahRecords
-                    ->map(function (HafalanRecord $record) use ($totalAyah) {
+                    ->map(function (HafalanRecordSurah $record) use ($totalAyah) {
                         $start = max(1, (int) $record->ayah_start);
                         $end = min($totalAyah, (int) $record->ayah_end);
 
@@ -410,14 +416,16 @@ class ProgressController extends Controller
 
     private function buildTimelineRows(Student $student): Collection
     {
-        $hafalanRows = HafalanRecord::query()
-            ->with(['surah', 'teacher.user'])
-            ->where('student_id', $student->id)
-            ->latest('submitted_at')
-            ->latest()
-            ->limit(20)
-            ->get()
-            ->map(function (HafalanRecord $record) {
+        $hafalanRows = HafalanRecord::flattenSurahs(
+            HafalanRecord::query()
+                ->with(['surahs.surah', 'teacher.user'])
+                ->where('student_id', $student->id)
+                ->latest('submitted_at')
+                ->latest()
+                ->limit(20)
+                ->get()
+        )
+            ->map(function (HafalanRecordSurah $record) {
                 $date = $record->submitted_at
                     ? Carbon::parse($record->submitted_at)
                     : $record->created_at;
@@ -479,7 +487,7 @@ class ProgressController extends Controller
                     'type' => 'target',
                     'label' => 'Target',
                     'title' => $target->surah?->name_latin ?? '-',
-                    'range' => $target->ayah_start.' - '.$target->ayah_end,
+                    'range' => $target->ayah_range,
                     'status' => $target->status,
                     'score' => null,
                     'teacher' => $target->teacher?->user?->name,

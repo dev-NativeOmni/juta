@@ -6,8 +6,11 @@ use App\Models\AdabMentorAssessment;
 use App\Models\AdabRecord;
 use App\Models\Attendance;
 use App\Models\Badge;
+use App\Models\CalendarMonthLock;
 use App\Models\ClassRoom;
+use App\Models\ClassWeekSchedule;
 use App\Models\HafalanRecord;
+use App\Models\HafalanRecordSurah;
 use App\Models\HafalanTarget;
 use App\Models\MurajaahRecord;
 use App\Models\ParentProfile;
@@ -19,6 +22,7 @@ use App\Models\StudentReport;
 use App\Models\TahfizhExam;
 use App\Models\TeacherProfile;
 use App\Models\User;
+use App\Observers\HafalanAutoTargetObserver;
 use App\Observers\HafalanRecordObserver;
 use App\Observers\ModelAuditObserver;
 use App\Policies\HafalanRecordPolicy;
@@ -26,6 +30,7 @@ use App\Policies\HafalanTargetPolicy;
 use App\Policies\MurajaahRecordPolicy;
 use App\Policies\StudentPolicy;
 use App\Policies\TahfizhExamPolicy;
+use App\Services\SchoolCalendar;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
@@ -38,7 +43,7 @@ class AppServiceProvider extends ServiceProvider
 {
     public function register(): void
     {
-        //
+        $this->app->scoped(SchoolCalendar::class);
     }
 
     public function boot(): void
@@ -81,6 +86,12 @@ class AppServiceProvider extends ServiceProvider
         AdabMentorAssessment::observe(ModelAuditObserver::class);
         Badge::observe(ModelAuditObserver::class);
         Setting::observe(ModelAuditObserver::class);
+        CalendarMonthLock::observe(ModelAuditObserver::class);
+        ClassWeekSchedule::observe(ModelAuditObserver::class);
+
+        // Target hafalan otomatis mengikuti setoran (lihat AutoHafalanTargetService).
+        HafalanRecord::observe(HafalanAutoTargetObserver::class);
+        HafalanRecordSurah::observe(HafalanAutoTargetObserver::class);
 
         /*
         |--------------------------------------------------------------------------

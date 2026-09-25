@@ -7,9 +7,11 @@ use Illuminate\Console\Command;
 
 class GenerateSystemNotificationsCommand extends Command
 {
-    protected $signature = 'ims:generate-system-notifications {--dry-run : Hitung potensi notifikasi tanpa menyimpan data}';
+    protected $signature = 'tad:generate-system-notifications {--dry-run : Hitung potensi notifikasi tanpa menyimpan data}';
 
-    protected $description = 'Generate notifikasi internal IMS berdasarkan target, hafalan, dan murajaah santri.';
+    protected $aliases = ['ims:generate-system-notifications'];
+
+    protected $description = 'Generate notifikasi internal TAD berdasarkan target, hafalan, dan murajaah santri.';
 
     public function handle(StudentAlertNotificationService $service): int
     {

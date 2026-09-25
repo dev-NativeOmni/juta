@@ -77,8 +77,7 @@ class HafalanTargetTest extends TestCase
         $response = $this->actingAs($this->admin)->post(route('hafalan-targets.store'), [
             'student_id' => $this->student->id,
             'surah_id' => $this->surah->id,
-            'ayah_start' => 1,
-            'ayah_end' => 7,
+            'ayah' => 7,
             'target_date' => now()->addDays(7)->toDateString(),
             'notes' => 'Target test Al-Fatihah.',
         ]);
@@ -89,8 +88,7 @@ class HafalanTargetTest extends TestCase
         $this->assertDatabaseHas('hafalan_targets', [
             'student_id' => $this->student->id,
             'surah_id' => $this->surah->id,
-            'ayah_start' => 1,
-            'ayah_end' => 7,
+            'ayah' => 7,
         ]);
     }
 
@@ -100,8 +98,7 @@ class HafalanTargetTest extends TestCase
         $response = $this->actingAs($this->teacherUser)->post(route('hafalan-targets.store'), [
             'student_id' => $this->student->id,
             'surah_id' => $this->surah->id,
-            'ayah_start' => 1,
-            'ayah_end' => 3,
+            'ayah' => 3,
             'target_date' => now()->addDays(3)->toDateString(),
         ]);
 
@@ -122,8 +119,7 @@ class HafalanTargetTest extends TestCase
         $response = $this->actingAs($this->admin)->post(route('hafalan-targets.store'), [
             'student_id' => $this->student->id,
             'surah_id' => $this->surah->id,
-            'ayah_start' => 1,
-            'ayah_end' => 7,
+            'ayah' => 7,
             // target_date tidak ada
         ]);
 
@@ -131,17 +127,16 @@ class HafalanTargetTest extends TestCase
     }
 
     #[Test]
-    public function store_fails_when_ayah_end_exceeds_surah_limit(): void
+    public function store_fails_when_ayah_exceeds_surah_limit(): void
     {
         $response = $this->actingAs($this->admin)->post(route('hafalan-targets.store'), [
             'student_id' => $this->student->id,
             'surah_id' => $this->surah->id, // total_ayah = 7
-            'ayah_start' => 1,
-            'ayah_end' => 999, // melebihi batas
+            'ayah' => 999, // melebihi batas
             'target_date' => now()->addDays(7)->toDateString(),
         ]);
 
-        $response->assertSessionHasErrors('ayah_end');
+        $response->assertSessionHasErrors('ayah');
     }
 
     #[Test]
@@ -154,8 +149,7 @@ class HafalanTargetTest extends TestCase
         $response = $this->actingAs($this->teacherUser)->post(route('hafalan-targets.store'), [
             'student_id' => 9999, // tidak ada
             'surah_id' => $this->surah->id,
-            'ayah_start' => 1,
-            'ayah_end' => 3,
+            'ayah' => 3,
             'target_date' => now()->addDays(3)->toDateString(),
         ]);
 
@@ -173,8 +167,7 @@ class HafalanTargetTest extends TestCase
             'student_id' => $this->student->id,
             'teacher_id' => $this->teacherProfile->id,
             'surah_id' => $this->surah->id,
-            'ayah_start' => 1,
-            'ayah_end' => 7,
+            'ayah' => 7,
             'target_date' => now()->addDays(7),
             'status' => 'active',
         ]);
@@ -192,8 +185,7 @@ class HafalanTargetTest extends TestCase
             'student_id' => $this->student->id,
             'teacher_id' => $this->teacherProfile->id,
             'surah_id' => $this->surah->id,
-            'ayah_start' => 1,
-            'ayah_end' => 7,
+            'ayah' => 7,
             'target_date' => now()->addDays(7),
             'status' => 'active',
         ]);
@@ -201,8 +193,7 @@ class HafalanTargetTest extends TestCase
         $response = $this->actingAs($this->admin)->put(route('hafalan-targets.update', $target), [
             'student_id' => $this->student->id,
             'surah_id' => $this->surah->id,
-            'ayah_start' => 1,
-            'ayah_end' => 7,
+            'ayah' => 7,
             'target_date' => now()->addDays(14)->toDateString(),
             'status' => 'active',
             'notes' => 'Update target test.',
@@ -226,8 +217,7 @@ class HafalanTargetTest extends TestCase
             'student_id' => $this->student->id,
             'teacher_id' => $this->teacherProfile->id,
             'surah_id' => $this->surah->id,
-            'ayah_start' => 1,
-            'ayah_end' => 7,
+            'ayah' => 7,
             'target_date' => now()->addDays(7),
             'status' => 'active',
         ]);
@@ -249,8 +239,7 @@ class HafalanTargetTest extends TestCase
             'student_id' => $this->student->id,
             'teacher_id' => $this->teacherProfile->id,
             'surah_id' => $this->surah->id,
-            'ayah_start' => 1,
-            'ayah_end' => 7,
+            'ayah' => 7,
             'target_date' => now()->subDays(3), // sudah lewat
             'status' => 'active',
         ]);
@@ -276,8 +265,7 @@ class HafalanTargetTest extends TestCase
             'student_id' => $this->student->id,
             'teacher_id' => $this->teacherProfile->id,
             'surah_id' => $this->surah->id,
-            'ayah_start' => 1,
-            'ayah_end' => 7,
+            'ayah' => 7,
             'target_date' => now()->addDays(7),
             'status' => 'active',
         ]);
@@ -299,8 +287,7 @@ class HafalanTargetTest extends TestCase
             'student_id' => $this->student->id,
             'teacher_id' => $this->teacherProfile->id,
             'surah_id' => $this->surah->id,
-            'ayah_start' => 1,
-            'ayah_end' => 7,
+            'ayah' => 7,
             'target_date' => now()->subDays(5), // sudah lewat
             'status' => 'active',
         ]);
@@ -315,8 +302,7 @@ class HafalanTargetTest extends TestCase
             'student_id' => $this->student->id,
             'teacher_id' => $this->teacherProfile->id,
             'surah_id' => $this->surah->id,
-            'ayah_start' => 1,
-            'ayah_end' => 7,
+            'ayah' => 7,
             'target_date' => now()->subDays(2),
             'status' => 'completed',
         ]);
@@ -337,8 +323,7 @@ class HafalanTargetTest extends TestCase
                 [
                     'student_id' => $this->student->id,
                     'surah_id' => $this->surah->id,
-                    'ayah_start' => 1,
-                    'ayah_end' => 10,
+                    'ayah' => 10,
                     'target_date' => now()->addDays(5)->toDateString(),
                     'notes' => 'Catatan Reguler Test',
                 ],
@@ -351,8 +336,7 @@ class HafalanTargetTest extends TestCase
         $this->assertDatabaseHas('hafalan_targets', [
             'student_id' => $this->student->id,
             'surah_id' => $this->surah->id,
-            'ayah_start' => 1,
-            'ayah_end' => 10,
+            'ayah' => 10,
         ]);
     }
 
@@ -409,8 +393,7 @@ class HafalanTargetTest extends TestCase
             'student_id' => $this->student->id,
             'teacher_id' => $this->teacherProfile->id,
             'surah_id' => $this->surah->id,
-            'ayah_start' => 1,
-            'ayah_end' => 5,
+            'ayah' => 5,
             'target_date' => now()->addDays(3)->toDateString(),
             'status' => 'active',
         ]);
@@ -419,8 +402,7 @@ class HafalanTargetTest extends TestCase
             'student_id' => $this->student->id,
             'teacher_id' => $this->teacherProfile->id,
             'surah_id' => $this->surah->id,
-            'ayah_start' => 6,
-            'ayah_end' => 10,
+            'ayah' => 10,
             'target_date' => now()->addDays(7)->toDateString(),
             'status' => 'active',
         ]);
@@ -443,8 +425,7 @@ class HafalanTargetTest extends TestCase
             'student_id' => $this->student->id,
             'teacher_id' => $this->teacherProfile->id,
             'surah_id' => $this->surah->id,
-            'ayah_start' => 1,
-            'ayah_end' => 5,
+            'ayah' => 5,
             'target_date' => now()->addDays(3)->toDateString(),
             'status' => 'active',
         ]);
@@ -453,8 +434,7 @@ class HafalanTargetTest extends TestCase
             'student_id' => $this->student->id,
             'teacher_id' => $this->teacherProfile->id,
             'surah_id' => $this->surah->id,
-            'ayah_start' => 6,
-            'ayah_end' => 10,
+            'ayah' => 10,
             'target_date' => now()->addDays(7)->toDateString(),
             'status' => 'active',
         ]);

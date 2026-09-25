@@ -2,11 +2,12 @@
 
 namespace App\Models;
 
-use App\Http\Controllers\ReportController;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Collection;
 
 class HafalanRecord extends Model
 {
@@ -15,15 +16,8 @@ class HafalanRecord extends Model
     protected $fillable = [
         'student_id',
         'teacher_id',
-        'surah_id',
-        'ayah_start',
-        'ayah_end',
-        'submission_type',
-        'score',
-        'status',
         'notes',
         'submitted_at',
-        'baris',
     ];
 
     protected function casts(): array
@@ -31,33 +25,24 @@ class HafalanRecord extends Model
         return [
             'student_id' => 'integer',
             'teacher_id' => 'integer',
-            'surah_id' => 'integer',
-            'ayah_start' => 'integer',
-            'ayah_end' => 'integer',
-            'score' => 'decimal:2',
-            'baris' => 'decimal:2',
             'submitted_at' => 'date',
         ];
     }
 
     public function getLinesCountAttribute(): float
     {
-        if ($this->baris !== null) {
-            return (float) $this->baris;
-        }
-        if (! $this->surah_id || ! $this->surah) {
-            return 0.0;
-        }
-        try {
-            return ReportController::calculateLines(
-                $this->surah->number,
-                $this->ayah_start ?? 1,
-                $this->ayah_end ?? 1,
-                $this->surah->total_ayah
-            );
-        } catch (\Throwable) {
-            return 0.0;
-        }
+        return (float) $this->surahs->sum(fn (HafalanRecordSurah $surah) => $surah->lines_count);
+    }
+
+    public function getSurahsLabelAttribute(): string
+    {
+        return $this->surahs
+            ->map(function (HafalanRecordSurah $surah) {
+                $label = $surah->surah?->name_latin ?? '-';
+
+                return "{$label} ({$surah->ayah_start}-{$surah->ayah_end})";
+            })
+            ->implode(', ');
     }
 
     public function student(): BelongsTo
@@ -70,56 +55,29 @@ class HafalanRecord extends Model
         return $this->belongsTo(TeacherProfile::class, 'teacher_id');
     }
 
-    public function surah(): BelongsTo
+    public function surahs(): HasMany
     {
-        return $this->belongsTo(Surah::class);
+        return $this->hasMany(HafalanRecordSurah::class)->orderBy('sort_order')->orderBy('id');
     }
 
-    public function getAyahRangeAttribute(): string
+    /**
+     * Flattens a collection of header rows (with `surahs` eager-loaded) into one
+     * pseudo-row per surah entry, for call sites that historically treated
+     * "one hafalan_records row" as "one graded surah submission". Each returned
+     * HafalanRecordSurah carries the header's submitted_at/notes/teacher_id/
+     * student_id as overlay properties (so it can be filtered/sorted/displayed
+     * the same way the old flat rows were), plus the header itself and any of
+     * its already-loaded relations (teacher, student, ...) reattached, so code
+     * that still needs the full session context can reach it via ->hafalanRecord.
+     */
+    public static function flattenSurahs(Collection $headers): Collection
     {
-        return $this->ayah_start.' - '.$this->ayah_end;
-    }
+        return $headers->flatMap(function (self $header) {
+            return $header->surahs->map(function (HafalanRecordSurah $surah) use ($header) {
+                $surah->setRelation('hafalanRecord', $header);
 
-    public function getSubmissionTypeLabelAttribute(): string
-    {
-        return match ($this->submission_type) {
-            'new' => 'Baru',
-            'continuation' => 'Lanjutan',
-            'revision' => 'Perbaikan',
-            default => '-',
-        };
-    }
-
-    public function getStatusLabelAttribute(): string
-    {
-        return match ($this->status) {
-            'passed' => 'Lulus',
-            'repeat' => 'Ulang',
-            'needs_improvement' => 'Perlu Perbaikan',
-            default => '-',
-        };
-    }
-
-    public function getScoreLetterAttribute(): string
-    {
-        if ($this->score === null) {
-            return '-';
-        }
-
-        $val = (float) $this->score;
-        if ($val >= 90) {
-            return 'A';
-        }
-        if ($val >= 80) {
-            return 'B';
-        }
-        if ($val >= 70) {
-            return 'C';
-        }
-        if ($val >= 60) {
-            return 'D';
-        }
-
-        return 'E';
+                return $surah->applyHeaderOverlay();
+            });
+        })->values();
     }
 }

@@ -72,13 +72,11 @@ class SettingTest extends TestCase
 
         $logoFile = UploadedFile::fake()->create('custom_logo.png', 100, 'image/png');
         $bgFile = UploadedFile::fake()->create('custom_bg.jpg', 500, 'image/jpeg');
-        $landingBgFile = UploadedFile::fake()->create('custom_landing_bg.jpg', 600, 'image/jpeg');
 
         $response = $this->actingAs($superAdmin)->post('/settings', [
             'nama_instansi' => 'PP Al-Huda',
             'logo' => $logoFile,
             'login_bg' => $bgFile,
-            'landing_bg' => $landingBgFile,
         ]);
 
         $response->assertRedirect('/settings');
@@ -86,15 +84,12 @@ class SettingTest extends TestCase
 
         $storedLogo = Setting::get('logo');
         $storedBg = Setting::get('login_bg');
-        $storedLandingBg = Setting::get('landing_bg');
 
         $this->assertNotNull($storedLogo);
         $this->assertNotNull($storedBg);
-        $this->assertNotNull($storedLandingBg);
 
         Storage::disk('public')->assertExists($storedLogo);
         Storage::disk('public')->assertExists($storedBg);
-        Storage::disk('public')->assertExists($storedLandingBg);
     }
 
     public function test_super_admin_can_reset_logo_and_background(): void
@@ -103,14 +98,12 @@ class SettingTest extends TestCase
 
         Setting::set('logo', 'settings/old_logo.png');
         Setting::set('login_bg', 'settings/old_bg.jpg');
-        Setting::set('landing_bg', 'settings/old_landing_bg.jpg');
 
         $superAdmin = User::where('username', 'superadmin')->first();
 
         $response = $this->actingAs($superAdmin)->post('/settings', [
             'reset_logo' => '1',
             'reset_login_bg' => '1',
-            'reset_landing_bg' => '1',
         ]);
 
         $response->assertRedirect('/settings');
@@ -118,6 +111,5 @@ class SettingTest extends TestCase
 
         $this->assertNull(Setting::get('logo'));
         $this->assertNull(Setting::get('login_bg'));
-        $this->assertNull(Setting::get('landing_bg'));
     }
 }

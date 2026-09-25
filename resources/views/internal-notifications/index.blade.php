@@ -9,7 +9,7 @@ class SyncInternalNotifications extends Command
 {
     protected $signature = 'ims:sync-notifications';
 
-    protected $description = 'Sinkronkan notifikasi internal IMS untuk target terlambat, hafalan follow-up, dan murajaah follow-up.';
+    protected $description = 'Sinkronkan notifikasi internal TAD untuk target terlambat, hafalan follow-up, dan murajaah follow-up.';
 
     public function handle(InternalNotificationSyncService $service): int
     {

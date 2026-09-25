@@ -41,17 +41,19 @@ class QuickInputController extends Controller
             ->orderBy('number')
             ->get();
 
-        $latestHafalanRecords = HafalanRecord::query()
-            ->with([
-                'student.classRoom.program',
-                'teacher.user',
-                'surah',
-            ])
-            ->whereIn('student_id', $visibleStudentIds)
-            ->latest('submitted_at')
-            ->latest()
-            ->limit(5)
-            ->get();
+        $latestHafalanRecords = HafalanRecord::flattenSurahs(
+            HafalanRecord::query()
+                ->with([
+                    'student.classRoom.program',
+                    'teacher.user',
+                    'surahs.surah',
+                ])
+                ->whereIn('student_id', $visibleStudentIds)
+                ->latest('submitted_at')
+                ->latest()
+                ->limit(5)
+                ->get()
+        );
 
         $latestMurajaahRecords = MurajaahRecord::query()
             ->with([
@@ -69,7 +71,7 @@ class QuickInputController extends Controller
             ->with([
                 'student.classRoom.program',
                 'teacher.user',
-                'surah',
+                'surahs.surah',
             ])
             ->whereIn('student_id', $visibleStudentIds)
             ->latest('tanggal')
@@ -167,17 +169,20 @@ class QuickInputController extends Controller
         $surahEndId = (int) ($validated['surah_end_id'] ?? $surahStartId);
 
         if ($surahStartId === $surahEndId) {
-            HafalanRecord::query()->create([
+            $hafalanRecord = HafalanRecord::query()->create([
                 'student_id' => $student->id,
                 'teacher_id' => $teacherId,
+                'submitted_at' => $validated['submitted_at'],
+                'notes' => $validated['notes'] ?? null,
+            ]);
+
+            $hafalanRecord->surahs()->create([
                 'surah_id' => $validated['surah_id'],
                 'ayah_start' => $validated['ayah_start'],
                 'ayah_end' => $validated['ayah_end'],
                 'submission_type' => $validated['submission_type'],
                 'score' => $validated['score'] ?? null,
                 'status' => $validated['status'],
-                'submitted_at' => $validated['submitted_at'],
-                'notes' => $validated['notes'] ?? null,
             ]);
         } else {
             $surahStart = Surah::findOrFail($surahStartId);
@@ -188,30 +193,34 @@ class QuickInputController extends Controller
                 ->get();
 
             DB::transaction(function () use ($surahs, $surahStart, $surahEnd, $validated, $student, $teacherId) {
-                foreach ($surahs as $surah) {
-                    $recordData = [
-                        'student_id' => $student->id,
-                        'teacher_id' => $teacherId,
+                $hafalanRecord = HafalanRecord::query()->create([
+                    'student_id' => $student->id,
+                    'teacher_id' => $teacherId,
+                    'submitted_at' => $validated['submitted_at'],
+                    'notes' => $validated['notes'] ?? null,
+                ]);
+
+                foreach ($surahs as $sortOrder => $surah) {
+                    $lineData = [
                         'surah_id' => $surah->id,
                         'submission_type' => $validated['submission_type'],
                         'score' => $validated['score'] ?? null,
                         'status' => $validated['status'],
-                        'submitted_at' => $validated['submitted_at'],
-                        'notes' => $validated['notes'] ?? null,
+                        'sort_order' => $sortOrder,
                     ];
 
                     if ($surah->id === $surahStart->id) {
-                        $recordData['ayah_start'] = $validated['ayah_start'];
-                        $recordData['ayah_end'] = $surah->total_ayah;
+                        $lineData['ayah_start'] = $validated['ayah_start'];
+                        $lineData['ayah_end'] = $surah->total_ayah;
                     } elseif ($surah->id === $surahEnd->id) {
-                        $recordData['ayah_start'] = 1;
-                        $recordData['ayah_end'] = $validated['ayah_end'];
+                        $lineData['ayah_start'] = 1;
+                        $lineData['ayah_end'] = $validated['ayah_end'];
                     } else {
-                        $recordData['ayah_start'] = 1;
-                        $recordData['ayah_end'] = $surah->total_ayah;
+                        $lineData['ayah_start'] = 1;
+                        $lineData['ayah_end'] = $surah->total_ayah;
                     }
 
-                    HafalanRecord::query()->create($recordData);
+                    $hafalanRecord->surahs()->create($lineData);
                 }
             });
         }
@@ -482,42 +491,27 @@ class QuickInputController extends Controller
                 $individualScore = ! empty($studentScores[$student->id]) ? $studentScores[$student->id] : ($validated['nilai'] ?? null);
                 $individualNote = ! empty($studentNotes[$student->id]) ? $studentNotes[$student->id] : ($validated['keterangan'] ?? null);
 
-                if (empty($hafalans)) {
-                    UmmiRecord::query()->create([
-                        'student_id' => $student->id,
-                        'teacher_id' => $teacherId,
-                        'tatap_muka' => $validated['tatap_muka'],
-                        'tanggal' => $validated['tanggal'],
-                        'hafalan_surah_id' => null,
-                        'hafalan_ayah' => null,
-                        'baris' => null,
-                        'ummi_jilid' => $validated['ummi_jilid'] ?? null,
-                        'ummi_halaman' => $validated['ummi_halaman'] ?? null,
-                        'materi' => $validated['materi'] ?? null,
-                        'nilai' => $individualScore,
-                        'disimak_guru' => $validated['disimak_guru'],
-                        'disimak_ortu' => $validated['disimak_ortu'],
-                        'keterangan' => $individualNote,
+                $ummiRecord = UmmiRecord::query()->create([
+                    'student_id' => $student->id,
+                    'teacher_id' => $teacherId,
+                    'tatap_muka' => $validated['tatap_muka'],
+                    'tanggal' => $validated['tanggal'],
+                    'ummi_jilid' => $validated['ummi_jilid'] ?? null,
+                    'ummi_halaman' => $validated['ummi_halaman'] ?? null,
+                    'materi' => $validated['materi'] ?? null,
+                    'nilai' => $individualScore,
+                    'disimak_guru' => $validated['disimak_guru'],
+                    'disimak_ortu' => $validated['disimak_ortu'],
+                    'keterangan' => $individualNote,
+                ]);
+
+                foreach ($hafalans as $sortOrder => $hafalan) {
+                    $ummiRecord->surahs()->create([
+                        'surah_id' => $hafalan['surah_id'],
+                        'hafalan_ayah' => $hafalan['ayah'],
+                        'baris' => $hafalan['baris'],
+                        'sort_order' => $sortOrder,
                     ]);
-                } else {
-                    foreach ($hafalans as $hafalan) {
-                        UmmiRecord::query()->create([
-                            'student_id' => $student->id,
-                            'teacher_id' => $teacherId,
-                            'tatap_muka' => $validated['tatap_muka'],
-                            'tanggal' => $validated['tanggal'],
-                            'hafalan_surah_id' => $hafalan['surah_id'],
-                            'hafalan_ayah' => $hafalan['ayah'],
-                            'baris' => $hafalan['baris'],
-                            'ummi_jilid' => $validated['ummi_jilid'] ?? null,
-                            'ummi_halaman' => $validated['ummi_halaman'] ?? null,
-                            'materi' => $validated['materi'] ?? null,
-                            'nilai' => $individualScore,
-                            'disimak_guru' => $validated['disimak_guru'],
-                            'disimak_ortu' => $validated['disimak_ortu'],
-                            'keterangan' => $individualNote,
-                        ]);
-                    }
                 }
             }
         });

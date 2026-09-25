@@ -61,7 +61,7 @@
                     <div class="flex items-center justify-between mb-2">
                         <span class="text-[10px] sm:text-xs font-bold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">Prestasi / Reward</span>
                         <div class="w-8 h-8 rounded-xl bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 flex items-center justify-center text-sm shadow-xs">
-                            🏆
+                            <x-heroicon-o-trophy class="w-4 h-4" />
                         </div>
                     </div>
                     <p class="text-2xl sm:text-3xl font-black text-emerald-600 dark:text-emerald-400 tracking-tight">{{ $stats['rewards_count_month'] }}</p>
@@ -79,20 +79,20 @@
                 </h3>
                 <div class="grid grid-cols-3 gap-2.5 sm:gap-4">
                     <a href="{{ route('student-points.create') }}" class="p-3 sm:p-4 rounded-2xl glass-liquid-inner hover:border-rose-500/40 hover:shadow-md hover:-translate-y-0.5 transition-all text-center group flex flex-col items-center">
-                        <div class="w-10 h-10 rounded-xl bg-rose-500/15 text-rose-600 dark:text-rose-400 flex items-center justify-center mb-1.5 group-hover:scale-110 transition text-lg">
-                            ➕
+                        <div class="w-10 h-10 rounded-xl bg-rose-500/15 text-rose-600 dark:text-rose-400 flex items-center justify-center mb-1.5 group-hover:scale-110 transition">
+                            <x-heroicon-o-plus-circle class="w-5 h-5" />
                         </div>
                         <span class="text-xs font-bold text-zinc-800 dark:text-zinc-200">Catat Poin</span>
                     </a>
                     <a href="{{ route('student-points.index') }}" class="p-3 sm:p-4 rounded-2xl glass-liquid-inner hover:border-teal-500/40 hover:shadow-md hover:-translate-y-0.5 transition-all text-center group flex flex-col items-center">
-                        <div class="w-10 h-10 rounded-xl bg-teal-500/15 text-teal-600 dark:text-teal-400 flex items-center justify-center mb-1.5 group-hover:scale-110 transition text-lg">
-                            📋
+                        <div class="w-10 h-10 rounded-xl bg-teal-500/15 text-teal-600 dark:text-teal-400 flex items-center justify-center mb-1.5 group-hover:scale-110 transition">
+                            <x-heroicon-o-clipboard-document-list class="w-5 h-5" />
                         </div>
                         <span class="text-xs font-bold text-zinc-800 dark:text-zinc-200">Daftar Poin</span>
                     </a>
                     <a href="{{ route('student-points.chart') }}" class="p-3 sm:p-4 rounded-2xl glass-liquid-inner hover:border-amber-500/40 hover:shadow-md hover:-translate-y-0.5 transition-all text-center group flex flex-col items-center">
-                        <div class="w-10 h-10 rounded-xl bg-amber-500/15 text-amber-600 dark:text-amber-400 flex items-center justify-center mb-1.5 group-hover:scale-110 transition text-lg">
-                            📊
+                        <div class="w-10 h-10 rounded-xl bg-amber-500/15 text-amber-600 dark:text-amber-400 flex items-center justify-center mb-1.5 group-hover:scale-110 transition">
+                            <x-heroicon-o-chart-bar class="w-5 h-5" />
                         </div>
                         <span class="text-xs font-bold text-zinc-800 dark:text-zinc-200">Grafik</span>
                     </a>

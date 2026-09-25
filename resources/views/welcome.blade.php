@@ -1,28 +1,24 @@
 @php
-    $institutionLogo = null;
-    $institutionName = null;
-    $landingBg = null;
     try {
-        if (\Illuminate\Support\Facades\Schema::hasTable('settings')) {
-            $institutionLogo = \App\Models\Setting::get('logo');
-            $institutionName = \App\Models\Setting::get('nama_instansi');
-            $landingBg = \App\Models\Setting::get('landing_bg');
-        }
+        $logo = class_exists(\App\Models\Setting::class) && \Illuminate\Support\Facades\Schema::hasTable('settings') 
+            ? \App\Models\Setting::get('logo') 
+            : null;
+        $namaInstansi = class_exists(\App\Models\Setting::class) && \Illuminate\Support\Facades\Schema::hasTable('settings') 
+            ? \App\Models\Setting::get('nama_instansi') 
+            : null;
     } catch (\Throwable $e) {
-        // Safe fallback
+        $logo = null;
+        $namaInstansi = null;
     }
-    $effectiveLogo = $institutionLogo ? asset('storage/' . $institutionLogo) : asset('images/logo_alazhar7.png');
-    $effectiveName = $institutionName ?: 'Lembaga Pendidikan';
-    $effectiveBg = $landingBg ? asset('storage/' . $landingBg) : asset('images/school_sunset_bg.jpg');
 @endphp
 <!DOCTYPE html>
 <html lang="{{ str_replace('_', '-', app()->getLocale()) }}" class="scroll-smooth">
     <head>
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=5">
-        <title>{{ $effectiveName }} — Platform Pelacakan Hafalan & Murajaah Qur'an Modern</title>
-        <link rel="icon" type="image/png" href="{{ $effectiveLogo }}">
-        <link rel="apple-touch-icon" href="{{ $effectiveLogo }}">
+        <meta name="csrf-token" content="{{ csrf_token() }}">
+        <title>TAD Management System — Platform Pelacakan Hafalan & Murajaah Qur'an Modern</title>
+        @include('partials.app-icons')
 
         <!-- Theme Initialization Script (Default: Light Mode unless explicitly set to dark) -->
         <script>
@@ -33,10 +29,26 @@
             }
         </script>
 
+        <!-- Google Fonts: Outfit -->
+        <link rel="preconnect" href="https://fonts.googleapis.com">
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@500;600;700;800;900&display=swap" rel="stylesheet">
+
         <!-- Scripts -->
         @vite(['resources/css/app.css', 'resources/js/app.js'])
 
         <style>
+            .font-display {
+                font-family: 'Outfit', sans-serif;
+            }
+            /* Autofill compatibility: keep background clean & text sharp */
+            input:-webkit-autofill,
+            input:-webkit-autofill:hover, 
+            input:-webkit-autofill:focus {
+                -webkit-text-fill-color: #0f172a !important;
+                -webkit-box-shadow: 0 0 0px 1000px #f8fafc inset !important;
+                transition: background-color 5000s ease-in-out 0s;
+            }
             /* Bulletproof Monolith Layout & Mobile First Architecture */
             .monolith-shell {
                 display: grid;
@@ -155,53 +167,32 @@
     <body class="bg-[#f1f5f9] dark:bg-[#09090b] text-zinc-800 dark:text-zinc-100 font-sans antialiased selection:bg-orange-500 selection:text-white relative overflow-x-hidden min-h-screen transition-colors duration-300">
 
         <!-- Full-screen Preloader / Intro Logo Reveal -->
-        <div x-data="{ loading: true, logoVisible: false, progress: 0 }" 
-             x-init="setTimeout(() => logoVisible = true, 100); 
-                     let interval = setInterval(() => { progress = Math.min(100, progress + 5); if (progress >= 100) clearInterval(interval); }, 40);
-                     setTimeout(() => loading = false, 1800)"
+        <div x-data="{ loading: true, logoVisible: false }" 
+             x-init="setTimeout(() => logoVisible = true, 100); setTimeout(() => loading = false, 2000)"
              x-show="loading"
-             x-transition:leave="transition cubic-bezier(0.16, 1, 0.3, 1) duration-700"
+             x-transition:leave="transition ease-in-out duration-1000"
              x-transition:leave-start="opacity-100 scale-100"
-             x-transition:leave-end="opacity-0 scale-105 blur-sm pointer-events-none"
-             class="fixed inset-0 bg-[#070b10] z-[9999] flex flex-col items-center justify-center overflow-hidden select-none">
+             x-transition:leave-end="opacity-0 scale-105 pointer-events-none"
+             class="fixed inset-0 bg-[#09090b] z-[9999] flex flex-col items-center justify-center overflow-hidden">
             <!-- Glowing Grid background in preloader -->
-            <div class="absolute inset-0 bg-grid-pattern opacity-15 pointer-events-none"></div>
+            <div class="absolute inset-0 bg-grid-pattern opacity-10 pointer-events-none"></div>
             
-            <!-- Atmospheric Multi-Layer Glowing Ambient Lights -->
-            <div class="absolute w-[500px] h-[500px] bg-teal-500/15 rounded-full blur-[140px] pointer-events-none animate-pulse"></div>
-            <div class="absolute w-[380px] h-[380px] bg-amber-500/10 rounded-full blur-[100px] pointer-events-none"></div>
+            <!-- Outer Glowing Ambient Light -->
+            <div class="absolute w-[600px] h-[600px] bg-teal-500/10 rounded-full blur-[120px] animate-pulse"></div>
             
-            <!-- Centered Logo Container with Liquid Halo & Shimmer -->
-            <div class="relative z-10 flex flex-col items-center gap-6 sm:gap-7 px-4 max-w-md w-full">
-                <!-- Logo Direct (Tanpa Box Wrapper) -->
-                <div class="relative flex items-center justify-center">
-                    <!-- Subtle Glow Behind Logo -->
-                    <div :class="logoVisible ? 'scale-110 opacity-60' : 'scale-50 opacity-0'"
-                         class="absolute w-44 h-44 sm:w-52 sm:h-52 rounded-full bg-gradient-to-tr from-teal-500/20 via-emerald-400/15 to-amber-500/20 blur-2xl transition-all duration-1000 ease-out pointer-events-none"></div>
-
-                    <!-- Direct Logo Image -->
-                    <img :class="logoVisible ? 'scale-100 opacity-100' : 'scale-90 opacity-0'"
-                         src="{{ $effectiveLogo }}" 
-                         alt="{{ $effectiveName }}" 
-                         class="relative z-10 w-32 h-32 sm:w-40 sm:h-40 object-contain drop-shadow-[0_12px_28px_rgba(0,0,0,0.65)] transition-all duration-1000 cubic-bezier(0.16, 1, 0.3, 1)">
+            <!-- Large Centered Ring & Logo Container -->
+            <div class="relative z-10 flex flex-col items-center gap-8">
+                <!-- Glowing Ring -->
+                <div :class="logoVisible ? 'scale-100 opacity-100' : 'scale-75 opacity-0'"
+                     class="w-64 h-64 sm:w-80 sm:h-80 rounded-full border border-teal-500/35 flex items-center justify-center shadow-[0_0_80px_rgba(13,148,136,0.3)] transition-all duration-1000 ease-out p-0 overflow-hidden">
+                    <img src="{{ asset('images/logo_alazhar7.png') }}" alt="Logo SMA Islam Al Azhar 7" class="w-full h-full object-cover">
                 </div>
                 
-                <!-- Institution Name Reveal -->
-                <div :class="logoVisible ? 'translate-y-0 opacity-100' : 'translate-y-4 opacity-0'"
-                     class="transition-all duration-1000 delay-200 ease-out text-center space-y-1.5">
-                    <h2 class="font-black text-2xl sm:text-3xl tracking-wide text-white drop-shadow-md">
-                        {{ $effectiveName }}
-                    </h2>
-                    <p class="text-[11px] sm:text-xs font-semibold text-teal-400/90 tracking-widest uppercase">
-                        Integrated Management System
-                    </p>
-                </div>
-
-                <!-- Sleek Minimalist Loading Bar -->
-                <div class="w-48 sm:w-56 h-1 bg-white/10 rounded-full overflow-hidden relative mt-2">
-                    <div class="h-full bg-gradient-to-r from-teal-400 via-emerald-400 to-amber-400 rounded-full transition-all duration-75 ease-out shadow-[0_0_12px_rgba(45,212,191,0.8)]"
-                         :style="`width: ${progress}%`"></div>
-                </div>
+                <!-- Large Text Reveal -->
+                <span :class="logoVisible ? 'translate-y-0 opacity-100' : 'translate-y-4 opacity-0'"
+                      class="font-black text-3xl sm:text-5xl tracking-widest text-white uppercase transition-all duration-1000 delay-300 ease-out text-center">
+                    Al Azhar <span class="text-amber-500">7</span>
+                </span>
             </div>
         </div>
 
@@ -217,13 +208,11 @@
                     x-transition:leave-end="opacity-0 -translate-y-4"
                     class="fixed top-0 inset-x-0 z-50 bg-[#f1f5f9]/85 dark:bg-zinc-900/85 border-b border-white/60 dark:border-white/10 shadow-lg shadow-slate-900/5 py-2 sm:py-2.5 backdrop-blur-2xl transition-colors duration-300">
                 <div class="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 flex items-center justify-between gap-2">
-                    <!-- Brand Logo: Pure Institution Logo -->
-                    <a href="{{ url('/') }}" class="flex items-center gap-2 sm:gap-2.5 shrink-0 select-none group">
-                        <img src="{{ $effectiveLogo }}" alt="{{ $effectiveName }}" class="h-7 w-7 xs:h-8 xs:w-8 sm:h-9 sm:w-9 md:h-10 md:w-10 object-contain shrink-0 drop-shadow-sm transition-transform duration-200 group-hover:scale-105">
-                        <span class="font-bold text-xs sm:text-sm text-zinc-800 dark:text-white tracking-tight leading-snug hidden xs:inline-block whitespace-normal line-clamp-2 max-w-sm sm:max-w-md">
-                            {{ $effectiveName }}
-                        </span>
-                    </a>
+                    <!-- Brand Logo: Pure School Logo & Pure Gemilang Banner Logo -->
+                    <div class="flex items-center gap-1.5 sm:gap-2.5 shrink-0">
+                        <img src="{{ asset('images/logo_alazhar7.png') }}" alt="Logo SMA Islam Al Azhar 7" class="h-7 w-7 xs:h-8 xs:w-8 sm:h-9 sm:w-9 md:h-10 md:w-10 object-contain shrink-0 drop-shadow-sm">
+                        <img src="{{ asset('images/logo-gemilang-banner.png') }}" alt="Logo Gemilang" class="h-5 sm:h-7 md:h-8 max-w-[95px] xs:max-w-[125px] sm:max-w-[160px] md:max-w-[200px] object-contain drop-shadow-sm shrink-0">
+                    </div>
 
                     <!-- Desktop Pill Menu Navigation (Visible on Widescreen Desktops >= 1280px to ensure zero collision on iPads/Tablets in landscape) -->
                     <nav class="hidden xl:flex items-center gap-1 p-1 rounded-full bg-white/40 dark:bg-black/50 border border-white/60 dark:border-white/10 text-xs font-semibold text-zinc-700 dark:text-zinc-300 backdrop-blur-xl shadow-sm shrink-0">
@@ -272,7 +261,7 @@
             <!-- SECTION 1: CLEAN MINIMALIST HERO (CRYSTAL FROSTED GLASS & NATURAL SUNSET) -->
             <!-- ========================================================================= -->
             <section class="w-full relative min-h-[100dvh] flex flex-col justify-between py-4 sm:py-7 px-3 sm:px-6 lg:px-8 overflow-hidden bg-cover bg-center bg-no-repeat"
-                     style="background-image: url('{{ $effectiveBg }}');">
+                     style="background-image: url('{{ asset('images/school_sunset_bg.jpg') }}');">
                 
                 <!-- Layer 1: Elegant Glassmorphic Ambient Tone (No Blinding White Wash) -->
                 <div class="absolute inset-0 pointer-events-none z-0">
@@ -280,7 +269,7 @@
                     <div class="absolute inset-0 bg-gradient-to-b from-black/20 via-black/10 to-[#f1f5f9] dark:from-black/50 dark:via-black/40 dark:to-[#09090b]"></div>
                     <div class="absolute inset-0 bg-[radial-gradient(circle_at_center,transparent_0%,rgba(15,23,42,0.18)_100%)] dark:bg-[radial-gradient(circle_at_center,transparent_0%,rgba(9,9,11,0.65)_100%)]"></div>
                     
-                    <!-- Duotone Ambient Glows -->
+                    <!-- Duotone Gemilang Ambient Glows -->
                     <div class="absolute -top-32 left-1/4 w-[500px] h-[500px] bg-orange-500/15 dark:bg-orange-500/18 rounded-full blur-[140px]"></div>
                     <div class="absolute top-1/3 -right-32 w-[550px] h-[550px] bg-blue-500/10 dark:bg-blue-600/20 rounded-full blur-[150px]"></div>
                 </div>
@@ -289,12 +278,10 @@
                 <header class="max-w-6xl mx-auto w-full relative z-20">
                     <div class="p-1.5 sm:p-2.5 rounded-full bg-white/40 dark:bg-zinc-900/60 backdrop-blur-2xl border border-white/60 dark:border-white/15 shadow-xl shadow-black/5 flex items-center justify-between gap-1.5 sm:gap-3 transition-colors duration-300">
                         
-                        <!-- Left Brand Logo: Pure Institution Logo -->
-                        <div class="flex items-center gap-2 sm:gap-2.5 pl-1.5 sm:pl-2.5 shrink-0 select-none">
-                            <img src="{{ $effectiveLogo }}" alt="{{ $effectiveName }}" class="h-7 w-7 xs:h-8 xs:w-8 sm:h-9 sm:w-9 md:h-10 md:w-10 object-contain shrink-0 drop-shadow-sm brightness-105 dark:brightness-110">
-                            <span class="font-bold text-xs sm:text-sm text-zinc-800 dark:text-white tracking-tight leading-snug hidden xs:inline-block whitespace-normal">
-                                {{ $effectiveName }}
-                            </span>
+                        <!-- Left Brand Logo: Pure School Logo & Pure Gemilang Banner Logo (Responsive scaling & zero collision) -->
+                        <div class="flex items-center gap-1.5 sm:gap-2.5 pl-1 sm:pl-2 shrink-0">
+                            <img src="{{ asset('images/logo_alazhar7.png') }}" alt="Logo SMA Islam Al Azhar 7" class="h-7 w-7 xs:h-8 xs:w-8 sm:h-9 sm:w-9 md:h-10 md:w-10 object-contain shrink-0 drop-shadow-sm">
+                            <img src="{{ asset('images/logo-gemilang-banner.png') }}" alt="Logo Gemilang" class="h-5 sm:h-7 md:h-8 max-w-[95px] xs:max-w-[125px] sm:max-w-[160px] md:max-w-[200px] object-contain drop-shadow-sm brightness-105 dark:brightness-110 shrink-0">
                         </div>
 
                         <!-- Center Navigation Links (Visible on Widescreen Desktops >= 1280px to guarantee zero overlapping on Tablets/iPads in landscape) -->
@@ -354,13 +341,16 @@
 
                     <!-- Main Hero Title -->
                     <h1 class="text-2xl xs:text-3xl sm:text-4xl lg:text-5xl font-black text-zinc-900 dark:text-white tracking-tight leading-snug sm:leading-tight drop-shadow-[0_2px_12px_rgba(255,255,255,0.9)] dark:drop-shadow-[0_4px_20px_rgba(0,0,0,0.95)] px-2">
-                        Integrated Management System
+                        TAD Management System
                     </h1>
+                    <p class="text-xs sm:text-sm font-bold tracking-widest text-orange-600 dark:text-amber-400 uppercase mt-1">
+                        (Tahfizh, Adab, Disiplin)
+                    </p>
 
                     <!-- Hero Subtitle in Indonesian with Sleek Frosted Glass Container to avoid Background Sign Clashing -->
                     <div class="mt-3 sm:mt-4 p-3 sm:p-4 rounded-2xl bg-white/40 dark:bg-black/45 backdrop-blur-md border border-white/60 dark:border-white/10 shadow-sm max-w-2xl mx-auto">
                         <p class="text-xs sm:text-sm md:text-base text-zinc-900 dark:text-zinc-100 leading-relaxed font-medium">
-                            Platform Digital Terpadu <strong class="text-zinc-950 dark:text-white font-bold">{{ $effectiveName }}</strong> untuk pemantauan tahfizh mutqin, pembiasaan karakter adab, dan kemajuan akademik santri secara real-time.
+                            Platform Digital Terpadu <strong class="text-zinc-950 dark:text-white font-bold">SMA Islam Al Azhar 7 Sukoharjo</strong> untuk pemantauan tahfizh mutqin, pembiasaan karakter adab, dan kemajuan akademik santri secara real-time.
                         </p>
                     </div>
 
@@ -456,7 +446,7 @@
                     <div class="text-center flex flex-col items-center gap-4 max-w-2xl mx-auto mb-16 sm:mb-20">
                         <div class="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-orange-500/10 border border-orange-500/20 text-orange-600 dark:text-orange-400 text-xs font-bold uppercase tracking-wider backdrop-blur-md">
                             <span class="w-1.5 h-1.5 rounded-full bg-orange-500 dark:bg-orange-400 animate-pulse"></span>
-                            Fitur Unggulan IMS
+                            Fitur Unggulan TAD Management System
                         </div>
                         <h2 class="text-3xl sm:text-4xl lg:text-5xl font-extrabold text-zinc-900 dark:text-white tracking-tight leading-tight">
                             Satu Platform, Semua Kebutuhan Pelacakan Tahfidz
@@ -480,7 +470,7 @@
                                     <span class="w-3 h-3 rounded-full bg-red-500/80"></span>
                                     <span class="w-3 h-3 rounded-full bg-amber-500/80"></span>
                                     <span class="w-3 h-3 rounded-full bg-emerald-500/80"></span>
-                                    <span class="text-xs font-bold text-zinc-500 dark:text-zinc-400 ml-2 hidden sm:inline">IMS Tahfidz Hub • Dashboard Live</span>
+                                    <span class="text-xs font-bold text-zinc-500 dark:text-zinc-400 ml-2 hidden sm:inline">TAD Tahfidz Hub • Dashboard Live</span>
                                 </div>
                                 <div class="flex items-center gap-2">
                                     <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-[10px] font-bold text-emerald-600 dark:text-emerald-400">
@@ -637,7 +627,7 @@
                             Keunggulan Sistem
                         </div>
                         <h2 class="text-3xl sm:text-4xl lg:text-5xl font-extrabold text-zinc-900 dark:text-white tracking-tight leading-tight">
-                            Mengapa Memilih IMS ?
+                            Mengapa Memilih TAD Management System ?
                         </h2>
                         <p class="text-zinc-600 dark:text-zinc-400 text-sm sm:text-base leading-relaxed">
                             Fitur-fitur tangguh yang dirancang spesifik untuk menyederhanakan manajemen Tahfizh di sekolah, Pondok Pesantren, dan Rumah Tahfizh.
@@ -826,7 +816,7 @@
                                     <!-- Tooltip Tag -->
                                     <g transform="translate(345, 260)">
                                         <rect x="-42" y="-12" width="84" height="22" rx="11" class="fill-white/95 dark:fill-[#18181b] stroke-orange-500 shadow-md" stroke-width="1.5"/>
-                                        <text x="0" y="3" class="fill-orange-700 dark:fill-[#fdba74]" font-size="9.5" font-weight="bold" text-anchor="middle" font-family="sans-serif">📍 Cirebon</text>
+                                        <text x="0" y="3" class="fill-orange-700 dark:fill-[#fdba74]" font-size="9.5" font-weight="bold" text-anchor="middle" font-family="sans-serif">Cirebon</text>
                                     </g>
                                 </g>
 
@@ -839,7 +829,7 @@
                                     <!-- Tooltip Tag -->
                                     <g transform="translate(415, 255)">
                                         <rect x="-56" y="-14" width="112" height="26" rx="13" class="fill-white/95 dark:fill-[#18181b] stroke-amber-500 shadow-lg" stroke-width="2"/>
-                                        <text x="0" y="3" class="fill-amber-700 dark:fill-[#fde68a]" font-size="10.5" font-weight="900" text-anchor="middle" font-family="sans-serif">★ Solo (Pusat)</text>
+                                        <text x="0" y="3" class="fill-amber-700 dark:fill-[#fde68a]" font-size="10.5" font-weight="900" text-anchor="middle" font-family="sans-serif">Solo (Pusat)</text>
                                     </g>
                                 </g>
 
@@ -852,7 +842,7 @@
                                     <!-- Tooltip Tag -->
                                     <g transform="translate(465, 260)">
                                         <rect x="-40" y="-12" width="80" height="22" rx="11" class="fill-white/95 dark:fill-[#18181b] stroke-emerald-500 shadow-md" stroke-width="1.5"/>
-                                        <text x="0" y="3" class="fill-emerald-700 dark:fill-[#6ee7b7]" font-size="9.5" font-weight="bold" text-anchor="middle" font-family="sans-serif">📍 Malang</text>
+                                        <text x="0" y="3" class="fill-emerald-700 dark:fill-[#6ee7b7]" font-size="9.5" font-weight="bold" text-anchor="middle" font-family="sans-serif">Malang</text>
                                     </g>
                                 </g>
                             </svg>
@@ -925,7 +915,7 @@
                                 <span class="w-3 h-3 rounded-full bg-red-500/80"></span>
                                 <span class="w-3 h-3 rounded-full bg-amber-500/80"></span>
                                 <span class="w-3 h-3 rounded-full bg-emerald-500/80"></span>
-                                <span class="text-xs font-bold text-zinc-500 dark:text-zinc-400 ml-2 hidden sm:inline">IMS Simulation Console</span>
+                                <span class="text-xs font-bold text-zinc-500 dark:text-zinc-400 ml-2 hidden sm:inline">TAD Simulation Console</span>
                             </div>
                             <div class="flex items-center gap-2">
                                 <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-orange-500/10 border border-orange-500/20 text-[10px] font-bold text-orange-600 dark:text-orange-400">
@@ -941,7 +931,7 @@
                             <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-slate-200/80 dark:border-white/10">
                                 <div>
                                     <h4 class="text-base sm:text-lg font-bold text-zinc-900 dark:text-white">Dasbor Murid — Syamil Rabbani</h4>
-                                    <p class="text-xs text-zinc-500 dark:text-zinc-400 font-medium mt-0.5">Kelas: X-MIPA 1 • {{ $effectiveName }}</p>
+                                    <p class="text-xs text-zinc-500 dark:text-zinc-400 font-medium mt-0.5">Kelas: X-MIPA 1 • SMA Islam Al Azhar 7 Solo Baru</p>
                                 </div>
                                 <span class="inline-flex items-center gap-1.5 self-start sm:self-auto px-3.5 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-xs font-bold text-emerald-600 dark:text-emerald-400">
                                     <span class="w-2 h-2 rounded-full bg-emerald-500 dark:bg-emerald-400"></span>
@@ -990,7 +980,7 @@
                             <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-slate-200/80 dark:border-white/10">
                                 <div>
                                     <h4 class="text-base sm:text-lg font-bold text-zinc-900 dark:text-white">Dasbor Ustadz Penguji — Ust. Ahmad Rabbani</h4>
-                                    <p class="text-xs text-zinc-500 dark:text-zinc-400 font-medium mt-0.5">Halaqah Tahfidz • {{ $effectiveName }}</p>
+                                    <p class="text-xs text-zinc-500 dark:text-zinc-400 font-medium mt-0.5">Halaqah Tahfidz Gemilang • SMA Islam Al Azhar 7</p>
                                 </div>
                                 <button class="self-start sm:self-auto px-4 py-2 bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-xs font-bold text-white rounded-full transition-all duration-150 shadow-md shadow-orange-500/25 hover:scale-105">
                                     + Input Cepat Setoran
@@ -1047,7 +1037,7 @@
                                 <div class="p-4 glass-liquid-inner rounded-2xl flex flex-col gap-1.5 hover:border-amber-500/40 transition">
                                     <span class="text-[10px] text-amber-600 dark:text-amber-400 font-bold uppercase tracking-wider">Laporan Pembiasaan Adab</span>
                                     <div class="text-sm font-bold text-zinc-900 dark:text-white">Sikap: Sangat Disiplin & Hormat Guru</div>
-                                    <span class="text-xs text-zinc-600 dark:text-zinc-400 mt-1">Status: 100 Poin • Mempertahankan Nilai Karakter Islami</span>
+                                    <span class="text-xs text-zinc-600 dark:text-zinc-400 mt-1">Status: 100 Poin • Mempertahankan Nilai Karakter Gemilang</span>
                                 </div>
                             </div>
                         </div>
@@ -1195,7 +1185,7 @@
             <footer class="w-full bg-zinc-950 dark:bg-black border-t border-zinc-800 dark:border-white/5 py-10 text-center relative z-10">
                 <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-6">
                     <p class="text-xs text-zinc-500">
-                        &copy; {{ date('Y') }} IMS (Integrated Management System). {{ $effectiveName }}.
+                        &copy; 2026 TAD Management System. SMA Islam Al Azhar 7 Sukoharjo Developed by Native
                     </p>
                     <div class="flex items-center gap-6 text-xs text-zinc-500">
                         <a href="#" class="hover:text-zinc-300 transition-colors">Syarat Ketentuan</a>
@@ -1207,6 +1197,9 @@
             <!-- ========================================================================= -->
             <!-- POP-UP LOGIN MODAL: LUXURY CRYSTAL FROSTED GLASS (BLURS LANDING PAGE BEHIND) -->
             <!-- ========================================================================= -->
+            <!-- ========================================================================= -->
+            <!-- LOGIN POPUP MODAL (Blue-to-Orange Gradient Theme & Fixed Non-Scroll Card) -->
+            <!-- ========================================================================= -->
             <div x-show="loginModalOpen" 
                  x-cloak
                  x-transition:enter="transition ease-out duration-300"
@@ -1215,16 +1208,16 @@
                  x-transition:leave="transition ease-in duration-200"
                  x-transition:leave-start="opacity-100"
                  x-transition:leave-end="opacity-0"
-                 class="fixed inset-0 z-[100] flex items-center justify-center p-3 sm:p-6 overflow-y-auto"
+                 class="fixed inset-0 z-[100] flex items-center justify-center p-3 sm:p-6 overflow-hidden"
                  role="dialog"
                  aria-modal="true"
                  aria-labelledby="login-modal-title">
                 
-                <!-- Blurred Glass Backdrop Overlay (Smoothly blurs the entire landing page behind it) -->
-                <div class="fixed inset-0 bg-slate-950/70 dark:bg-black/85 backdrop-blur-2xl transition-all duration-300"
+                <!-- Moderate Blurred Glass Backdrop Overlay (Not Too Heavy) -->
+                <div class="fixed inset-0 bg-black/45 backdrop-blur-[6px] transition-all duration-300"
                      @click="closeLoginModal()"></div>
 
-                <!-- Glassmorphism Login Card (Matching Mockup Reference) -->
+                <!-- Main Container (Fixed, Non-scrollable) -->
                 <div x-show="loginModalOpen"
                      x-transition:enter="transition ease-out duration-300 delay-75"
                      x-transition:enter-start="opacity-0 scale-95 translate-y-4"
@@ -1233,134 +1226,146 @@
                      x-transition:leave-start="opacity-100 scale-100 translate-y-0"
                      x-transition:leave-end="opacity-0 scale-95 translate-y-4"
                      @click.stop
-                     class="relative w-full max-w-[400px] sm:max-w-[420px] max-h-[92vh] overflow-y-auto p-5 xs:p-6 sm:p-8 rounded-[1.75rem] sm:rounded-[2.25rem] bg-gradient-to-b from-white/20 via-white/[0.08] to-white/[0.03] dark:from-white/10 dark:via-white/[0.04] dark:to-black/55 backdrop-blur-3xl border border-white/30 dark:border-amber-400/25 shadow-[0_25px_60px_-15px_rgba(0,0,0,0.8),inset_0_1px_1px_rgba(255,255,255,0.4)] text-white transition-all duration-300 z-10 my-auto">
+                     class="relative w-full max-w-[390px] sm:max-w-[420px] rounded-[2rem] p-[1px] bg-gradient-to-br from-blue-400/35 via-white/15 to-orange-400/35 shadow-[0_20px_50px_rgba(0,0,0,0.45)] transition-all duration-300 z-10 my-auto">
                     
-                    <!-- Top Specular Glare / Rim Reflection Effect -->
-                    <div class="absolute -top-20 left-1/2 -translate-x-1/2 w-48 h-20 bg-gradient-to-b from-white/40 via-white/10 to-transparent blur-xl pointer-events-none rounded-full"></div>
-                    <div class="absolute top-0 inset-x-0 h-[1.5px] bg-gradient-to-r from-transparent via-amber-300/80 to-transparent pointer-events-none"></div>
+                    <!-- Pure Glassmorphism Card (Translucent, Non-scrollable) -->
+                    <div class="w-full rounded-[calc(2rem-1px)] bg-[#0a0f1d]/50 backdrop-blur-md p-5 sm:p-7 text-white relative overflow-hidden">
 
-                    <!-- Ambient Glow Blobs Inside Card -->
-                    <div class="absolute -top-10 -right-10 w-40 h-40 bg-orange-500/20 rounded-full blur-2xl pointer-events-none"></div>
-                    <div class="absolute -bottom-10 -left-10 w-40 h-40 bg-blue-600/15 rounded-full blur-2xl pointer-events-none"></div>
+                        <!-- Subtle Top Glass Specular Reflection -->
+                        <div class="absolute top-0 inset-x-0 h-[1px] bg-gradient-to-r from-transparent via-white/25 to-transparent pointer-events-none"></div>
 
-                    <!-- Close Button (X) -->
-                    <button @click="closeLoginModal()" 
-                            type="button" 
-                            aria-label="Tutup"
-                            class="absolute top-4 right-4 w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 border border-white/20 flex items-center justify-center text-zinc-300 hover:text-white transition-all duration-200 hover:scale-110 active:scale-95 z-20">
-                        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
-                        </svg>
-                    </button>
+                        <!-- Close Button (X) -->
+                        <button @click="closeLoginModal()" 
+                                type="button" 
+                                aria-label="Tutup"
+                                class="absolute top-4 right-4 w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 border border-white/15 flex items-center justify-center text-zinc-300 hover:text-white transition-all duration-200 hover:scale-110 active:scale-95 z-20 cursor-pointer">
+                            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                        </button>
 
-                    <!-- Header Brand Emblem & Title -->
-                    <div class="flex flex-col items-center justify-center text-center mb-6 relative z-10">
-                        <!-- Glowing Emblem Container -->
-                        <div class="relative mb-3 flex items-center justify-center">
-                            <div class="absolute inset-0 bg-amber-400/25 rounded-full blur-xl animate-pulse"></div>
-                            <div class="relative w-16 h-16 sm:w-20 sm:h-20 rounded-2xl bg-gradient-to-b from-white/20 to-black/40 backdrop-blur-xl border border-amber-400/50 p-2.5 shadow-[0_0_30px_rgba(245,158,11,0.35)] flex items-center justify-center">
-                                <img src="{{ $effectiveLogo }}" alt="{{ $effectiveName }}" class="w-full h-full object-contain drop-shadow-md">
+                        <!-- Header Brand Emblem & Title -->
+                        <div class="flex flex-col items-center justify-center text-center mb-5 relative z-10">
+                            <!-- Logo (Clean without box wrapper) -->
+                            <div class="relative mb-3 flex items-center justify-center">
+                                @if ($logo)
+                                    <img src="{{ asset('storage/' . $logo) }}" alt="Logo" class="w-16 h-16 sm:w-20 sm:h-20 object-contain drop-shadow-[0_8px_20px_rgba(0,0,0,0.55)]" />
+                                @else
+                                    <img src="{{ asset('images/logo_alazhar7.png') }}" alt="Logo SMA Islam Al Azhar 7 Solo Baru" class="w-16 h-16 sm:w-20 sm:h-20 object-contain drop-shadow-[0_8px_20px_rgba(0,0,0,0.55)]">
+                                @endif
                             </div>
-                        </div>
-                        <h3 id="login-modal-title" class="text-xl sm:text-2xl font-black text-white tracking-tight leading-tight">
-                            Portal <span class="text-transparent bg-clip-text bg-gradient-to-r from-amber-300 via-amber-400 to-orange-400">Masuk</span>
-                        </h3>
-                        <p class="text-xs text-zinc-300/80 font-medium mt-1">{{ $effectiveName }}</p>
-                    </div>
 
-                    <!-- Login Form -->
-                    <form method="POST" action="{{ route('login') }}" class="space-y-4 relative z-10">
-                        @csrf
-
-                        <!-- Username / Email Field with Icon -->
-                        <div>
-                            <div class="relative">
-                                <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-amber-300/80">
-                                    <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
-                                        <path stroke-linecap="round" stroke-linejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 01-2.25 2.25h-15a2.25 2.25 0 01-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25m19.5 0v.243a2.25 2.25 0 01-1.07 1.916l-7.5 4.615a2.25 2.25 0 01-2.36 0L3.32 8.91a2.25 2.25 0 01-1.07-1.916V6.75" />
-                                    </svg>
-                                </div>
-                                <input type="text" 
-                                       name="username" 
-                                       value="{{ old('username') }}" 
-                                       required 
-                                       autocomplete="username"
-                                       placeholder="Email / Username"
-                                       class="w-full pl-11 pr-4 py-3 rounded-2xl bg-black/35 dark:bg-black/55 border border-amber-400/40 focus:border-amber-400 text-white placeholder-zinc-400 text-sm focus:outline-none focus:ring-2 focus:ring-amber-400/30 backdrop-blur-md transition-all duration-200">
-                            </div>
-                            @if ($errors->has('username'))
-                                <p class="text-xs font-semibold text-rose-400 mt-1.5 flex items-center gap-1">
-                                    <svg class="w-3.5 h-3.5 shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                                        <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd" />
-                                    </svg>
-                                    <span>{{ $errors->first('username') }}</span>
-                                </p>
-                            @endif
+                            <h3 id="login-modal-title" class="text-2xl sm:text-[1.75rem] font-black font-display text-white tracking-tight leading-tight">
+                                LOGIN TAD
+                            </h3>
+                            
+                            <p class="text-xs sm:text-sm text-zinc-300 font-medium mt-1 tracking-wide">
+                                {{ ($namaInstansi && !in_array($namaInstansi, ['SMAIA 7', 'SMAIA7', 'SMA Islam Al Azhar 7 Sukoharjo'])) ? $namaInstansi : 'SMA Islam Al Azhar 7 Solo Baru' }}
+                            </p>
                         </div>
 
-                        <!-- Password Field with Lock Icon & Show/Hide Eye Toggle -->
-                        <div x-data="{ showPass: false }">
-                            <div class="relative">
-                                <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-amber-300/80">
-                                    <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
-                                        <path stroke-linecap="round" stroke-linejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z" />
-                                    </svg>
+                        <!-- Session Status Alert -->
+                        @if (session('status'))
+                            <div class="mb-3 text-center text-xs font-bold text-amber-300 bg-amber-500/15 border border-amber-400/30 p-2.5 rounded-xl backdrop-blur-md">
+                                {{ session('status') }}
+                            </div>
+                        @endif
+
+                        <!-- Login Form -->
+                        <form method="POST" action="{{ route('login') }}" class="space-y-3.5 relative z-10">
+                            @csrf
+
+                            <!-- Username / Email Field with Blue Accent Icon -->
+                            <div>
+                                <div class="relative">
+                                    <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-blue-600">
+                                        <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                            <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" />
+                                        </svg>
+                                    </div>
+                                    <input type="text" 
+                                           name="username" 
+                                           value="{{ old('username') }}" 
+                                           required 
+                                           autocomplete="username"
+                                           placeholder="Username"
+                                           class="w-full pl-11 pr-4 py-3 rounded-2xl bg-white text-zinc-900 font-semibold placeholder-zinc-400 text-base sm:text-sm border-2 border-transparent focus:border-orange-500 focus:ring-4 focus:ring-blue-500/25 shadow-inner focus:outline-none transition-all duration-200">
                                 </div>
-                                <input :type="showPass ? 'text' : 'password'" 
-                                       name="password" 
-                                       required 
-                                       autocomplete="current-password"
-                                       placeholder="Password"
-                                       class="w-full pl-11 pr-11 py-3 rounded-2xl bg-black/35 dark:bg-black/55 border border-amber-400/40 focus:border-amber-400 text-white placeholder-zinc-400 text-sm focus:outline-none focus:ring-2 focus:ring-amber-400/30 backdrop-blur-md transition-all duration-200">
-                                
-                                <!-- Eye Toggle Icon Button -->
-                                <button type="button" 
-                                        @click="showPass = !showPass" 
-                                        aria-label="Toggle password visibility"
-                                        class="absolute inset-y-0 right-0 pr-3.5 flex items-center text-amber-300/70 hover:text-amber-300 focus:outline-none transition-colors">
-                                    <svg x-show="!showPass" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
-                                        <path stroke-linecap="round" stroke-linejoin="round" d="M3.98 8.223A10.477 10.477 0 001.934 12C3.226 16.338 7.244 19.5 12 19.5c.993 0 1.953-.138 2.863-.395M6.228 6.228A10.45 10.45 0 0112 4.5c4.756 0 8.773 3.162 10.065 7.498a10.523 10.523 0 01-4.293 5.774M6.228 6.228L3 3m3.228 3.228l3.65 3.65m7.894 7.894L21 21m-3.228-3.228l-3.65-3.65m0 0a3 3 0 10-4.243-4.243m4.242 4.242L9.88 9.88" />
-                                    </svg>
-                                    <svg x-show="showPass" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
-                                        <path stroke-linecap="round" stroke-linejoin="round" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z" />
-                                        <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                @if ($errors->has('username'))
+                                    <p class="text-xs font-semibold text-rose-400 mt-1 flex items-center gap-1">
+                                        <svg class="w-3.5 h-3.5 shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                                            <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd" />
+                                        </svg>
+                                        <span>{{ $errors->first('username') }}</span>
+                                    </p>
+                                @endif
+                            </div>
+
+                            <!-- Password Field with Lock Icon & Show/Hide Eye Toggle -->
+                            <div x-data="{ showPass: false }">
+                                <div class="relative">
+                                    <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-orange-500">
+                                        <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                            <path stroke-linecap="round" stroke-linejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z" />
+                                        </svg>
+                                    </div>
+                                    <input :type="showPass ? 'text' : 'password'" 
+                                           name="password" 
+                                           required 
+                                           autocomplete="current-password"
+                                           placeholder="Password"
+                                           class="w-full pl-11 pr-11 py-3 rounded-2xl bg-white text-zinc-900 font-semibold placeholder-zinc-400 text-base sm:text-sm border-2 border-transparent focus:border-orange-500 focus:ring-4 focus:ring-blue-500/25 shadow-inner focus:outline-none transition-all duration-200">
+                                    
+                                    <!-- Eye Toggle Icon Button -->
+                                    <button type="button" 
+                                            @click="showPass = !showPass" 
+                                            aria-label="Toggle password visibility"
+                                            class="absolute inset-y-0 right-0 pr-3.5 flex items-center text-zinc-400 hover:text-orange-500 focus:outline-none transition-colors cursor-pointer">
+                                        <svg x-show="!showPass" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                            <path stroke-linecap="round" stroke-linejoin="round" d="M3.98 8.223A10.477 10.477 0 001.934 12C3.226 16.338 7.244 19.5 12 19.5c.993 0 1.953-.138 2.863-.395M6.228 6.228A10.45 10.45 0 0112 4.5c4.756 0 8.773 3.162 10.065 7.498a10.523 10.523 0 01-4.293 5.774M6.228 6.228L3 3m3.228 3.228l3.65 3.65m7.894 7.894L21 21m-3.228-3.228l-3.65-3.65m0 0a3 3 0 10-4.243-4.243m4.242 4.242L9.88 9.88" />
+                                        </svg>
+                                        <svg x-show="showPass" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                            <path stroke-linecap="round" stroke-linejoin="round" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z" />
+                                            <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                        </svg>
+                                    </button>
+                                </div>
+                                @if ($errors->has('password'))
+                                    <p class="text-xs font-semibold text-rose-400 mt-1 flex items-center gap-1">
+                                        <svg class="w-3.5 h-3.5 shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                                            <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd" />
+                                        </svg>
+                                        <span>{{ $errors->first('password') }}</span>
+                                    </p>
+                                @endif
+                            </div>
+
+                            <!-- Remember Me & Forgot Password -->
+                            <div class="flex items-center justify-between text-xs text-zinc-300 pt-0.5">
+                                <label class="inline-flex items-center cursor-pointer select-none hover:text-white transition-colors">
+                                    <input type="checkbox" name="remember" class="rounded border-zinc-500 bg-black/40 text-orange-500 focus:ring-blue-500/30 w-4 h-4 mr-2">
+                                    <span>Ingat saya</span>
+                                </label>
+                                @if (Route::has('password.request'))
+                                    <a href="{{ route('password.request') }}" class="text-orange-400 hover:text-orange-300 font-medium transition-colors">
+                                        Lupa Password?
+                                    </a>
+                                @endif
+                            </div>
+
+                            <!-- Gradient Blue-to-Orange Submit Button (Clean Shadow, No Harsh Glow) -->
+                            <div class="pt-2">
+                                <button type="submit"
+                                        class="w-full py-3.5 px-6 rounded-2xl font-black text-sm uppercase tracking-widest text-white bg-gradient-to-r from-blue-600 via-amber-500 to-orange-500 hover:from-blue-500 hover:via-amber-400 hover:to-orange-400 active:scale-[0.98] shadow-lg shadow-orange-500/25 hover:shadow-orange-500/35 transition-all duration-300 flex items-center justify-center gap-2 cursor-pointer">
+                                    <span>LOGIN</span>
+                                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" />
                                     </svg>
                                 </button>
                             </div>
-                            @if ($errors->has('password'))
-                                <p class="text-xs font-semibold text-rose-400 mt-1.5 flex items-center gap-1">
-                                    <svg class="w-3.5 h-3.5 shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                                        <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd" />
-                                    </svg>
-                                    <span>{{ $errors->first('password') }}</span>
-                                </p>
-                            @endif
-                        </div>
+                        </form>
 
-                        <!-- Remember Me & Forgot Password -->
-                        <div class="flex items-center justify-between text-xs text-zinc-300 pt-1">
-                            <label class="inline-flex items-center cursor-pointer select-none hover:text-white transition-colors">
-                                <input type="checkbox" name="remember" class="rounded border-amber-400/40 bg-black/40 text-amber-500 focus:ring-amber-400/30 w-4 h-4 mr-2">
-                                <span>Ingat saya</span>
-                            </label>
-                            @if (Route::has('password.request'))
-                                <a href="{{ route('password.request') }}" class="text-amber-300 hover:text-amber-200 font-medium transition-colors">
-                                    Lupa Password?
-                                </a>
-                            @endif
-                        </div>
-
-                        <!-- Glowing Golden Submit Button (Matching Mockup) -->
-                        <div class="pt-3">
-                            <button type="submit"
-                                    class="w-full py-3.5 px-6 rounded-2xl font-black text-sm uppercase tracking-widest text-zinc-950 bg-gradient-to-r from-amber-300 via-amber-400 to-amber-500 hover:from-amber-400 hover:to-orange-500 shadow-[0_0_25px_rgba(245,158,11,0.45)] hover:shadow-[0_0_35px_rgba(245,158,11,0.7)] transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] flex items-center justify-center gap-2">
-                                <span>LOGIN</span>
-                                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
-                                    <path stroke-linecap="round" stroke-linejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" />
-                                </svg>
-                            </button>
-                        </div>
-                    </form>
+                    </div>
                 </div>
             </div>
 

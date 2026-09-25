@@ -7,7 +7,13 @@ use App\Models\HafalanTarget;
 use App\Models\Student;
 use App\Models\Surah;
 use App\Models\User;
+use App\Services\AcademicCalendarService;
+use App\Services\AutoHafalanTargetService;
+use App\Services\HafalanProgressService;
 use App\Services\StudentProgressService;
+use App\Support\AyahCoverage;
+use App\Support\HafalanOrder;
+use Carbon\Carbon;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -214,15 +220,14 @@ class HafalanTargetController extends Controller
             'targets' => ['required', 'array'],
             'targets.*.student_id' => ['required', 'integer', 'exists:students,id'],
             'targets.*.surah_id' => ['nullable', 'integer', 'exists:surahs,id'],
-            'targets.*.ayah_start' => ['nullable', 'integer', 'min:1'],
-            'targets.*.ayah_end' => ['nullable', 'integer', 'min:1'],
+            'targets.*.ayah' => ['nullable', 'integer', 'min:1'],
             'targets.*.target_date' => ['nullable', 'date'],
             'targets.*.notes' => ['nullable', 'string', 'max:500'],
         ]);
 
         $count = 0;
         foreach ($validated['targets'] as $row) {
-            if (empty($row['surah_id']) || empty($row['ayah_start']) || empty($row['ayah_end'])) {
+            if (empty($row['surah_id']) || empty($row['ayah'])) {
                 continue;
             }
 
@@ -242,8 +247,7 @@ class HafalanTargetController extends Controller
                 'student_id' => $student->id,
                 'teacher_id' => $teacherId,
                 'surah_id' => $row['surah_id'],
-                'ayah_start' => $row['ayah_start'],
-                'ayah_end' => $row['ayah_end'],
+                'ayah' => $row['ayah'],
                 'target_date' => $row['target_date'] ?: now()->addWeeks(2)->toDateString(),
                 'notes' => $row['notes'] ?? null,
                 'status' => $this->defaultOpenTargetStatus(),
@@ -310,8 +314,7 @@ class HafalanTargetController extends Controller
                 'halaman_peraga' => $validated['halaman_peraga'] ?? null,
                 'halaman_buku' => $validated['halaman_buku'] ?? null,
                 'surah_id' => $validated['surah_id'] ?? null,
-                'ayah_start' => null,
-                'ayah_end' => null,
+                'ayah' => null,
                 'target_date' => $validated['target_date'],
                 'notes' => $validated['notes'] ?? null,
                 'status' => $this->defaultOpenTargetStatus(),
@@ -509,6 +512,9 @@ class HafalanTargetController extends Controller
 
         $data['teacher_id'] = $this->resolveTeacherId($request, $student);
 
+        // Target otomatis yang diedit guru menjadi target guru: tidak ditimpa lagi oleh perhitungan otomatis.
+        $data['auto_month'] = null;
+
         $hafalanTarget->update($data);
 
         return redirect()
@@ -569,8 +575,7 @@ class HafalanTargetController extends Controller
         $validator = Validator::make($request->all(), [
             'student_id' => ['required', 'integer', 'exists:students,id'],
             'surah_id' => ['required', 'integer', 'exists:surahs,id'],
-            'ayah_start' => ['required', 'integer', 'min:1'],
-            'ayah_end' => ['required', 'integer', 'min:1', 'gte:ayah_start'],
+            'ayah' => ['required', 'integer', 'min:1'],
             'target_date' => ['required', 'date'],
             'status' => ['nullable', Rule::in($statuses)],
             'notes' => ['nullable', 'string', 'max:2000'],
@@ -589,10 +594,10 @@ class HafalanTargetController extends Controller
             $surah = Surah::query()->find($request->input('surah_id'));
 
             if ($surah && isset($surah->total_ayah)) {
-                if ((int) $request->input('ayah_end') > (int) $surah->total_ayah) {
+                if ((int) $request->input('ayah') > (int) $surah->total_ayah) {
                     $validator->errors()->add(
-                        'ayah_end',
-                        'Ayat akhir tidak boleh melebihi jumlah ayat surah.'
+                        'ayah',
+                        'Ayat tidak boleh melebihi jumlah ayat surah.'
                     );
                 }
             }
@@ -625,6 +630,147 @@ class HafalanTargetController extends Controller
             403,
             'Target hafalan tidak boleh diakses oleh akun ini.'
         );
+    }
+
+    /**
+     * Target Triwulan: per murid kelas 11/12, titik awal (setoran pertama triwulan), target
+     * akhir triwulan & titik antara tiap bulan, capaian, dan persentase -- semuanya dihitung
+     * otomatis dari pertemuan aktif (AutoHafalanTargetService::termPlan).
+     */
+    public function term(Request $request, AutoHafalanTargetService $targets, AcademicCalendarService $calendar): View
+    {
+        $visibleStudentIds = $this->visibleStudentIds($request->user());
+
+        // Pilihan triwulan: 6 triwulan terakhir (termasuk yang berjalan).
+        $currentStart = $calendar->termStartDate(today());
+        $periods = collect(range(0, 5))->mapWithKeys(function ($i) use ($currentStart) {
+            $start = $currentStart->copy()->subMonthsNoOverflow($i * 3);
+            $termNumber = [7 => 1, 10 => 2, 1 => 3, 4 => 4][$start->month];
+            $academicYear = $start->month >= 7 ? $start->year.'/'.($start->year + 1) : ($start->year - 1).'/'.$start->year;
+
+            return [$start->toDateString() => "Triwulan {$termNumber} · {$academicYear} ({$start->locale('id')->translatedFormat('M')} – {$start->copy()->addMonths(2)->locale('id')->translatedFormat('M Y')})"];
+        });
+        $period = $periods->has($request->input('period')) ? $request->input('period') : $currentStart->toDateString();
+
+        $classRooms = ClassRoom::query()
+            ->with('program')
+            ->whereIn('id', Student::query()->whereIn('id', $visibleStudentIds)->where('status', 'active')->select('class_room_id'))
+            ->orderBy('name')
+            ->get()
+            ->reject(fn (ClassRoom $class) => $class->isGradeTen())
+            ->values();
+        $selectedClass = $classRooms->firstWhere('id', (int) $request->input('class_room_id')) ?? $classRooms->first();
+
+        $rows = collect();
+        if ($selectedClass) {
+            $rows = Student::query()
+                ->whereIn('id', $visibleStudentIds)
+                ->where('class_room_id', $selectedClass->id)
+                ->where('status', 'active')
+                ->orderBy('name')
+                ->get()
+                ->map(function (Student $student) use ($targets, $selectedClass, $period) {
+                    $student->setRelation('classRoom', $selectedClass);
+
+                    return ['student' => $student, 'plan' => $targets->termPlan($student, Carbon::parse($period), $selectedClass)];
+                });
+        }
+
+        $withStart = $rows->filter(fn ($row) => $row['plan']['start'] !== null);
+        $summary = [
+            'students' => $rows->count(),
+            'reached' => $rows->where('plan.reached', true)->count(),
+            'no_start' => $rows->count() - $withStart->count(),
+            'avg_progress' => $withStart->isEmpty() ? 0 : (int) round($withStart->avg('plan.progress')),
+            'meetings' => $rows->first()['plan']['term_meetings'] ?? 0,
+        ];
+
+        return view('hafalan-targets.term', compact('periods', 'period', 'classRooms', 'selectedClass', 'rows', 'summary'));
+    }
+
+    /**
+     * Ubah arah hafalan murid (lanjut ke belakang / pindah ke depan setelah Juz 29, 28, atau 27),
+     * lalu hitung ulang target otomatis triwulan yang sedang dilihat.
+     */
+    public function updateDirection(Request $request, Student $student, AutoHafalanTargetService $targets): RedirectResponse
+    {
+        abort_unless($this->visibleStudentIds($request->user())->contains($student->id), 403);
+
+        $validated = $request->validate([
+            'hafalan_direction' => ['required', Rule::in(array_keys(HafalanOrder::directionOptions()))],
+            'period' => ['nullable', 'date'],
+        ]);
+
+        $student->update(['hafalan_direction' => $validated['hafalan_direction']]);
+        $targets->syncStudent($student->fresh(), Carbon::parse($validated['period'] ?? today()));
+
+        return back()->with('success', "Arah hafalan {$student->name} diperbarui dan target dihitung ulang.");
+    }
+
+    /**
+     * Koreksi urutan di dalam satu juz (dari awal / dari akhir) untuk satu murid, atau
+     * kembalikan ke deteksi otomatis; lalu hitung ulang target otomatis triwulan itu.
+     */
+    public function updateJuzOrder(Request $request, Student $student, AutoHafalanTargetService $targets): RedirectResponse
+    {
+        abort_unless($this->visibleStudentIds($request->user())->contains($student->id), 403);
+
+        $validated = $request->validate([
+            'juz' => ['required', 'integer', 'between:1,30'],
+            'order' => ['required', Rule::in(['auto', HafalanOrder::ASC, HafalanOrder::DESC])],
+            'period' => ['nullable', 'date'],
+        ]);
+
+        $orders = collect($student->juz_orders ?? [])->except((string) $validated['juz']);
+        if ($validated['order'] !== 'auto') {
+            $orders->put((string) $validated['juz'], $validated['order']);
+        }
+        $student->update(['juz_orders' => $orders->isEmpty() ? null : $orders->all()]);
+        $targets->syncStudent($student->fresh(), Carbon::parse($validated['period'] ?? today()));
+
+        return back()->with('success', "Urutan Juz {$validated['juz']} untuk {$student->name} diperbarui dan target dihitung ulang.");
+    }
+
+    /**
+     * Urutan hafalan satu murid: 30 juz dalam urutan arah murid, cakupan ayat tiap juz,
+     * urutan di dalam juz (terdeteksi / diatur guru) yang bisa dikoreksi.
+     */
+    public function juzOrders(Request $request, Student $student, HafalanProgressService $progress): View
+    {
+        abort_unless($this->visibleStudentIds($request->user())->contains($student->id), 403);
+
+        $records = $progress->records($student);
+        $coverage = $progress->coverage($records);
+        $detected = $progress->detectedJuzOrders($records);
+        $effective = $progress->juzOrders($student, $records);
+        $manual = array_map('intval', array_keys($student->juz_orders ?? []));
+
+        $juzRows = collect(HafalanOrder::juzSequence($student->hafalan_direction))->map(function (int $juz) use ($coverage, $detected, $effective, $manual, $records) {
+            $totalAyat = 0;
+            $coveredAyat = 0;
+            foreach (HafalanOrder::JUZ_RANGES[$juz] as $range) {
+                $totalAyat += $range['end'] - $range['start'] + 1;
+                foreach (AyahCoverage::covered($coverage[$range['surah']] ?? [], $range['start'], $range['end']) as [$a, $b]) {
+                    $coveredAyat += $b - $a + 1;
+                }
+            }
+            $surahsInJuz = collect(HafalanOrder::JUZ_RANGES[$juz])->pluck('surah')->all();
+
+            return [
+                'juz' => $juz,
+                'surah_range' => [reset($surahsInJuz), end($surahsInJuz)],
+                'covered_percent' => $totalAyat > 0 ? (int) round($coveredAyat / $totalAyat * 100) : 0,
+                'setoran_count' => $records->where('status', 'passed')->filter(fn ($r) => in_array((int) $r->surah_number, $surahsInJuz, true))->count(),
+                'order' => $effective[$juz] ?? HafalanOrder::defaultJuzOrder($juz),
+                'source' => in_array($juz, $manual, true) ? 'manual' : (isset($detected[$juz]) ? 'auto' : 'default'),
+            ];
+        });
+
+        return view('hafalan-targets.juz-orders', [
+            'student' => $student->load('classRoom'),
+            'juzRows' => $juzRows,
+            'surahNames' => $progress->surahs()->map->name_latin,
+        ]);
     }
 
     private function visibleStudentIds(?User $user): Collection
@@ -670,11 +816,7 @@ class HafalanTargetController extends Controller
 
     private function targetStatuses(): array
     {
-        // "SHOW COLUMNS" is MySQL-only syntax. On Postgres it doesn't just
-        // throw — a failed statement poisons the rest of the current
-        // transaction, so every later query in the same request/test would
-        // fail too. Only attempt it when actually connected to MySQL.
-        if (DB::connection()->getDriverName() === 'mysql') {
+        if (DB::getDriverName() === 'mysql') {
             try {
                 $column = DB::selectOne("SHOW COLUMNS FROM hafalan_targets LIKE 'status'");
 

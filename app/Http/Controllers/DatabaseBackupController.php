@@ -2,18 +2,14 @@
 
 namespace App\Http\Controllers;
 
-use App\Services\AuditLogService;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\File;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
 class DatabaseBackupController extends Controller
 {
-    public function __construct(private readonly AuditLogService $auditLog) {}
-
     public function index(): View
     {
         $backups = $this->backups();
@@ -26,52 +22,41 @@ class DatabaseBackupController extends Controller
         ]);
     }
 
-    public function store(Request $request): RedirectResponse
+    public function store(): RedirectResponse
     {
-        // Dispatched to the queue instead of Artisan::call() so a large
-        // mysqldump can't time out the HTTP request/PHP-FPM worker.
-        Artisan::queue('ims:backup-database', [
-            '--prune' => $request->boolean('prune', true),
+        $exitCode = Artisan::call('tad:backup-database', [
+            '--prune' => true,
         ]);
 
-        $this->auditLog->logAction(
-            action: 'backup_requested',
-            description: ($request->user()?->name ?? 'System').' menjadwalkan backup database.',
-        );
+        $output = trim(Artisan::output());
+
+        if ($exitCode !== 0) {
+            return redirect()
+                ->route('database-backups.index')
+                ->with('error', 'Backup database gagal. Detail: '.$output);
+        }
 
         return redirect()
             ->route('database-backups.index')
-            ->with('success', 'Backup database sedang diproses di background. Muat ulang halaman ini beberapa saat lagi untuk melihat hasilnya.');
+            ->with('success', 'Backup database berhasil dibuat.');
     }
 
-    public function download(Request $request, string $filename): BinaryFileResponse
+    public function download(string $filename): BinaryFileResponse
     {
         $path = $this->resolveBackupPath($filename);
 
         abort_unless(File::exists($path), 404);
 
-        $this->auditLog->logAction(
-            action: 'backup_downloaded',
-            description: ($request->user()?->name ?? 'System').' mengunduh file backup database.',
-            context: ['filename' => basename($path)],
-        );
-
         return response()->download($path, basename($path));
     }
 
-    public function destroy(Request $request, string $filename): RedirectResponse
+    public function destroy(string $filename): RedirectResponse
     {
         $path = $this->resolveBackupPath($filename);
 
         abort_unless(File::exists($path), 404);
 
         File::delete($path);
-
-        $this->auditLog->logAction(
-            action: 'backup_deleted',
-            description: ($request->user()?->name ?? 'System').' menghapus file backup database.',
-            context: ['filename' => basename($path)],
-        );
 
         return redirect()
             ->route('database-backups.index')

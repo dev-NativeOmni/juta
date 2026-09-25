@@ -4,8 +4,12 @@ namespace App\Http\Controllers;
 
 use App\Models\ClassRoom;
 use App\Models\Setting;
+use App\Services\SchoolCalendar;
+use App\Support\Signatures;
+use App\Support\TargetRules;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Storage;
 
 class SettingController extends Controller
@@ -17,6 +21,11 @@ class SettingController extends Controller
             'nama_instansi' => Setting::get('nama_instansi'),
             'login_bg' => Setting::get('login_bg'),
             'landing_bg' => Setting::get('landing_bg'),
+            'officials' => collect(Signatures::OFFICIALS)->map(fn ($official, $key) => [
+                'label' => $official['label'],
+                'name' => Signatures::officialIdentity($key)['name'],
+                'preview' => Signatures::dataUri(Signatures::officialFile($key)),
+            ])->all(),
         ]);
     }
 
@@ -27,7 +36,22 @@ class SettingController extends Controller
             'nama_instansi' => 'nullable|string|max:255',
             'login_bg' => 'nullable|image|max:5120',
             'landing_bg' => 'nullable|image|max:5120',
+            'signatures' => 'nullable|array',
+            'signatures.*' => Signatures::UPLOAD_RULES,
+            'reset_signatures' => 'nullable|array',
+            'reset_signatures.*' => 'in:'.implode(',', array_keys(Signatures::OFFICIALS)),
         ]);
+
+        // Tanda tangan pejabat: hapus bila dicentang, ganti bila ada unggahan baru.
+        foreach (array_keys(Signatures::OFFICIALS) as $key) {
+            $settingKey = Signatures::OFFICIALS[$key]['file'];
+            $upload = $request->file("signatures.{$key}");
+
+            if ($upload || in_array($key, (array) $request->input('reset_signatures', []), true)) {
+                Signatures::delete(Setting::get($settingKey));
+                Setting::set($settingKey, $upload ? Signatures::store($upload, 'officials') : null);
+            }
+        }
 
         if ($request->boolean('reset_logo')) {
             $oldLogo = Setting::get('logo');
@@ -177,60 +201,142 @@ class SettingController extends Controller
         $nextMonth = $nextCarbon->month;
         $nextYear = $nextCarbon->year;
 
-        $holidays = Setting::getNationalHolidays($year);
-        $classRooms = ClassRoom::query()->orderBy('name')->get();
+        $calendar = app(SchoolCalendar::class);
+        $monthDays = $calendar->monthDays($year, $month);
+        $classRooms = ClassRoom::query()->with('program')->orderBy('name')->get();
+        $locks = $calendar->monthLocks($year, $month);
+        $permissions = $this->calendarPermissions($request, $year, $month);
 
-        $classHolidaysRaw = Setting::get("class_holidays_{$year}");
-        $classHolidays = $classHolidaysRaw ? json_decode($classHolidaysRaw, true) : [];
-
-        return view('settings.calendar', compact(
-            'gridDates', 'year', 'month', 'holidays', 'classRooms', 'classHolidays',
-            'prevMonth', 'prevYear', 'nextMonth', 'nextYear'
-        ));
+        return view('settings.calendar', [
+            'gridDates' => $gridDates,
+            'year' => $year,
+            'month' => $month,
+            'globalDays' => $monthDays['global'],
+            'classHolidays' => $monthDays['class'],
+            'classRooms' => $classRooms,
+            'locks' => $locks,
+            'permissions' => $permissions,
+            'adabDays' => $calendar->adabDays(),
+            'prevMonth' => $prevMonth,
+            'prevYear' => $prevYear,
+            'nextMonth' => $nextMonth,
+            'nextYear' => $nextYear,
+        ]);
     }
 
     public function calendarUpdate(Request $request)
     {
         $year = $request->integer('year', (int) date('Y'));
         $month = $request->integer('month', (int) date('m'));
-        $submittedHolidays = $request->input('holidays', []);
-        $submittedClassHolidays = $request->input('class_holidays', []);
+        $permissions = $this->calendarPermissions($request, $year, $month);
 
-        // 1. Merge global holidays
-        $existingHolidays = Setting::getNationalHolidays($year);
-        $monthPrefix = sprintf('%04d-%02d-', $year, $month);
-        $otherMonthsHolidays = array_filter($existingHolidays, function ($date) use ($monthPrefix) {
-            return strpos($date, $monthPrefix) !== 0;
-        });
-        $allHolidays = array_merge($otherMonthsHolidays, $submittedHolidays);
-        sort($allHolidays);
-        Setting::set("national_holidays_{$year}", json_encode(array_values(array_unique($allHolidays))));
+        abort_unless($permissions['edit_tahfizh'] || $permissions['edit_adab'], 403, 'Kalender bulan ini terkunci atau Anda tidak berhak mengubahnya.');
 
-        // 2. Merge class-specific holidays
-        $existingClassHolidaysRaw = Setting::get("class_holidays_{$year}");
-        $existingClassHolidays = $existingClassHolidaysRaw ? json_decode($existingClassHolidaysRaw, true) : [];
-
-        $otherMonthsClassHolidays = [];
-        foreach ($existingClassHolidays as $dateStr => $classIds) {
-            if (strpos($dateStr, $monthPrefix) !== 0) {
-                $otherMonthsClassHolidays[$dateStr] = $classIds;
-            }
+        $globalDays = [];
+        foreach ((array) $request->input('days', []) as $date => $flags) {
+            $globalDays[(string) $date] = [
+                'tahfizh_off' => (bool) ($flags['tahfizh'] ?? false),
+                'adab_off' => (bool) ($flags['adab'] ?? false),
+            ];
+        }
+        // Format lama (holidays[] = Libur Total) tetap diterima.
+        foreach ((array) $request->input('holidays', []) as $date) {
+            $globalDays[(string) $date] = ['tahfizh_off' => true, 'adab_off' => true];
         }
 
-        $filteredNewClassHolidays = [];
-        foreach ($submittedClassHolidays as $dateStr => $classIds) {
-            if (! empty($classIds)) {
-                $filteredNewClassHolidays[$dateStr] = array_map('intval', $classIds);
-            }
-        }
+        $classDays = array_filter(
+            (array) $request->input('class_holidays', []),
+            fn ($classIds, $date) => ! ($globalDays[$date]['tahfizh_off'] ?? false) && ! empty($classIds),
+            ARRAY_FILTER_USE_BOTH
+        );
 
-        $allClassHolidays = array_merge($otherMonthsClassHolidays, $filteredNewClassHolidays);
-        ksort($allClassHolidays);
-        Setting::set("class_holidays_{$year}", json_encode($allClassHolidays));
+        app(SchoolCalendar::class)->updateMonth(
+            $year,
+            $month,
+            $globalDays,
+            $classDays,
+            $permissions['edit_tahfizh'],
+            $permissions['edit_adab'],
+            $request->user()?->id
+        );
 
         return redirect()
             ->route('academic-calendar.index', ['year' => $year, 'month' => $month])
             ->with('success', 'Kalender akademik berhasil diperbarui.');
+    }
+
+    /**
+     * Hari pengisian kuisioner Adab (Admin & Koordinator Keagamaan).
+     */
+    public function calendarAdabDays(Request $request)
+    {
+        $validated = $request->validate([
+            'adab_days' => ['required', 'array', 'min:1'],
+            'adab_days.*' => ['integer', 'between:1,7'],
+            'year' => ['nullable', 'integer'],
+            'month' => ['nullable', 'integer'],
+        ], ['adab_days.required' => 'Pilih minimal satu hari pengisian Adab.']);
+        abort_unless($this->calendarPermissions($request, (int) date('Y'), (int) date('n'))['edit_adab_days'], 403);
+
+        app(SchoolCalendar::class)->saveAdabDays($validated['adab_days']);
+
+        return redirect()
+            ->route('academic-calendar.index', array_filter(['year' => $validated['year'] ?? null, 'month' => $validated['month'] ?? null]))
+            ->with('success', 'Hari pengisian Adab diperbarui.');
+    }
+
+    public function calendarLock(Request $request)
+    {
+        $validated = $request->validate([
+            'year' => ['required', 'integer', 'between:2000,2100'],
+            'month' => ['required', 'integer', 'between:1,12'],
+            'scope' => ['required', 'in:'.SchoolCalendar::SCOPE_TAHFIZH.','.SchoolCalendar::SCOPE_ADAB],
+            'action' => ['required', 'in:lock,unlock'],
+        ]);
+        $permissions = $this->calendarPermissions($request, $validated['year'], $validated['month']);
+        $calendar = app(SchoolCalendar::class);
+        $scopeLabel = $validated['scope'] === SchoolCalendar::SCOPE_TAHFIZH ? 'Tahfizh' : 'Adab';
+
+        if ($validated['action'] === 'lock') {
+            abort_unless($permissions['lock_'.$validated['scope']], 403);
+            $calendar->lockMonth($validated['year'], $validated['month'], $validated['scope'], $request->user()?->id);
+            $message = "Kalender {$scopeLabel} bulan ini dikunci.";
+        } else {
+            abort_unless($permissions['unlock'], 403, 'Hanya Super Admin & Admin yang bisa membuka kunci kalender.');
+            $calendar->unlockMonth($validated['year'], $validated['month'], $validated['scope']);
+            $message = "Kunci kalender {$scopeLabel} bulan ini dibuka.";
+        }
+
+        return redirect()
+            ->route('academic-calendar.index', ['year' => $validated['year'], 'month' => $validated['month']])
+            ->with('success', $message);
+    }
+
+    /**
+     * Hak akses kalender: Super Admin & Admin mengatur semuanya; Koordinator Adab
+     * (Koordinator Keagamaan, role supervisor) hanya status Adab & mengunci Adab. Bulan terkunci tidak bisa
+     * diubah untuk cakupan itu sampai dibuka Super Admin/Admin.
+     *
+     * @return array<string, bool>
+     */
+    private function calendarPermissions(Request $request, int $year, int $month): array
+    {
+        $user = $request->user();
+        $isAdmin = $user?->hasAnyRole(['super_admin', 'admin']) ?? false;
+        $isAdabCoordinator = $user?->hasRole('supervisor') ?? false;
+        $calendar = app(SchoolCalendar::class);
+        $tahfizhLocked = $calendar->isMonthLocked($year, $month, SchoolCalendar::SCOPE_TAHFIZH);
+        $adabLocked = $calendar->isMonthLocked($year, $month, SchoolCalendar::SCOPE_ADAB);
+
+        return [
+            'is_admin' => $isAdmin,
+            'edit_tahfizh' => $isAdmin && ! $tahfizhLocked,
+            'edit_adab' => ($isAdmin || $isAdabCoordinator) && ! $adabLocked,
+            'lock_tahfizh' => $isAdmin && ! $tahfizhLocked,
+            'lock_adab' => ($isAdmin || $isAdabCoordinator) && ! $adabLocked,
+            'unlock' => $isAdmin,
+            'edit_adab_days' => $isAdmin || $isAdabCoordinator,
+        ];
     }
 
     public function hafalanTargetsIndex()
@@ -239,7 +345,35 @@ class SettingController extends Controller
 
         return view('settings.hafalan-targets', [
             'config' => $config,
+            'levelLines' => TargetRules::levelLines(),
+            'mandatoryUntil' => TargetRules::mandatoryUntil(),
+            'latestSwitch' => TargetRules::latestSwitch(),
+            'canEditTargetRules' => request()->user()?->hasAnyRole(['super_admin', 'admin', 'coordinator_tahfizh']) ?? false,
         ]);
+    }
+
+    /**
+     * Aturan target otomatis (baris per level, juz wajib, batas pindah ke depan), lalu
+     * hitung ulang target otomatis triwulan berjalan untuk semua kelas 11/12.
+     */
+    public function targetRulesUpdate(Request $request)
+    {
+        $validated = $request->validate([
+            'level_lines' => ['required', 'array'],
+            'level_lines.*' => ['required', 'integer', 'between:1,60'],
+            'mandatory_until' => ['required', 'integer', 'between:2,30'],
+            'latest_switch' => ['required', 'integer', 'between:2,30', 'lte:mandatory_until'],
+        ], [
+            'latest_switch.lte' => 'Batas pindah paling akhir harus sama dengan atau setelah juz wajib (nomor juz lebih kecil atau sama).',
+        ]);
+
+        TargetRules::save($validated['level_lines'], (int) $validated['mandatory_until'], (int) $validated['latest_switch']);
+
+        @set_time_limit(300);
+        Artisan::call('tad:sync-auto-targets');
+
+        return redirect()->route('settings.hafalan-targets')
+            ->with('success', 'Aturan target otomatis disimpan dan target triwulan berjalan sudah dihitung ulang.');
     }
 
     public function hafalanTargetsUpdate(Request $request)
@@ -299,5 +433,50 @@ class SettingController extends Controller
         return redirect()
             ->route('settings.hafalan-targets')
             ->with('success', 'Konfigurasi target progres hafalan berhasil di-reset ke standar default.');
+    }
+
+    public function tahfizhScoringIndex()
+    {
+        return view('settings.tahfizh-scoring', [
+            'config' => Setting::getTahfizhScoringConfig(),
+        ]);
+    }
+
+    public function tahfizhScoringUpdate(Request $request)
+    {
+        $validated = $request->validate([
+            'target_weight' => ['required', 'integer', 'min:0', 'max:100'],
+            'exam_weight' => ['required', 'integer', 'min:0', 'max:100'],
+            'target_incomplete_score' => ['required', 'integer', 'min:0'],
+        ]);
+
+        if ($validated['target_weight'] + $validated['exam_weight'] !== 100) {
+            return redirect()
+                ->route('settings.tahfizh-scoring')
+                ->withErrors(['target_weight' => 'Total bobot ketuntasan target dan ujian harus sama dengan 100.'])
+                ->withInput();
+        }
+
+        if ($validated['target_incomplete_score'] > $validated['target_weight']) {
+            return redirect()
+                ->route('settings.tahfizh-scoring')
+                ->withErrors(['target_incomplete_score' => 'Nilai target belum tuntas tidak boleh melebihi bobot ketuntasan target.'])
+                ->withInput();
+        }
+
+        Setting::set('tahfizh_scoring_config', json_encode($validated));
+
+        return redirect()
+            ->route('settings.tahfizh-scoring')
+            ->with('success', 'Pengaturan penilaian tahfizh berhasil disimpan.');
+    }
+
+    public function tahfizhScoringReset()
+    {
+        Setting::set('tahfizh_scoring_config', null);
+
+        return redirect()
+            ->route('settings.tahfizh-scoring')
+            ->with('success', 'Pengaturan penilaian tahfizh berhasil di-reset ke standar default.');
     }
 }

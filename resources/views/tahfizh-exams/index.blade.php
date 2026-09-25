@@ -45,10 +45,33 @@
             <!-- Filter Panel -->
             <div class="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 shadow-sm rounded-xl p-5">
                 <form method="GET" action="{{ route('tahfizh-exams.index') }}" class="flex flex-wrap items-end gap-3">
+                    <!-- Status Ujian Triwulan -->
+                    <div class="flex-1 min-w-[180px]">
+                        <label class="block text-xs font-semibold uppercase text-zinc-400 dark:text-zinc-500 mb-1.5">Status Ujian ({{ $termLabel }})</label>
+                        <select name="exam_status" onchange="this.form.submit()" class="w-full rounded-lg border-zinc-300 dark:border-zinc-700 dark:bg-zinc-800 dark:text-white text-sm focus:ring-indigo-500 focus:border-indigo-500 transition">
+                            <option value="">Semua</option>
+                            <option value="belum" @selected($examStatus === 'belum')>Belum ujian triwulan ini</option>
+                            <option value="sudah" @selected($examStatus === 'sudah')>Sudah ujian triwulan ini</option>
+                        </select>
+                    </div>
+
+                    @if ($examStatus !== 'belum')
+                        <!-- Kelulusan -->
+                        <div class="flex-1 min-w-[220px]">
+                            <label class="block text-xs font-semibold uppercase text-zinc-400 dark:text-zinc-500 mb-1.5">Kelulusan (Ambang {{ $passThreshold }})</label>
+                            <x-filter-toggle
+                                name="pass_status"
+                                :options="['' => 'Semua', 'lulus' => 'Lulus', 'tidak_lulus' => 'Tidak Lulus']"
+                                :current="$passStatus"
+                                :colors="['lulus' => 'bg-emerald-600 text-white shadow-sm', 'tidak_lulus' => 'bg-rose-600 text-white shadow-sm']"
+                            />
+                        </div>
+                    @endif
+
                     <!-- Kelas -->
                     <div class="flex-1 min-w-[140px]">
                         <label class="block text-xs font-semibold uppercase text-zinc-400 dark:text-zinc-500 mb-1.5">Kelas</label>
-                        <select name="class_room_id" class="w-full rounded-lg border-zinc-300 dark:border-zinc-700 dark:bg-zinc-800 dark:text-white text-sm focus:ring-indigo-500 focus:border-indigo-500 transition">
+                        <select name="class_room_id" onchange="this.form.submit()" class="w-full rounded-lg border-zinc-300 dark:border-zinc-700 dark:bg-zinc-800 dark:text-white text-sm focus:ring-indigo-500 focus:border-indigo-500 transition">
                             <option value="">Semua Kelas</option>
                             @foreach ($classRooms as $class)
                                 <option value="{{ $class->id }}" @selected((string) request('class_room_id') === (string) $class->id)>
@@ -61,7 +84,7 @@
                     <!-- Murid -->
                     <div class="flex-1 min-w-[140px]">
                         <label class="block text-xs font-semibold uppercase text-zinc-400 dark:text-zinc-500 mb-1.5">Murid</label>
-                        <select name="student_id" class="w-full rounded-lg border-zinc-300 dark:border-zinc-700 dark:bg-zinc-800 dark:text-white text-sm focus:ring-indigo-500 focus:border-indigo-500 transition">
+                        <select name="student_id" onchange="this.form.submit()" class="w-full rounded-lg border-zinc-300 dark:border-zinc-700 dark:bg-zinc-800 dark:text-white text-sm focus:ring-indigo-500 focus:border-indigo-500 transition">
                             <option value="">Semua Murid</option>
                             @foreach ($students as $student)
                                 <option value="{{ $student->id }}" @selected((string) request('student_id') === (string) $student->id)>
@@ -74,7 +97,7 @@
                     <!-- Juz -->
                     <div class="flex-1 min-w-[110px]">
                         <label class="block text-xs font-semibold uppercase text-zinc-400 dark:text-zinc-500 mb-1.5">Juz</label>
-                        <select name="juz" class="w-full rounded-lg border-zinc-300 dark:border-zinc-700 dark:bg-zinc-800 dark:text-white text-sm focus:ring-indigo-500 focus:border-indigo-500 transition">
+                        <select name="juz" onchange="this.form.submit()" class="w-full rounded-lg border-zinc-300 dark:border-zinc-700 dark:bg-zinc-800 dark:text-white text-sm focus:ring-indigo-500 focus:border-indigo-500 transition">
                             <option value="">Semua Juz</option>
                             @for ($j = 1; $j <= 30; $j++)
                                 <option value="{{ $j }}" @selected((string) request('juz') === (string) $j)>
@@ -87,7 +110,7 @@
                     <!-- Surah -->
                     <div class="flex-1 min-w-[140px]">
                         <label class="block text-xs font-semibold uppercase text-zinc-400 dark:text-zinc-500 mb-1.5">Surah</label>
-                        <select name="surah_id" class="w-full rounded-lg border-zinc-300 dark:border-zinc-700 dark:bg-zinc-800 dark:text-white text-sm focus:ring-indigo-500 focus:border-indigo-500 transition">
+                        <select name="surah_id" onchange="this.form.submit()" class="w-full rounded-lg border-zinc-300 dark:border-zinc-700 dark:bg-zinc-800 dark:text-white text-sm focus:ring-indigo-500 focus:border-indigo-500 transition">
                             <option value="">Semua Surah</option>
                             @foreach ($surahs as $surah)
                                 <option value="{{ $surah->id }}" @selected((string) request('surah_id') === (string) $surah->id)>
@@ -116,6 +139,61 @@
             </div>
         @endif
 
+        @if ($pendingStudents)
+            <div class="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 shadow-sm rounded-xl overflow-hidden">
+                <div class="px-5 py-4 border-b border-zinc-200 dark:border-zinc-800 flex items-center justify-between gap-3">
+                    <div>
+                        <h3 class="text-sm font-semibold text-zinc-900 dark:text-white">Murid Belum Ujian Tahfizh</h3>
+                        <p class="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">Triwulan {{ $termLabel }}</p>
+                    </div>
+                    <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold bg-red-50 dark:bg-red-950/30 text-red-800 dark:text-red-300 border border-red-200 dark:border-red-800">
+                        {{ $pendingStudents->total() }} murid
+                    </span>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="min-w-full divide-y divide-zinc-200 dark:divide-zinc-800 text-sm">
+                        <thead class="bg-zinc-50 dark:bg-zinc-900/50">
+                            <tr class="text-left text-xs font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">
+                                <th class="px-5 py-3.5">No</th>
+                                <th class="px-5 py-3.5">Murid</th>
+                                <th class="px-5 py-3.5">Kelas</th>
+                                <th class="px-5 py-3.5">Level</th>
+                                <th class="px-5 py-3.5">Pembimbing</th>
+                                <th class="px-5 py-3.5 text-right">Aksi</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-zinc-100 dark:divide-zinc-800">
+                            @forelse ($pendingStudents as $pending)
+                                <tr class="hover:bg-zinc-50/50 dark:hover:bg-white/[0.015] transition duration-150">
+                                    <td class="px-5 py-4 text-zinc-400 text-xs">{{ $pendingStudents->firstItem() + $loop->index }}</td>
+                                    <td class="px-5 py-4 font-semibold text-zinc-900 dark:text-white">{{ $pending->name }}</td>
+                                    <td class="px-5 py-4 text-zinc-600 dark:text-zinc-400">{{ $pending->classRoom?->name ?: '-' }}</td>
+                                    <td class="px-5 py-4 text-zinc-600 dark:text-zinc-400">{{ ucfirst($pending->tahfizh_level ?? 'reguler') }}</td>
+                                    <td class="px-5 py-4 text-zinc-600 dark:text-zinc-400">{{ $pending->teacher?->user?->name ?: '-' }}</td>
+                                    <td class="px-5 py-4 whitespace-nowrap text-right">
+                                        <a href="{{ route('tahfizh-exams.create', ['student_id' => $pending->id]) }}" class="inline-flex items-center px-2.5 py-1.5 border border-indigo-200 dark:border-indigo-800 text-xs font-semibold text-indigo-700 dark:text-indigo-300 bg-indigo-50 dark:bg-indigo-950/30 rounded-md hover:bg-indigo-100 transition duration-150">
+                                            Mulai Ujian
+                                        </a>
+                                    </td>
+                                </tr>
+                            @empty
+                                <tr>
+                                    <td colspan="6" class="px-5 py-12 text-center text-sm font-medium text-emerald-600 dark:text-emerald-400">
+                                        Semua murid sudah ujian tahfizh di triwulan ini.
+                                    </td>
+                                </tr>
+                            @endforelse
+                        </tbody>
+                    </table>
+                </div>
+
+                @if ($pendingStudents->hasPages())
+                    <div class="px-5 py-4 border-t border-zinc-200 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-900/50">
+                        {{ $pendingStudents->links() }}
+                    </div>
+                @endif
+            </div>
+        @else
         <!-- List Table -->
         <div class="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 shadow-sm rounded-xl overflow-hidden">
             <div class="overflow-x-auto">
@@ -125,8 +203,7 @@
                             <th class="px-5 py-3.5">Tanggal</th>
                             <th class="px-5 py-3.5">Murid</th>
                             <th class="px-5 py-3.5">Materi Ujian</th>
-                            <th class="px-5 py-3.5 text-center">Soal 1-5</th>
-                            <th class="px-5 py-3.5 text-center">Nilai Akhir</th>
+                            <th class="px-5 py-3.5 text-center">Nilai Ujian</th>
                             <th class="px-5 py-3.5">Penguji</th>
                             <th class="px-5 py-3.5">Keterangan</th>
                             <th class="px-5 py-3.5 text-right">Aksi</th>
@@ -150,19 +227,9 @@
                                 <td class="px-5 py-4 font-medium text-zinc-800 dark:text-zinc-200 text-sm">
                                     {{ $exam->exam_range }}
                                 </td>
-                                <td class="px-5 py-4 text-center">
-                                    <div class="flex items-center justify-center gap-1 flex-wrap">
-                                        @foreach ([1,2,3,4,5] as $qi)
-                                            @php $qval = 'q'.$qi; @endphp
-                                            <span class="inline-block bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 rounded-md px-1.5 py-0.5 text-[10px] font-semibold border border-zinc-200 dark:border-zinc-700" title="Pertanyaan {{ $qi }}">
-                                                Q{{ $qi }}: {{ $exam->$qval }}
-                                            </span>
-                                        @endforeach
-                                    </div>
-                                </td>
                                 <td class="px-5 py-4 text-center whitespace-nowrap">
-                                    <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold {{ $exam->total_score >= 75 ? 'bg-emerald-50 dark:bg-emerald-950/30 text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800' : 'bg-red-50 dark:bg-red-950/30 text-red-800 dark:text-red-300 border border-red-200 dark:border-red-800' }}">
-                                        {{ round($exam->total_score) }}
+                                    <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold {{ $exam->total_score >= $passThreshold ? 'bg-emerald-50 dark:bg-emerald-950/30 text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800' : 'bg-red-50 dark:bg-red-950/30 text-red-800 dark:text-red-300 border border-red-200 dark:border-red-800' }}">
+                                        {{ rtrim(rtrim(number_format((float) $exam->total_score, 1), '0'), '.') }} / {{ $maxScore }}
                                     </span>
                                 </td>
                                 <td class="px-5 py-4 text-zinc-600 dark:text-zinc-400 text-sm">
@@ -195,7 +262,10 @@
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                                         </svg>
                                         <p class="text-sm font-medium">Belum ada riwayat ujian tahfizh.</p>
-                                        <a href="{{ route('tahfizh-exams.create') }}" class="text-xs text-indigo-600 dark:text-indigo-400 hover:underline font-semibold">Mulai ujian pertama →</a>
+                                        <a href="{{ route('tahfizh-exams.create') }}" class="inline-flex items-center gap-1 text-xs text-indigo-600 dark:text-indigo-400 hover:underline font-semibold">
+                                            <span>Mulai ujian pertama</span>
+                                            <x-heroicon-m-arrow-right class="w-3.5 h-3.5" />
+                                        </a>
                                     </div>
                                 </td>
                             </tr>
@@ -210,5 +280,6 @@
                 </div>
             @endif
         </div>
+        @endif
     </div>
 </x-app-layout>

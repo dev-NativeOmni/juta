@@ -140,7 +140,7 @@
                                     <div class="w-12 h-12 rounded-lg bg-white dark:bg-[#09090b]/40 border dark:border-zinc-800 flex items-center justify-center text-gray-455 font-bold">
                                         DEF
                                     </div>
-                                    <span>Menggunakan logo default IMS (SVG).</span>
+                                    <span>Menggunakan logo default TAD (SVG).</span>
                                 </div>
                             @endif
 
@@ -240,6 +240,48 @@
                                 class="block w-full text-sm text-zinc-500 file:mr-4 file:py-2.5 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-indigo-50 file:text-indigo-700 file:cursor-pointer hover:file:bg-indigo-100 dark:file:bg-zinc-800 dark:file:text-zinc-200"
                             />
                         </div>
+                    </div>
+
+                    <hr class="border-gray-200 dark:border-zinc-800" />
+
+                    <!-- Tanda Tangan Pejabat (rapor & Laporan Triwulan) -->
+                    <div class="space-y-4">
+                        <div>
+                            <h4 class="text-sm font-bold text-gray-900 dark:text-white">Tanda Tangan Pejabat</h4>
+                            <p class="text-xs text-gray-500 dark:text-zinc-500 mt-1">
+                                Dipakai di Rapor Digital (cetak) dan Laporan Triwulan (.xlsx). Nama & NIK diambil dari
+                                <a href="{{ route('digital-reports.settings') }}" class="text-indigo-600 hover:underline">Pengaturan Rapor</a>.
+                                Gunakan PNG berlatar transparan (tinta hitam/biru), maksimal 1MB. Berkas tersimpan privat, tidak bisa dibuka lewat URL.
+                            </p>
+                        </div>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            @foreach ($officials as $key => $official)
+                                <div class="p-4 rounded-xl border border-gray-200 dark:border-zinc-800 bg-gray-50/50 dark:bg-[#09090b]/20 space-y-3">
+                                    <div>
+                                        <p class="text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-zinc-400">{{ $official['label'] }}</p>
+                                        <p class="text-sm font-semibold text-gray-900 dark:text-white">{{ $official['name'] }}</p>
+                                    </div>
+                                    <div class="h-20 rounded-lg bg-white border border-dashed border-gray-300 dark:border-zinc-700 flex items-center justify-center overflow-hidden">
+                                        @if ($official['preview'])
+                                            <img src="{{ $official['preview'] }}" alt="Tanda tangan {{ $official['label'] }}" class="max-h-full max-w-full object-contain">
+                                        @else
+                                            <span class="text-xs text-gray-400">Belum ada tanda tangan</span>
+                                        @endif
+                                    </div>
+                                    <input type="file" name="signatures[{{ $key }}]" accept="image/png,image/jpeg,image/webp"
+                                           class="block w-full text-xs text-zinc-500 file:mr-3 file:py-2 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-indigo-50 file:text-indigo-700 file:cursor-pointer hover:file:bg-indigo-100 dark:file:bg-zinc-800 dark:file:text-zinc-200" />
+                                    @if ($official['preview'])
+                                        <label class="inline-flex items-center text-xs text-red-600 hover:text-red-700 cursor-pointer">
+                                            <input type="checkbox" name="reset_signatures[]" value="{{ $key }}" class="rounded border-gray-300 text-red-600 focus:ring-red-500 mr-1.5" />
+                                            Hapus tanda tangan
+                                        </label>
+                                    @endif
+                                </div>
+                            @endforeach
+                        </div>
+                        @error('signatures.*')
+                            <p class="text-xs text-red-600">{{ $message }}</p>
+                        @enderror
                     </div>
 
                     <!-- Actions -->

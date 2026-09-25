@@ -7,7 +7,7 @@
                 </h2>
 
                 <p class="mt-1 text-sm text-gray-600">
-                    Kelola dan baca notifikasi internal IMS.
+                    Kelola dan baca notifikasi internal TAD.
                 </p>
             </div>
 
@@ -83,6 +83,7 @@
                                 </label>
 
                                 <select name="scope"
+                                        onchange="this.form.submit()"
                                         class="w-full rounded-lg border-gray-300 text-sm shadow-sm focus:border-emerald-500 focus:ring-emerald-500">
                                     <option value="inbox" @selected($scope === 'inbox')>Inbox Saya</option>
                                     <option value="all" @selected($scope === 'all')>Semua Notifikasi</option>
@@ -96,6 +97,7 @@
                             </label>
 
                             <select name="status"
+                                        onchange="this.form.submit()"
                                     class="w-full rounded-lg border-gray-300 text-sm shadow-sm focus:border-emerald-500 focus:ring-emerald-500">
                                 <option value="">Semua</option>
                                 <option value="unread" @selected(request('status') === 'unread')>Belum Dibaca</option>
@@ -109,6 +111,7 @@
                             </label>
 
                             <select name="type"
+                                        onchange="this.form.submit()"
                                     class="w-full rounded-lg border-gray-300 text-sm shadow-sm focus:border-emerald-500 focus:ring-emerald-500">
                                 <option value="">Semua</option>
                                 @foreach ($availableTypes as $value => $label)
@@ -125,6 +128,7 @@
                             </label>
 
                             <select name="target_role"
+                                        onchange="this.form.submit()"
                                     class="w-full rounded-lg border-gray-300 text-sm shadow-sm focus:border-emerald-500 focus:ring-emerald-500">
                                 <option value="">Semua</option>
                                 @foreach ($availableRoles as $value => $label)

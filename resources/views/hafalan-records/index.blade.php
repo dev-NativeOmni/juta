@@ -8,9 +8,10 @@
             <div class="flex items-center gap-2 overflow-x-auto no-scrollbar py-0.5">
                 <a
                     href="{{ route('spreadsheet-input.index') }}"
-                    class="inline-flex items-center justify-center px-3 py-1.5 sm:px-3.5 sm:py-2 bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white rounded-xl font-bold text-xs shadow-md transition duration-150 shrink-0 min-h-[36px]"
+                    class="inline-flex items-center gap-1.5 justify-center px-3 py-1.5 sm:px-3.5 sm:py-2 bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white rounded-xl font-bold text-xs shadow-md transition duration-150 shrink-0 min-h-[36px]"
                 >
-                    📊 Input Spreadsheet
+                    <x-heroicon-o-table-cells class="w-4 h-4" />
+                    <span>Input Spreadsheet</span>
                 </a>
                 <a
                     href="{{ route('hafalan-records.create') }}"
@@ -68,12 +69,15 @@
             <!-- Hafalan Category Tabs (Scrollable on Mobile) -->
             <div class="flex overflow-x-auto items-center gap-2 sm:gap-3 border-b border-zinc-200 dark:border-zinc-800 pb-2 sm:pb-3 no-scrollbar -mx-1 px-1">
                 <a href="{{ route('hafalan-records.index', array_merge(request()->except('class_room_id', 'page'), ['category' => 'reguler'])) }}"
-                   class="px-3.5 py-2 rounded-xl font-bold text-xs sm:text-sm whitespace-nowrap transition min-h-[36px] inline-flex items-center shrink-0 {{ request('category', 'reguler') !== 'ummi' ? 'bg-indigo-600 text-white shadow-sm' : 'bg-zinc-100 dark:bg-zinc-800/80 text-zinc-600 dark:text-zinc-400 hover:bg-zinc-200 dark:hover:bg-zinc-700' }}">
-                    📖 Hafalan Reguler (Juz 1–30)
+                   class="px-3.5 py-2 rounded-xl font-bold text-xs sm:text-sm whitespace-nowrap transition min-h-[36px] inline-flex items-center gap-1.5 shrink-0 {{ request('category', 'reguler') !== 'ummi' ? 'bg-indigo-600 text-white shadow-sm' : 'bg-zinc-100 dark:bg-zinc-800/80 text-zinc-600 dark:text-zinc-400 hover:bg-zinc-200 dark:hover:bg-zinc-700' }}">
+                    <x-heroicon-o-book-open class="w-4 h-4" />
+                    <span>Hafalan Reguler (Juz 1–30)</span>
                 </a>
                 <a href="{{ route('hafalan-records.index', array_merge(request()->except('class_room_id', 'page'), ['category' => 'ummi'])) }}"
-                   class="px-3.5 py-2 rounded-xl font-bold text-xs sm:text-sm whitespace-nowrap transition min-h-[36px] inline-flex items-center shrink-0 {{ request('category') === 'ummi' ? 'bg-emerald-600 text-white shadow-sm' : 'bg-zinc-100 dark:bg-zinc-800/80 text-zinc-600 dark:text-zinc-400 hover:bg-zinc-200 dark:hover:bg-zinc-700' }}">
-                    🌱 Hafalan Metode Ummi <span class="text-[10px] uppercase font-black px-1.5 py-0.5 rounded bg-amber-400 text-black ml-1.5">Mulai Kelas 10</span>
+                   class="px-3.5 py-2 rounded-xl font-bold text-xs sm:text-sm whitespace-nowrap transition min-h-[36px] inline-flex items-center gap-1.5 shrink-0 {{ request('category') === 'ummi' ? 'bg-emerald-600 text-white shadow-sm' : 'bg-zinc-100 dark:bg-zinc-800/80 text-zinc-600 dark:text-zinc-400 hover:bg-zinc-200 dark:hover:bg-zinc-700' }}">
+                    <x-heroicon-o-sparkles class="w-4 h-4" />
+                    <span>Hafalan Metode Ummi</span>
+                    <span class="text-[10px] uppercase font-black px-1.5 py-0.5 rounded bg-amber-400 text-black ml-1.5">Mulai Kelas 10</span>
                 </a>
             </div>
 
@@ -82,11 +86,11 @@
                 <div class="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 shadow-sm rounded-xl p-3 sm:p-4 space-y-2">
                     <div class="flex items-center justify-between">
                         <span class="text-xs font-bold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider flex items-center gap-1.5">
-                            🏫 Filter Kelas Fast-Access:
+                            <x-heroicon-o-academic-cap class="w-3.5 h-3.5 text-indigo-500" /> Filter Kelas Fast-Access:
                         </span>
                         @if(request('class_room_id'))
-                            <a href="{{ route('hafalan-records.index', request()->except('class_room_id', 'page')) }}" class="text-[11px] font-bold text-rose-600 dark:text-rose-400 hover:underline">
-                                ✕ Hapus Filter Kelas
+                            <a href="{{ route('hafalan-records.index', request()->except('class_room_id', 'page')) }}" class="inline-flex items-center gap-1 text-[11px] font-bold text-rose-600 dark:text-rose-400 hover:underline">
+                                <x-heroicon-o-x-mark class="w-3 h-3" /> Hapus Filter Kelas
                             </a>
                         @endif
                     </div>
@@ -127,6 +131,7 @@
                             name="search"
                             value="{{ request('search') }}"
                             placeholder="Cari murid / surah..."
+                            x-on:input.debounce.600ms="$el.form.submit()"
                             class="rounded-lg border-zinc-300 dark:border-zinc-700 bg-transparent text-xs sm:text-sm text-zinc-900 dark:text-zinc-100 placeholder-zinc-400 shadow-sm"
                         >
 
@@ -134,10 +139,11 @@
                             type="date"
                             name="date"
                             value="{{ request('date') }}"
+                            onchange="this.form.submit()"
                             class="rounded-lg border-zinc-300 dark:border-zinc-700 bg-transparent text-xs sm:text-sm text-zinc-900 dark:text-zinc-100 shadow-sm"
                         >
 
-                        <select name="surah_id" class="rounded-lg border-zinc-300 dark:border-zinc-700 bg-transparent text-xs sm:text-sm text-zinc-900 dark:text-zinc-100 shadow-sm">
+                        <select name="surah_id" onchange="this.form.submit()" class="rounded-lg border-zinc-300 dark:border-zinc-700 bg-transparent text-xs sm:text-sm text-zinc-900 dark:text-zinc-100 shadow-sm">
                             <option value="">Semua Surah</option>
                             @foreach ($surahs as $surah)
                                 <option value="{{ $surah->id }}" @selected((string) request('surah_id') === (string) $surah->id)>
@@ -147,19 +153,20 @@
                         </select>
 
                         @if (request('category') !== 'ummi')
-                        <select name="submission_type" class="rounded-lg border-zinc-300 dark:border-zinc-700 bg-transparent text-xs sm:text-sm text-zinc-900 dark:text-zinc-100 shadow-sm">
+                        <select name="submission_type" onchange="this.form.submit()" class="rounded-lg border-zinc-300 dark:border-zinc-700 bg-transparent text-xs sm:text-sm text-zinc-900 dark:text-zinc-100 shadow-sm">
                             <option value="">Semua Jenis</option>
                             <option value="new" @selected(request('submission_type') === 'new')>Baru</option>
                             <option value="continuation" @selected(request('submission_type') === 'continuation')>Lanjutan</option>
                             <option value="revision" @selected(request('submission_type') === 'revision')>Perbaikan</option>
                         </select>
 
-                        <select name="status" class="rounded-lg border-zinc-300 dark:border-zinc-700 bg-transparent text-xs sm:text-sm text-zinc-900 dark:text-zinc-100 shadow-sm">
-                            <option value="">Semua Status</option>
-                            <option value="passed" @selected(request('status') === 'passed')>Lulus</option>
-                            <option value="repeat" @selected(request('status') === 'repeat')>Ulang</option>
-                            <option value="needs_improvement" @selected(request('status') === 'needs_improvement')>Perlu Perbaikan</option>
-                        </select>
+                        <div class="sm:col-span-2 lg:col-span-1 xl:col-span-2 flex items-center">
+                            <x-filter-toggle
+                                name="status"
+                                :options="['' => 'Semua Status', 'passed' => 'Lulus', 'repeat' => 'Ulang', 'needs_improvement' => 'Perlu Perbaikan']"
+                                :colors="['passed' => 'bg-emerald-600 text-white shadow-sm', 'repeat' => 'bg-rose-600 text-white shadow-sm', 'needs_improvement' => 'bg-amber-600 text-white shadow-sm']"
+                            />
+                        </div>
                         @endif
 
                         <div class="flex gap-2 col-span-1 sm:col-span-2 lg:col-span-1">
@@ -179,7 +186,9 @@
             <div class="block md:hidden space-y-3">
                 @if (request('category') === 'ummi')
                     @forelse ($hafalanRecords as $record)
-                        <div class="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 shadow-sm rounded-xl p-4 space-y-3">
+                        <div class="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 shadow-sm rounded-xl p-4 space-y-3" x-data="{ editing: false }">
+                            <template x-if="!editing">
+                            <div>
                             <div class="flex items-start justify-between gap-2 border-b border-zinc-100 dark:border-zinc-800 pb-2.5">
                                 <div>
                                     <h3 class="font-bold text-sm text-zinc-900 dark:text-white leading-tight">
@@ -191,10 +200,11 @@
                                         <span>{{ $record->tanggal?->format('d M Y') }}</span>
                                         @if (!auth()->user()->hasAnyRole(['student', 'parent']))
                                             <span>•</span>
-                                            <a href="{{ route('hafalan-records.student.ummi-card', $record->student_id) }}" 
+                                            <a href="{{ route('hafalan-records.student.ummi-card', $record->student_id) }}"
                                                target="_blank"
-                                               class="text-indigo-600 dark:text-indigo-400 hover:underline font-semibold flex items-center gap-0.5">
-                                                📄 Kartu
+                                               class="text-indigo-600 dark:text-indigo-400 hover:underline font-semibold inline-flex items-center gap-1">
+                                                <x-heroicon-o-document-text class="w-3.5 h-3.5" />
+                                                <span>Kartu</span>
                                             </a>
                                         @endif
                                     </div>
@@ -204,7 +214,7 @@
                                 </span>
                             </div>
 
-                            <div class="grid grid-cols-2 gap-2 text-xs">
+                            <div class="grid grid-cols-2 gap-2 text-xs mt-3">
                                 <div>
                                     <span class="text-zinc-400 dark:text-zinc-500 block text-[10px] uppercase font-semibold">Jilid / Hal</span>
                                     <span class="font-bold text-zinc-800 dark:text-zinc-200">
@@ -217,28 +227,46 @@
                                         {{ $record->materi ?: '-' }} | <strong class="text-indigo-600 dark:text-indigo-400">{{ $record->nilai ?? '-' }}</strong>
                                     </span>
                                 </div>
-                                @if($record->surah)
+                                @if($record->surahs->isNotEmpty())
                                 <div class="col-span-2 mt-1">
                                     <span class="text-zinc-400 dark:text-zinc-500 block text-[10px] uppercase font-semibold">Hafalan UMMI</span>
-                                    <span class="font-medium text-zinc-700 dark:text-zinc-300">
-                                        {{ $record->surah?->number }}. {{ $record->surah?->name_latin }} ({{ $record->hafalan_ayah ?: '-' }}) ({{ $record->lines_count }} Baris)
+                                    <span class="font-medium text-zinc-700 dark:text-zinc-300 space-y-0.5 block">
+                                        @foreach ($record->surahs as $surahEntry)
+                                            <span class="block">{{ $surahEntry->surah?->number }}. {{ $surahEntry->surah?->name_latin }} ({{ $surahEntry->hafalan_ayah ?: '-' }})</span>
+                                        @endforeach
+                                        <span class="block text-indigo-600 dark:text-indigo-400 font-bold">{{ $record->lines_count }} Baris</span>
                                     </span>
                                 </div>
                                 @endif
                             </div>
                             @if (!auth()->user()->hasAnyRole(['student', 'parent']))
-                                <div class="flex items-center gap-2 pt-2 border-t border-zinc-100 dark:border-zinc-800">
-                                    <a href="{{ route('ummi-records.edit', $record) }}" class="btn-action-edit flex-1 text-center">
-                                        ✏️ Edit
-                                    </a>
+                                <div class="flex items-center gap-2 pt-2 mt-2 border-t border-zinc-100 dark:border-zinc-800">
+                                    <button type="button" @click="editing = true" class="btn-action-edit flex-1 text-center inline-flex items-center justify-center gap-1 cursor-pointer">
+                                        <x-heroicon-o-pencil-square class="w-3.5 h-3.5" />
+                                        <span>Edit</span>
+                                    </button>
                                     <form method="POST" action="{{ route('ummi-records.destroy', $record) }}" onsubmit="return confirm('Hapus data progres UMMI ini?')" class="flex-1">
                                         @csrf
                                         @method('DELETE')
-                                        <button type="submit" class="btn-action-delete w-full">
-                                            🗑️ Hapus
+                                        <button type="submit" class="btn-action-delete w-full inline-flex items-center justify-center gap-1">
+                                            <x-heroicon-o-trash class="w-3.5 h-3.5" />
+                                            <span>Hapus</span>
                                         </button>
                                     </form>
                                 </div>
+                            @endif
+                            </div>
+                            </template>
+
+                            @if (!auth()->user()->hasAnyRole(['student', 'parent']))
+                                <template x-if="editing">
+                                    <div>
+                                        <h4 class="text-xs font-bold text-zinc-700 dark:text-zinc-300 mb-2">
+                                            Edit Progres UMMI — {{ $record->student?->name }}
+                                        </h4>
+                                        @include('hafalan-records.partials.ummi-inline-edit-form', ['record' => $record, 'surahs' => $surahs])
+                                    </div>
+                                </template>
                             @endif
                         </div>
                     @empty
@@ -260,43 +288,51 @@
                                         <span>{{ $record->submitted_at?->format('d M Y') }}</span>
                                     </div>
                                 </div>
-                                <span class="px-2.5 py-1 rounded-lg text-xs font-bold shrink-0
-                                    {{ $record->status === 'passed' ? 'bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-400' : '' }}
-                                    {{ $record->status === 'repeat' ? 'bg-rose-100 dark:bg-rose-950/60 text-rose-700 dark:text-rose-400' : '' }}
-                                    {{ $record->status === 'needs_improvement' ? 'bg-amber-100 dark:bg-amber-950/60 text-amber-700 dark:text-amber-400' : '' }}
-                                ">
-                                    {{ $record->status_label }}
+                                <span class="px-2.5 py-1 rounded-lg text-xs font-bold shrink-0 bg-indigo-50 dark:bg-indigo-950/40 text-indigo-700 dark:text-indigo-400">
+                                    {{ $record->lines_count }} Baris
                                 </span>
                             </div>
 
-                            <div class="grid grid-cols-2 gap-2 text-xs">
-                                <div>
-                                    <span class="text-zinc-400 dark:text-zinc-500 block text-[10px] uppercase font-semibold">Surah & Ayat</span>
-                                    <span class="font-bold text-zinc-800 dark:text-zinc-200">
-                                        {{ $record->surah?->number }}. {{ $record->surah?->name_latin }} ({{ $record->ayah_start }}-{{ $record->ayah_end }}) ({{ $record->lines_count }} Baris)
-                                    </span>
-                                </div>
-                                <div>
-                                    <span class="text-zinc-400 dark:text-zinc-500 block text-[10px] uppercase font-semibold">Jenis & Nilai</span>
-                                    <span class="font-semibold text-zinc-700 dark:text-zinc-300">
-                                        {{ $record->submission_type_label }} | <strong class="text-indigo-600 dark:text-indigo-400">{{ $record->score_letter ?? '-' }}</strong>
-                                    </span>
-                                </div>
+                            <div class="space-y-2 text-xs">
+                                @forelse ($record->surahs as $surahEntry)
+                                    <div class="flex items-center justify-between gap-2 bg-zinc-50 dark:bg-zinc-800/40 rounded-lg p-2">
+                                        <div>
+                                            <span class="font-bold text-zinc-800 dark:text-zinc-200 block">
+                                                {{ $surahEntry->surah?->number }}. {{ $surahEntry->surah?->name_latin }} ({{ $surahEntry->ayah_start }}-{{ $surahEntry->ayah_end }})
+                                            </span>
+                                            <span class="text-zinc-500 dark:text-zinc-400">
+                                                {{ $surahEntry->submission_type_label }} · Nilai <strong class="text-indigo-600 dark:text-indigo-400">{{ $surahEntry->score_letter ?? '-' }}</strong>
+                                            </span>
+                                        </div>
+                                        <span class="shrink-0 px-2 py-0.5 rounded text-[10px] font-bold
+                                            {{ $surahEntry->status === 'passed' ? 'bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-400' : '' }}
+                                            {{ $surahEntry->status === 'repeat' ? 'bg-rose-100 dark:bg-rose-950/60 text-rose-700 dark:text-rose-400' : '' }}
+                                            {{ $surahEntry->status === 'needs_improvement' ? 'bg-amber-100 dark:bg-amber-950/60 text-amber-700 dark:text-amber-400' : '' }}
+                                        ">
+                                            {{ $surahEntry->status_label }}
+                                        </span>
+                                    </div>
+                                @empty
+                                    <span class="text-zinc-400">Belum ada surah tercatat.</span>
+                                @endforelse
                             </div>
 
                             <!-- Action Bar Mobile -->
                             <div class="flex items-center gap-2 pt-2 border-t border-zinc-100 dark:border-zinc-800">
-                                <a href="{{ route('hafalan-records.show', $record) }}" class="btn-action-detail flex-1">
-                                    🔍 Detail
+                                <a href="{{ route('hafalan-records.show', $record) }}" class="btn-action-detail flex-1 inline-flex items-center justify-center gap-1">
+                                    <x-heroicon-o-magnifying-glass class="w-3.5 h-3.5" />
+                                    <span>Detail</span>
                                 </a>
-                                <a href="{{ route('hafalan-records.edit', $record) }}" class="btn-action-edit flex-1">
-                                    ✏️ Edit
+                                <a href="{{ route('hafalan-records.edit', $record) }}" class="btn-action-edit flex-1 inline-flex items-center justify-center gap-1">
+                                    <x-heroicon-o-pencil-square class="w-3.5 h-3.5" />
+                                    <span>Edit</span>
                                 </a>
                                 <form method="POST" action="{{ route('hafalan-records.destroy', $record) }}" onsubmit="return confirm('Hapus setoran hafalan ini? Data akan soft delete.')" class="flex-1">
                                     @csrf
                                     @method('DELETE')
-                                    <button type="submit" class="btn-action-delete w-full">
-                                        🗑️ Hapus
+                                    <button type="submit" class="btn-action-delete w-full inline-flex items-center justify-center gap-1">
+                                        <x-heroicon-o-trash class="w-3.5 h-3.5" />
+                                        <span>Hapus</span>
                                     </button>
                                 </form>
                             </div>
@@ -340,9 +376,9 @@
                                 </tr>
                             </thead>
 
-                            <tbody class="divide-y divide-zinc-100 dark:divide-zinc-800/60">
-                                @forelse ($hafalanRecords as $record)
-                                    <tr class="hover:bg-zinc-50/50 dark:hover:bg-zinc-800/40 transition duration-150">
+                            @forelse ($hafalanRecords as $record)
+                                <tbody x-data="{ editing: false }">
+                                    <tr class="hover:bg-zinc-50/50 dark:hover:bg-zinc-800/40 transition duration-150 {{ $loop->first ? '' : 'border-t border-zinc-100 dark:border-zinc-800/60' }}" x-show="!editing">
                                         @if (!auth()->user()->hasAnyRole(['student', 'parent']))
                                             <td class="px-3 py-3.5 text-center">
                                                 <input type="checkbox" value="{{ $record->id }}" x-model="selectedIds" class="rounded border-zinc-300 dark:border-zinc-700 text-rose-600 focus:ring-rose-500">
@@ -360,10 +396,11 @@
                                                 <span>{{ $record->student?->classRoom?->name ?: '-' }}</span>
                                                 @if (!auth()->user()->hasAnyRole(['student', 'parent']))
                                                     <span>•</span>
-                                                    <a href="{{ route('hafalan-records.student.ummi-card', $record->student_id) }}" 
+                                                    <a href="{{ route('hafalan-records.student.ummi-card', $record->student_id) }}"
                                                        target="_blank"
-                                                       class="text-indigo-600 dark:text-indigo-400 hover:underline font-semibold flex items-center gap-0.5">
-                                                        📄 Kartu
+                                                       class="text-indigo-600 dark:text-indigo-400 hover:underline font-semibold inline-flex items-center gap-1">
+                                                        <x-heroicon-o-document-text class="w-3.5 h-3.5" />
+                                                        <span>Kartu</span>
                                                     </a>
                                                 @endif
                                             </div>
@@ -381,12 +418,14 @@
                                             {{ $record->materi ?: '-' }}
                                         </td>
 
-                                        <td class="px-4 py-3.5 text-xs text-zinc-700 dark:text-zinc-300 whitespace-nowrap">
-                                            @if($record->surah)
-                                                {{ $record->surah?->number }}. {{ $record->surah?->name_latin }} ({{ $record->hafalan_ayah ?: '-' }})
-                                            @else
+                                        <td class="px-4 py-3.5 text-xs text-zinc-700 dark:text-zinc-300">
+                                            @forelse ($record->surahs as $surahEntry)
+                                                <div class="whitespace-nowrap">
+                                                    {{ $surahEntry->surah?->number }}. {{ $surahEntry->surah?->name_latin }} ({{ $surahEntry->hafalan_ayah ?: '-' }})
+                                                </div>
+                                            @empty
                                                 -
-                                            @endif
+                                            @endforelse
                                         </td>
 
                                         <td class="px-4 py-3.5 text-xs text-zinc-700 dark:text-zinc-300 text-center font-bold">
@@ -400,35 +439,47 @@
                                         </td>
 
                                         <td class="px-4 py-3.5 text-[11px] text-zinc-500 dark:text-zinc-400 whitespace-nowrap">
-                                            Guru: <span class="font-semibold {{ $record->disimak_guru === 'Ya' ? 'text-emerald-600' : 'text-zinc-400' }}">{{ $record->disimak_guru }}</span> | 
+                                            Guru: <span class="font-semibold {{ $record->disimak_guru === 'Ya' ? 'text-emerald-600' : 'text-zinc-400' }}">{{ $record->disimak_guru }}</span> |
                                             Ortu: <span class="font-semibold {{ $record->disimak_ortu === 'Ya' ? 'text-emerald-600' : 'text-zinc-400' }}">{{ $record->disimak_ortu }}</span>
                                         </td>
 
                                         @if (!auth()->user()->hasAnyRole(['student', 'parent']))
                                             <td class="px-4 py-3.5 text-right whitespace-nowrap">
                                                 <div class="flex items-center justify-end gap-1.5">
-                                                    <a href="{{ route('ummi-records.edit', $record) }}" class="btn-action-edit">
-                                                        ✏️ Edit
-                                                    </a>
+                                                    <button type="button" @click="editing = true" class="btn-action-edit inline-flex items-center gap-1 cursor-pointer">
+                                                        <x-heroicon-o-pencil-square class="w-3.5 h-3.5" />
+                                                        <span>Edit</span>
+                                                    </button>
                                                     <form method="POST" action="{{ route('ummi-records.destroy', $record) }}" onsubmit="return confirm('Hapus data progres UMMI ini?')">
                                                         @csrf
                                                         @method('DELETE')
-                                                        <button type="submit" class="btn-action-delete">
-                                                            🗑️ Hapus
+                                                        <button type="submit" class="btn-action-delete inline-flex items-center gap-1">
+                                                            <x-heroicon-o-trash class="w-3.5 h-3.5" />
+                                                            <span>Hapus</span>
                                                         </button>
                                                     </form>
                                                 </div>
                                             </td>
                                         @endif
                                     </tr>
-                                @empty
+
+                                    @if (!auth()->user()->hasAnyRole(['student', 'parent']))
+                                        <tr x-show="editing" x-cloak>
+                                            <td colspan="11" class="px-4 py-4 bg-zinc-50/70 dark:bg-zinc-900/60 border-t border-zinc-100 dark:border-zinc-800/60">
+                                                @include('hafalan-records.partials.ummi-inline-edit-form', ['record' => $record, 'surahs' => $surahs])
+                                            </td>
+                                        </tr>
+                                    @endif
+                                </tbody>
+                            @empty
+                                <tbody>
                                     <tr>
                                         <td colspan="10" class="px-4 py-6 text-center text-xs text-zinc-500">
                                             Belum ada data catatan Tahsin UMMI.
                                         </td>
                                     </tr>
-                                @endforelse
-                            </tbody>
+                                </tbody>
+                            @endforelse
                         @else
                             <thead>
                                 <tr class="text-left text-xs font-semibold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider">
@@ -471,11 +522,17 @@
                                         </td>
 
                                         <td class="px-4 py-3.5 text-xs text-zinc-700 dark:text-zinc-300">
-                                            {{ $record->surah?->number }}. {{ $record->surah?->name_latin }}
+                                            @forelse ($record->surahs as $surahEntry)
+                                                <div class="whitespace-nowrap">{{ $surahEntry->surah?->number }}. {{ $surahEntry->surah?->name_latin }}</div>
+                                            @empty
+                                                -
+                                            @endforelse
                                         </td>
 
                                         <td class="px-4 py-3.5 text-xs text-zinc-700 dark:text-zinc-300 whitespace-nowrap">
-                                            {{ $record->ayah_start }} - {{ $record->ayah_end }}
+                                            @foreach ($record->surahs as $surahEntry)
+                                                <div>{{ $surahEntry->ayah_start }} - {{ $surahEntry->ayah_end }}</div>
+                                            @endforeach
                                         </td>
 
                                         <td class="px-4 py-3.5 text-xs text-zinc-700 dark:text-zinc-300 text-center font-bold">
@@ -483,21 +540,27 @@
                                         </td>
 
                                         <td class="px-4 py-3.5 text-xs text-zinc-700 dark:text-zinc-300">
-                                            {{ $record->submission_type_label }}
+                                            @foreach ($record->surahs as $surahEntry)
+                                                <div class="whitespace-nowrap">{{ $surahEntry->submission_type_label }}</div>
+                                            @endforeach
                                         </td>
 
                                         <td class="px-4 py-3.5 font-bold text-xs text-zinc-800 dark:text-zinc-200">
-                                            {{ $record->score_letter ?? '-' }}
+                                            @foreach ($record->surahs as $surahEntry)
+                                                <div>{{ $surahEntry->score_letter ?? '-' }}</div>
+                                            @endforeach
                                         </td>
 
                                         <td class="px-4 py-3.5">
-                                            <span class="px-2.5 py-1 rounded-lg text-xs font-bold whitespace-nowrap inline-block
-                                                {{ $record->status === 'passed' ? 'bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-400' : '' }}
-                                                {{ $record->status === 'repeat' ? 'bg-rose-100 dark:bg-rose-950/60 text-rose-700 dark:text-rose-400' : '' }}
-                                                {{ $record->status === 'needs_improvement' ? 'bg-amber-100 dark:bg-amber-950/60 text-amber-700 dark:text-amber-400' : '' }}
-                                            ">
-                                                {{ $record->status_label }}
-                                            </span>
+                                            @foreach ($record->surahs as $surahEntry)
+                                                <span class="px-2.5 py-1 mb-1 rounded-lg text-xs font-bold whitespace-nowrap inline-block
+                                                    {{ $surahEntry->status === 'passed' ? 'bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-400' : '' }}
+                                                    {{ $surahEntry->status === 'repeat' ? 'bg-rose-100 dark:bg-rose-950/60 text-rose-700 dark:text-rose-400' : '' }}
+                                                    {{ $surahEntry->status === 'needs_improvement' ? 'bg-amber-100 dark:bg-amber-950/60 text-amber-700 dark:text-amber-400' : '' }}
+                                                ">
+                                                    {{ $surahEntry->status_label }}
+                                                </span>
+                                            @endforeach
                                         </td>
 
                                         <td class="px-4 py-3.5">

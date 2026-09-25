@@ -4,7 +4,8 @@
             <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <div>
                     <h2 class="font-bold text-2xl text-gray-900 dark:text-white leading-tight flex items-center gap-2">
-                        <span>🏆 Kelola Badge & Gamifikasi Hafalan</span>
+                        <x-heroicon-o-sparkles class="w-6 h-6 text-indigo-600 dark:text-indigo-400 shrink-0" />
+                        <span>Kelola Badge & Gamifikasi Hafalan</span>
                     </h2>
                     <p class="text-sm text-gray-600 dark:text-zinc-400">
                         Atur badge penghargaan, kriteria kelulusan, serta pencapaian hafalan murid.
@@ -28,7 +29,8 @@
                 @if ($dbMissing ?? false)
                     <div class="rounded-2xl border border-amber-300 bg-amber-50 p-5 shadow-sm dark:bg-amber-950/40 dark:border-amber-700/60 text-amber-900 dark:text-amber-200 space-y-2">
                         <div class="flex items-center gap-2 font-bold text-base">
-                            <span>⚠️ Migrasi Database Belum Dijalankan</span>
+                            <x-heroicon-o-exclamation-triangle class="w-5 h-5 text-amber-600 dark:text-amber-400 shrink-0" />
+                            <span>Migrasi Database Belum Dijalankan</span>
                         </div>
                         <p class="text-sm">
                             Tabel <code class="bg-amber-200/60 dark:bg-amber-900/60 px-1.5 py-0.5 rounded font-mono text-xs">badges</code> belum ada di database MySQL server Anda. Silakan jalankan perintah migrasi berikut di terminal server:
@@ -130,7 +132,7 @@
                 <div x-show="showModal" x-cloak class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 overflow-y-auto" @keydown.escape.window="closeModal()">
                     <div class="bg-white dark:bg-zinc-900 rounded-2xl border border-gray-200 dark:border-zinc-800 shadow-2xl max-w-xl w-full p-6 space-y-5" @click.away="closeModal()">
                         <div class="flex items-center justify-between border-b border-gray-100 dark:border-zinc-800 pb-3">
-                            <h3 class="text-lg font-extrabold text-gray-900 dark:text-white" x-text="editMode ? '✏️ Edit Badge' : '✨ Tambah Badge Baru'"></h3>
+                            <h3 class="text-lg font-extrabold text-gray-900 dark:text-white" x-text="editMode ? 'Edit Badge' : 'Tambah Badge Baru'"></h3>
                             <button @click="closeModal()" class="text-gray-400 hover:text-gray-600 dark:hover:text-zinc-300 text-xl font-bold cursor-pointer">&times;</button>
                         </div>
 

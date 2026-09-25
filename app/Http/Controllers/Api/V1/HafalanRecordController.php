@@ -4,7 +4,7 @@ namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
 use App\Http\Resources\Api\V1\HafalanRecordResource;
-use App\Models\HafalanRecord;
+use App\Models\HafalanRecordSurah;
 use App\Services\Api\V1\StudentApiService;
 use App\Support\ApiResponse;
 use Illuminate\Database\Eloquent\Builder;
@@ -67,38 +67,41 @@ class HafalanRecordController extends Controller
             ->visibleStudentQuery($request->user())
             ->select('students.id');
 
-        $records = HafalanRecord::query()
+        $records = HafalanRecordSurah::query()
+            ->select('hafalan_record_surahs.*')
+            ->join('hafalan_records', 'hafalan_records.id', '=', 'hafalan_record_surahs.hafalan_record_id')
+            ->whereNull('hafalan_records.deleted_at')
             ->with([
-                'student.classRoom.program',
-                'teacher.user',
+                'hafalanRecord.student.classRoom.program',
+                'hafalanRecord.teacher.user',
                 'surah',
             ])
-            ->whereIn('student_id', $visibleStudentIdsQuery)
+            ->whereIn('hafalan_records.student_id', $visibleStudentIdsQuery)
             ->when(isset($validated['student_id']), function (Builder $query) use ($validated) {
-                $query->where('student_id', (int) $validated['student_id']);
+                $query->where('hafalan_records.student_id', (int) $validated['student_id']);
             })
             ->when(isset($validated['teacher_id']), function (Builder $query) use ($validated) {
-                $query->where('teacher_id', (int) $validated['teacher_id']);
+                $query->where('hafalan_records.teacher_id', (int) $validated['teacher_id']);
             })
             ->when(isset($validated['surah_id']), function (Builder $query) use ($validated) {
-                $query->where('surah_id', (int) $validated['surah_id']);
+                $query->where('hafalan_record_surahs.surah_id', (int) $validated['surah_id']);
             })
             ->when(isset($validated['status']), function (Builder $query) use ($validated) {
-                $query->where('status', $validated['status']);
+                $query->where('hafalan_record_surahs.status', $validated['status']);
             })
             ->when(isset($validated['submission_type']), function (Builder $query) use ($validated) {
-                $query->where('submission_type', $validated['submission_type']);
+                $query->where('hafalan_record_surahs.submission_type', $validated['submission_type']);
             })
             ->when(isset($validated['from']), function (Builder $query) use ($validated) {
-                $query->whereDate('submitted_at', '>=', $validated['from']);
+                $query->whereDate('hafalan_records.submitted_at', '>=', $validated['from']);
             })
             ->when(isset($validated['to']), function (Builder $query) use ($validated) {
-                $query->whereDate('submitted_at', '<=', $validated['to']);
+                $query->whereDate('hafalan_records.submitted_at', '<=', $validated['to']);
             })
             ->when($search !== '', function (Builder $query) use ($search) {
                 $query->where(function (Builder $subQuery) use ($search) {
-                    $subQuery->where('notes', 'like', "%{$search}%")
-                        ->orWhereHas('student', function (Builder $studentQuery) use ($search) {
+                    $subQuery->where('hafalan_records.notes', 'like', "%{$search}%")
+                        ->orWhereHas('hafalanRecord.student', function (Builder $studentQuery) use ($search) {
                             $studentQuery->where('name', 'like', "%{$search}%")
                                 ->orWhere('student_number', 'like', "%{$search}%");
                         })
@@ -106,16 +109,18 @@ class HafalanRecordController extends Controller
                             $surahQuery->where('name_latin', 'like', "%{$search}%")
                                 ->orWhere('name_ar', 'like', "%{$search}%");
                         })
-                        ->orWhereHas('teacher.user', function (Builder $teacherUserQuery) use ($search) {
+                        ->orWhereHas('hafalanRecord.teacher.user', function (Builder $teacherUserQuery) use ($search) {
                             $teacherUserQuery->where('name', 'like', "%{$search}%")
                                 ->orWhere('email', 'like', "%{$search}%");
                         });
                 });
             })
-            ->latest('submitted_at')
-            ->latest()
+            ->orderByDesc('hafalan_records.submitted_at')
+            ->orderByDesc('hafalan_record_surahs.id')
             ->paginate($perPage)
             ->withQueryString();
+
+        $records->getCollection()->transform(fn (HafalanRecordSurah $record) => $record->applyHeaderOverlay());
 
         return ApiResponse::success(
             data: [
@@ -154,13 +159,16 @@ class HafalanRecordController extends Controller
             ->visibleStudentQuery($request->user())
             ->select('students.id');
 
-        $record = HafalanRecord::query()
+        $record = HafalanRecordSurah::query()
+            ->select('hafalan_record_surahs.*')
+            ->join('hafalan_records', 'hafalan_records.id', '=', 'hafalan_record_surahs.hafalan_record_id')
+            ->whereNull('hafalan_records.deleted_at')
             ->with([
-                'student.classRoom.program',
-                'teacher.user',
+                'hafalanRecord.student.classRoom.program',
+                'hafalanRecord.teacher.user',
                 'surah',
             ])
-            ->whereIn('student_id', $visibleStudentIdsQuery)
+            ->whereIn('hafalan_records.student_id', $visibleStudentIdsQuery)
             ->whereKey((int) $hafalanRecord)
             ->first();
 
@@ -170,6 +178,8 @@ class HafalanRecordController extends Controller
                 status: 404
             );
         }
+
+        $record->applyHeaderOverlay();
 
         return ApiResponse::success(
             data: [

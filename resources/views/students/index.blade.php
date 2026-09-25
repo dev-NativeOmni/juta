@@ -11,7 +11,7 @@
                         href="{{ route('students.export') }}"
                         class="inline-flex items-center justify-center px-3.5 py-2 bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white rounded-xl font-bold text-xs shadow-sm transition duration-150 min-h-[38px] flex-1 sm:flex-none"
                     >
-                        📊 Ekspor Excel
+                        <x-heroicon-o-arrow-down-tray class="w-4 h-4 mr-1.5 shrink-0" /> Ekspor Excel
                     </a>
 
                     <button
@@ -20,7 +20,7 @@
                         x-on:click.prevent="$dispatch('open-modal', 'import-students')"
                         class="inline-flex items-center justify-center px-3.5 py-2 bg-amber-600 hover:bg-amber-700 active:scale-95 text-white rounded-xl font-bold text-xs shadow-sm transition duration-150 min-h-[38px] flex-1 sm:flex-none"
                     >
-                        📥 Impor Excel
+                        <x-heroicon-o-arrow-up-tray class="w-4 h-4 mr-1.5 shrink-0" /> Impor Excel
                     </button>
                 @endif
 
@@ -56,10 +56,11 @@
                         name="search"
                         value="{{ request('search') }}"
                         placeholder="Cari nama / nomor murid..."
+                        x-on:input.debounce.600ms="$el.form.submit()"
                         class="rounded-xl border-zinc-300 dark:border-zinc-700 bg-transparent text-xs sm:text-sm text-zinc-900 dark:text-zinc-100 placeholder-zinc-400 shadow-sm py-2 px-3"
                     >
 
-                    <select name="class_room_id" class="rounded-xl border-zinc-300 dark:border-zinc-700 bg-transparent text-xs sm:text-sm text-zinc-900 dark:text-zinc-100 shadow-sm py-2 px-3 font-medium cursor-pointer">
+                    <select name="class_room_id" onchange="this.form.submit()" class="rounded-xl border-zinc-300 dark:border-zinc-700 bg-transparent text-xs sm:text-sm text-zinc-900 dark:text-zinc-100 shadow-sm py-2 px-3 font-medium cursor-pointer">
                         <option value="">Semua Kelas</option>
                         @foreach ($classRooms as $classRoom)
                             <option value="{{ $classRoom->id }}" @selected((string) request('class_room_id') === (string) $classRoom->id)>
@@ -68,7 +69,7 @@
                         @endforeach
                     </select>
 
-                    <select name="status" class="rounded-xl border-zinc-300 dark:border-zinc-700 bg-transparent text-xs sm:text-sm text-zinc-900 dark:text-zinc-100 shadow-sm py-2 px-3 font-medium cursor-pointer">
+                    <select name="status" onchange="this.form.submit()" class="rounded-xl border-zinc-300 dark:border-zinc-700 bg-transparent text-xs sm:text-sm text-zinc-900 dark:text-zinc-100 shadow-sm py-2 px-3 font-medium cursor-pointer">
                         <option value="">Semua Status</option>
                         <option value="active" @selected(request('status') === 'active')>Aktif</option>
                         <option value="inactive" @selected(request('status') === 'inactive')>Nonaktif</option>
@@ -132,17 +133,20 @@
 
                         <!-- Action Bar Mobile -->
                         <div class="flex items-center gap-2 pt-2 border-t border-zinc-100 dark:border-zinc-800">
-                            <a href="{{ route('students.show', $student) }}" class="btn-action-detail flex-1">
-                                🔍 Detail
+                            <a href="{{ route('students.show', $student) }}" class="btn-action-detail flex-1 inline-flex items-center justify-center gap-1">
+                                <x-heroicon-o-eye class="w-3.5 h-3.5" />
+                                <span>Detail</span>
                             </a>
-                            <a href="{{ route('students.edit', $student) }}" class="btn-action-edit flex-1">
-                                ✏️ Edit
+                            <a href="{{ route('students.edit', $student) }}" class="btn-action-edit flex-1 inline-flex items-center justify-center gap-1">
+                                <x-heroicon-o-pencil-square class="w-3.5 h-3.5" />
+                                <span>Edit</span>
                             </a>
                             <form method="POST" action="{{ route('students.destroy', $student) }}" onsubmit="return confirm('Hapus murid ini? Data akan soft delete.')" class="flex-1">
                                 @csrf
                                 @method('DELETE')
-                                <button type="submit" class="btn-action-delete w-full">
-                                    🗑️ Hapus
+                                <button type="submit" class="btn-action-delete w-full inline-flex items-center justify-center gap-1">
+                                    <x-heroicon-o-trash class="w-3.5 h-3.5" />
+                                    <span>Hapus</span>
                                 </button>
                             </form>
                         </div>

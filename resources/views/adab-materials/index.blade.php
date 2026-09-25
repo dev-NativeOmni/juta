@@ -80,6 +80,7 @@
                                name="q"
                                value="{{ request('q') }}"
                                placeholder="Cari berdasarkan judul atau deskripsi materi..."
+                               x-on:input.debounce.600ms="$el.form.submit()"
                                class="w-full rounded-xl border-gray-300 dark:border-zinc-700 bg-transparent text-sm focus:ring-indigo-500 focus:border-indigo-500 text-gray-900 dark:text-white"
                         />
                     </div>

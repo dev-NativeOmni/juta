@@ -2,7 +2,7 @@
 
 namespace App\Services;
 
-use App\Models\HafalanRecord;
+use App\Models\HafalanRecordSurah;
 use App\Models\HafalanTarget;
 use App\Models\MurajaahRecord;
 use App\Models\SystemNotification;
@@ -89,20 +89,21 @@ class InternalNotificationService
     {
         $created = 0;
 
-        $this->visibleHafalanRecordQuery($user)
+        $this->visibleHafalanSurahQuery($user)
             ->with([
-                'student.classRoom',
-                'teacher.user',
+                'hafalanRecord.student.classRoom',
+                'hafalanRecord.teacher.user',
                 'surah',
             ])
-            ->whereIn('status', [
+            ->whereIn('hafalan_record_surahs.status', [
                 'repeat',
                 'needs_improvement',
             ])
-            ->latest('submitted_at')
+            ->orderByDesc('hafalan_records.submitted_at')
             ->limit(100)
             ->get()
-            ->each(function (HafalanRecord $record) use ($user, &$created) {
+            ->each(function (HafalanRecordSurah $record) use ($user, &$created) {
+                $record->applyHeaderOverlay();
                 $studentName = $record->student?->name ?? 'Murid';
                 $surahName = $record->surah?->name_latin ?? 'Surah';
 
@@ -112,9 +113,9 @@ class InternalNotificationService
                     severity: 'danger',
                     title: 'Hafalan perlu tindak lanjut',
                     message: $studentName.' memiliki setoran '.$surahName.' ayat '.$record->ayah_range.' dengan status '.$record->status_label.'.',
-                    sourceType: HafalanRecord::class,
+                    sourceType: HafalanRecordSurah::class,
                     sourceId: $record->id,
-                    actionUrl: $this->recordActionUrl($user, 'hafalan-records', $record->id),
+                    actionUrl: $this->recordActionUrl($user, 'hafalan-records', $record->hafalan_record_id),
                     code: 'hafalan-attention'
                 );
             });
@@ -178,23 +179,26 @@ class InternalNotificationService
             : $query->whereIn('student_id', $studentIds);
     }
 
-    private function visibleHafalanRecordQuery(User $user): Builder
+    private function visibleHafalanSurahQuery(User $user): Builder
     {
-        $query = HafalanRecord::query();
+        $query = HafalanRecordSurah::query()
+            ->select('hafalan_record_surahs.*')
+            ->join('hafalan_records', 'hafalan_records.id', '=', 'hafalan_record_surahs.hafalan_record_id')
+            ->whereNull('hafalan_records.deleted_at');
 
         if ($user->hasAnyRole(['super_admin', 'admin'])) {
             return $query;
         }
 
         if ($user->hasRole('teacher')) {
-            return $query->where('teacher_id', $user->teacherProfile?->id ?? 0);
+            return $query->where('hafalan_records.teacher_id', $user->teacherProfile?->id ?? 0);
         }
 
         $studentIds = $this->visibleStudentIds($user);
 
         return $studentIds->isEmpty()
             ? $query->whereRaw('1 = 0')
-            : $query->whereIn('student_id', $studentIds);
+            : $query->whereIn('hafalan_records.student_id', $studentIds);
     }
 
     private function visibleMurajaahRecordQuery(User $user): Builder

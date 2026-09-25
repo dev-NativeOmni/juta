@@ -5,16 +5,21 @@ namespace App\Http\Controllers;
 use App\Models\Attendance;
 use App\Models\ClassRoom;
 use App\Models\HafalanRecord;
+use App\Models\HafalanRecordSurah;
 use App\Models\HafalanTarget;
 use App\Models\MurajaahRecord;
 use App\Models\ParentProfile;
-use App\Models\Setting;
 use App\Models\Student;
 use App\Models\StudentPoint;
 use App\Models\Surah;
 use App\Models\TeacherProfile;
 use App\Models\UmmiRecord;
 use App\Models\User;
+use App\Services\AcademicCalendarService;
+use App\Services\HafalanProgressService;
+use App\Services\QuranLineTargetService;
+use App\Services\SchoolCalendar;
+use App\Support\TargetRules;
 use Illuminate\Contracts\View\View;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
@@ -55,12 +60,12 @@ class ReportController extends Controller
         $murajaahQuery = $this->filteredMurajaahQuery($request, $visibleStudentIds);
         $targetQuery = $this->filteredTargetQuery($request, $visibleStudentIds);
 
-        $hafalanAgg = (clone $hafalanQuery)
+        $hafalanAgg = $this->filteredHafalanSurahQuery($request, $visibleStudentIds)
             ->selectRaw("
                 COUNT(*) as total,
-                SUM(CASE WHEN status = 'passed' THEN 1 ELSE 0 END) as passed_cnt,
-                SUM(CASE WHEN status IN ('repeat', 'needs_improvement') THEN 1 ELSE 0 END) as repeat_cnt,
-                AVG(score) as avg_score
+                SUM(CASE WHEN hafalan_record_surahs.status = 'passed' THEN 1 ELSE 0 END) as passed_cnt,
+                SUM(CASE WHEN hafalan_record_surahs.status IN ('repeat', 'needs_improvement') THEN 1 ELSE 0 END) as repeat_cnt,
+                AVG(hafalan_record_surahs.score) as avg_score
             ")
             ->first();
 
@@ -98,17 +103,19 @@ class ReportController extends Controller
             'average_murajaah_score' => round((float) ($murajaahAgg?->avg_score ?? 0), 2),
         ];
 
-        $hafalanRecords = (clone $hafalanQuery)
+        $hafalanRecords = $this->filteredHafalanSurahQuery($request, $visibleStudentIds)
+            ->select('hafalan_record_surahs.*')
             ->with([
-                'student.classRoom.program',
-                'student.teacher.user',
                 'surah',
-                'teacher.user',
+                'hafalanRecord.student.classRoom.program',
+                'hafalanRecord.student.teacher.user',
+                'hafalanRecord.teacher.user',
             ])
-            ->latest('submitted_at')
-            ->latest()
+            ->orderByDesc('hafalan_records.submitted_at')
+            ->orderByDesc('hafalan_record_surahs.id')
             ->paginate(20, ['*'], 'hafalan_page')
             ->withQueryString();
+        $hafalanRecords->getCollection()->transform(fn (HafalanRecordSurah $r) => $r->applyHeaderOverlay());
 
         $murajaahRecords = (clone $murajaahQuery)
             ->with([
@@ -171,13 +178,15 @@ class ReportController extends Controller
             'parents.user',
         ]);
 
-        $hafalanRecords = HafalanRecord::query()
-            ->with(['surah', 'teacher.user'])
-            ->where('student_id', $student->id)
-            ->latest('submitted_at')
-            ->latest()
-            ->limit(500)
-            ->get();
+        $hafalanRecords = HafalanRecord::flattenSurahs(
+            HafalanRecord::query()
+                ->with(['surahs.surah', 'teacher.user'])
+                ->where('student_id', $student->id)
+                ->latest('submitted_at')
+                ->latest()
+                ->limit(500)
+                ->get()
+        );
 
         $murajaahRecords = MurajaahRecord::query()
             ->with(['surah', 'teacher.user'])
@@ -236,7 +245,7 @@ class ReportController extends Controller
         $visibleStudentIds = $this->visibleStudentIds($request->user());
 
         $hafalanQuery = $this->filteredHafalanQuery($request, $visibleStudentIds)
-            ->with(['student.classRoom.program', 'surah', 'teacher.user'])
+            ->with(['student.classRoom.program', 'surahs.surah', 'teacher.user'])
             ->latest('submitted_at')
             ->latest();
 
@@ -245,7 +254,7 @@ class ReportController extends Controller
             ->latest('reviewed_at')
             ->latest();
 
-        $fileName = 'laporan-ims-'.now()->format('Ymd-His').'.csv';
+        $fileName = 'laporan-tad-'.now()->format('Ymd-His').'.csv';
 
         // Gunakan cursor() agar hanya satu baris dimuat ke memory pada satu waktu.
         return response()->streamDownload(function () use ($hafalanQuery, $murajaahQuery) {
@@ -268,21 +277,23 @@ class ReportController extends Controller
                 'Catatan',
             ]);
 
-            foreach ($hafalanQuery->cursor() as $record) {
-                fputcsv($handle, [
-                    'Hafalan',
-                    $record->student?->name,
-                    $record->student?->classRoom?->name,
-                    $record->student?->classRoom?->program?->name,
-                    $record->surah?->name_latin ?? $record->surah?->name,
-                    $record->ayah_start,
-                    $record->ayah_end,
-                    $record->status,
-                    $record->score,
-                    $this->formatDateForCsv($record->submitted_at),
-                    $record->teacher?->user?->name,
-                    $record->notes,
-                ]);
+            foreach ($hafalanQuery->cursor() as $header) {
+                foreach ($header->surahs as $record) {
+                    fputcsv($handle, [
+                        'Hafalan',
+                        $header->student?->name,
+                        $header->student?->classRoom?->name,
+                        $header->student?->classRoom?->program?->name,
+                        $record->surah?->name_latin ?? $record->surah?->name,
+                        $record->ayah_start,
+                        $record->ayah_end,
+                        $record->status,
+                        $record->score,
+                        $this->formatDateForCsv($header->submitted_at),
+                        $header->teacher?->user?->name,
+                        $header->notes,
+                    ]);
+                }
             }
 
             foreach ($murajaahQuery->cursor() as $record) {
@@ -310,6 +321,8 @@ class ReportController extends Controller
 
     public function exportStudentCsv(Request $request, Student $student): StreamedResponse
     {
+        abort_if($request->user()?->hasAnyRole(['student', 'parent']), 403, 'Akses ekspor CSV tidak diizinkan untuk akun murid dan orang tua.');
+
         $visibleStudentIds = $this->visibleStudentIds($request->user());
 
         abort_unless($visibleStudentIds->contains($student->id), 403);
@@ -325,8 +338,63 @@ class ReportController extends Controller
     {
         $query = HafalanRecord::query();
 
-        $this->applyCommonFilters($query, $request, $visibleStudentIds);
+        $this->applyCommonFilters($query, $request, $visibleStudentIds, allowStatusFilter: true, filterViaSurahs: true);
         $this->applyDateFilters($query, $request, 'submitted_at');
+
+        return $query;
+    }
+
+    /**
+     * Same filters as filteredHafalanQuery(), but scoped to hafalan_record_surahs
+     * rows directly (joined to their header) for raw aggregate queries where
+     * per-surah status/score must be counted at the child-row granularity, not
+     * "does this header have any matching child".
+     */
+    /**
+     * Base filtered query joining hafalan_record_surahs to their header, scoped to
+     * the given student ids. No SELECT clause is applied here — the join means a
+     * bare "SELECT *" would collide on columns both tables share (id, created_at,
+     * ...), so every caller must specify its own select() or selectRaw().
+     */
+    private function filteredHafalanSurahQuery(Request $request, Collection $visibleStudentIds): Builder
+    {
+        $query = HafalanRecordSurah::query()
+            ->join('hafalan_records', 'hafalan_records.id', '=', 'hafalan_record_surahs.hafalan_record_id')
+            ->whereNull('hafalan_records.deleted_at')
+            ->whereIn('hafalan_records.student_id', $visibleStudentIds);
+
+        $studentId = $request->integer('student_id');
+        if ($studentId > 0) {
+            abort_unless($visibleStudentIds->contains($studentId), 403);
+            $query->where('hafalan_records.student_id', $studentId);
+        }
+
+        if ($request->filled('class_room_id')) {
+            $classRoomId = $request->integer('class_room_id');
+            $query->whereIn('hafalan_records.student_id', function ($sub) use ($classRoomId) {
+                $sub->select('id')->from('students')->where('class_room_id', $classRoomId);
+            });
+        }
+
+        if ($request->filled('teacher_id')) {
+            $query->where('hafalan_records.teacher_id', $request->integer('teacher_id'));
+        }
+
+        if ($request->filled('surah_id')) {
+            $query->where('hafalan_record_surahs.surah_id', $request->integer('surah_id'));
+        }
+
+        if ($request->filled('status')) {
+            $query->where('hafalan_record_surahs.status', $request->string('status')->toString());
+        }
+
+        if ($request->filled('from')) {
+            $query->whereDate('hafalan_records.submitted_at', '>=', $request->date('from')->toDateString());
+        }
+
+        if ($request->filled('to')) {
+            $query->whereDate('hafalan_records.submitted_at', '<=', $request->date('to')->toDateString());
+        }
 
         return $query;
     }
@@ -355,7 +423,8 @@ class ReportController extends Controller
         Builder $query,
         Request $request,
         Collection $visibleStudentIds,
-        bool $allowStatusFilter = true
+        bool $allowStatusFilter = true,
+        bool $filterViaSurahs = false
     ): void {
         $query->whereIn('student_id', $visibleStudentIds);
 
@@ -375,6 +444,23 @@ class ReportController extends Controller
 
         if ($request->filled('teacher_id')) {
             $query->where('teacher_id', $request->integer('teacher_id'));
+        }
+
+        // HafalanRecord moved surah_id/status onto its `surahs` child rows, so those
+        // filters need to go through whereHas instead of a direct column match.
+        if ($filterViaSurahs) {
+            if ($request->filled('surah_id') || ($allowStatusFilter && $request->filled('status'))) {
+                $query->whereHas('surahs', function (Builder $surahQuery) use ($request, $allowStatusFilter) {
+                    if ($request->filled('surah_id')) {
+                        $surahQuery->where('surah_id', $request->integer('surah_id'));
+                    }
+                    if ($allowStatusFilter && $request->filled('status')) {
+                        $surahQuery->where('status', $request->string('status')->toString());
+                    }
+                });
+            }
+
+            return;
         }
 
         if ($request->filled('surah_id')) {
@@ -477,6 +563,12 @@ class ReportController extends Controller
                 ->pluck('student_id');
         }
 
+        if ($this->userHasAnyRole($user, ['wali_kelas'])) {
+            return Student::query()
+                ->whereHas('classRoom', fn ($q) => $q->where('wali_kelas_user_id', $user->id))
+                ->pluck('id');
+        }
+
         if ($this->userHasAnyRole($user, ['student'])) {
             if (! Schema::hasColumn('students', 'user_id')) {
                 return collect();
@@ -522,10 +614,13 @@ class ReportController extends Controller
         $performanceData = [];
 
         foreach ($teachers as $teacher) {
-            // Count total hafalan inputs
-            $totalHafalan = HafalanRecord::where('teacher_id', $teacher->id)
-                ->whereYear('submitted_at', $year)
-                ->whereMonth('submitted_at', $month)
+            // Count total hafalan inputs (per surah submitted, matching historical semantics)
+            $totalHafalan = DB::table('hafalan_record_surahs')
+                ->join('hafalan_records', 'hafalan_records.id', '=', 'hafalan_record_surahs.hafalan_record_id')
+                ->whereNull('hafalan_records.deleted_at')
+                ->where('hafalan_records.teacher_id', $teacher->id)
+                ->whereYear('hafalan_records.submitted_at', $year)
+                ->whereMonth('hafalan_records.submitted_at', $month)
                 ->count();
 
             // Count total murajaah inputs
@@ -547,11 +642,14 @@ class ReportController extends Controller
                 ->count();
 
             // Average student scores
-            $avgHafalan = HafalanRecord::where('teacher_id', $teacher->id)
-                ->whereYear('submitted_at', $year)
-                ->whereMonth('submitted_at', $month)
-                ->whereNotNull('score')
-                ->avg('score');
+            $avgHafalan = DB::table('hafalan_record_surahs')
+                ->join('hafalan_records', 'hafalan_records.id', '=', 'hafalan_record_surahs.hafalan_record_id')
+                ->whereNull('hafalan_records.deleted_at')
+                ->where('hafalan_records.teacher_id', $teacher->id)
+                ->whereYear('hafalan_records.submitted_at', $year)
+                ->whereMonth('hafalan_records.submitted_at', $month)
+                ->whereNotNull('hafalan_record_surahs.score')
+                ->avg('hafalan_record_surahs.score');
 
             $avgMurajaah = MurajaahRecord::where('teacher_id', $teacher->id)
                 ->whereYear('reviewed_at', $year)
@@ -773,12 +871,14 @@ class ReportController extends Controller
         $studentIds = $students->pluck('id');
 
         // Fetch records
-        $hafalanRecords = HafalanRecord::query()
-            ->with(['surah', 'student'])
-            ->whereIn('student_id', $studentIds)
-            ->where('status', 'passed')
-            ->whereBetween('submitted_at', [$startDate, $endDate])
-            ->get();
+        $hafalanRecords = HafalanRecord::flattenSurahs(
+            HafalanRecord::query()
+                ->with(['surahs' => fn ($q) => $q->where('status', 'passed')->with('surah'), 'student'])
+                ->whereIn('student_id', $studentIds)
+                ->whereHas('surahs', fn ($q) => $q->where('status', 'passed'))
+                ->whereBetween('submitted_at', [$startDate, $endDate])
+                ->get()
+        );
 
         $murajaahRecords = MurajaahRecord::query()
             ->with(['surah', 'student'])
@@ -916,14 +1016,15 @@ class ReportController extends Controller
             ->groupBy('student_id');
 
         // Bulk fetch latest passed hafalan records for all students in scope
-        $allPassedHafalan = HafalanRecord::query()
-            ->with('surah')
-            ->whereIn('student_id', $studentIds)
-            ->where('status', 'passed')
-            ->where('submitted_at', '<=', $endDate)
-            ->orderBy('submitted_at', 'desc')
-            ->get()
-            ->groupBy('student_id');
+        $allPassedHafalan = HafalanRecord::flattenSurahs(
+            HafalanRecord::query()
+                ->with(['surahs' => fn ($q) => $q->where('status', 'passed')->with('surah')])
+                ->whereIn('student_id', $studentIds)
+                ->whereHas('surahs', fn ($q) => $q->where('status', 'passed'))
+                ->where('submitted_at', '<=', $endDate)
+                ->orderBy('submitted_at', 'desc')
+                ->get()
+        )->groupBy('student_id');
 
         // Bulk fetch violations for all students in scope
         $allViolations = StudentPoint::query()
@@ -942,7 +1043,7 @@ class ReportController extends Controller
 
         // Bulk fetch latest UmmiRecords for Grade 10 / Ummi students
         $allUmmiRecords = UmmiRecord::query()
-            ->with('surah')
+            ->with('surahs.surah')
             ->whereIn('student_id', $studentIds)
             ->where('tanggal', '<=', $endDate)
             ->orderBy('tanggal', 'desc')
@@ -955,7 +1056,7 @@ class ReportController extends Controller
             $studentMurajaah = $murajaahRecords->where('student_id', $student->id);
 
             // Latest surah during the period
-            $latestHafalan = $studentHafalan->sortByDesc('submitted_at')->first();
+            $latestHafalan = app(QuranLineTargetService::class)->latestByPosition($studentHafalan, $student->hafalan_direction);
             $latestMurajaah = $studentMurajaah->sortByDesc('reviewed_at')->first();
 
             $latestProgressText = '-';
@@ -977,13 +1078,7 @@ class ReportController extends Controller
             }
 
             // Calculate Target Baris
-            $levelBaris = match ($student->tahfizh_level) {
-                'tahsin' => 3,
-                'reguler' => 5,
-                'akselerasi' => 7,
-                'ummi' => null,
-                default => 5,
-            };
+            $levelBaris = TargetRules::linesForLevel($student->tahfizh_level);
 
             if ($levelBaris === null) {
                 $targetBaris = 0;
@@ -993,20 +1088,11 @@ class ReportController extends Controller
                 $targetBaris = $levelBaris * $meetings;
             }
 
-            // Check if student completed their target
-            $isTuntas = ($levelBaris === null) ? true : ($capaianBaris >= $targetBaris);
-
-            if ($isTuntas) {
-                $tuntasCount++;
-            } else {
-                $tidakTuntasCount++;
-            }
-
             // Target Surah and Ayat (latest target_date <= $endDate)
             $latestTarget = $allLatestTargets->get($student->id, collect())->first();
 
             $targetSurah = $latestTarget?->surah?->name_latin ?? '-';
-            $targetAyat = $latestTarget?->ayah_end ?? '-';
+            $targetAyat = $latestTarget?->ayah ?? '-';
 
             // Capaian Surah and Ayat (latest passed setoran submitted_at <= $endDate)
             $studentPassedRecords = $allPassedHafalan->get($student->id, collect());
@@ -1014,6 +1100,30 @@ class ReportController extends Controller
 
             $capaianSurah = $latestHafalanPassed?->surah?->name_latin ?? '-';
             $capaianAyat = $latestHafalanPassed?->ayah_end ?? '-';
+
+            // Tuntas: kelas 11 & 12 dengan target posisi -> semua ayat dari titik awal triwulan target
+            // sampai target sudah lulus disetor per akhir periode (HafalanProgressService); selain itu
+            // (Kelas 10/Ummi, tanpa target) dari jumlah baris.
+            if (! $isGrade10 && $levelBaris !== null && $latestTarget?->surah) {
+                $calendar = app(AcademicCalendarService::class);
+                $targetTermMonths = $calendar->termMonths(Carbon::parse($latestTarget->target_date));
+                $isTuntas = app(HafalanProgressService::class)->evaluate(
+                    $student,
+                    (int) $latestTarget->surah->number,
+                    (int) $latestTarget->ayah,
+                    reset($targetTermMonths)['start'],
+                    end($targetTermMonths)['end'],
+                    Carbon::parse($endDate)
+                )['reached'];
+            } else {
+                $isTuntas = ($levelBaris === null) ? true : ($capaianBaris >= $targetBaris);
+            }
+
+            if ($isTuntas) {
+                $tuntasCount++;
+            } else {
+                $tidakTuntasCount++;
+            }
 
             // Ummi Record Details
             $latestUmmi = $allUmmiRecords->get($student->id, collect())->first();
@@ -1028,7 +1138,9 @@ class ReportController extends Controller
             } else {
                 $ummiHalaman = '-';
             }
-            $ummiCapaian = $latestUmmi?->surah?->name_latin ?? ($latestUmmi?->materi ?? '-');
+            $ummiCapaian = ($latestUmmi && $latestUmmi->surahs->isNotEmpty())
+                ? $latestUmmi->surahs_label
+                : ($latestUmmi?->materi ?? '-');
 
             $ziyadahText = '-';
             if ($latestHafalanPassed && $latestHafalanPassed->surah) {
@@ -1107,48 +1219,24 @@ class ReportController extends Controller
 
     private function countMeetings(Carbon $startDate, Carbon $endDate, string $meetingFrequency, ClassRoom $classRoom): int
     {
-        $meetings = 0;
+        $calendar = app(SchoolCalendar::class);
         $current = $startDate->copy()->startOfDay();
         $end = $endDate->copy()->endOfDay();
-        $tahfizhDays = $classRoom->tahfizh_days;
+        $meetings = 0;
+        $weeks = [];
 
-        $year = $startDate->year;
-        $holidays = Setting::getNationalHolidays($year);
-        $classHolidaysRaw = Setting::get("class_holidays_{$year}");
-        $classHolidays = $classHolidaysRaw ? json_decode($classHolidaysRaw, true) : [];
-
-        if ($meetingFrequency === 'seminggu sekali') {
-            $weeks = [];
-            while ($current->lte($end)) {
-                $dayOfWeek = $current->dayOfWeek;
-                $isoDay = $dayOfWeek === 0 ? 7 : $dayOfWeek;
-                $dateString = $current->toDateString();
-
-                $isClassHoliday = isset($classHolidays[$dateString]) && in_array($classRoom->id, $classHolidays[$dateString]);
-
-                if (in_array($isoDay, $tahfizhDays, true) && ! in_array($dateString, $holidays, true) && ! $isClassHoliday) {
-                    $weekNum = $current->format('o-W');
-                    $weeks[$weekNum] = true;
-                }
-                $current->addDay();
-            }
-            $meetings = count($weeks);
-        } else {
-            while ($current->lte($end)) {
-                $dayOfWeek = $current->dayOfWeek;
-                $isoDay = $dayOfWeek === 0 ? 7 : $dayOfWeek;
-                $dateString = $current->toDateString();
-
-                $isClassHoliday = isset($classHolidays[$dateString]) && in_array($classRoom->id, $classHolidays[$dateString]);
-
-                if (in_array($isoDay, $tahfizhDays, true) && ! in_array($dateString, $holidays, true) && ! $isClassHoliday) {
+        while ($current->lte($end)) {
+            if ($calendar->isTahfizhEffectiveDay($classRoom, $current)) {
+                if ($meetingFrequency === 'seminggu sekali') {
+                    $weeks[$current->format('o-W')] = true;
+                } else {
                     $meetings++;
                 }
-                $current->addDay();
             }
+            $current->addDay();
         }
 
-        return $meetings;
+        return $meetingFrequency === 'seminggu sekali' ? count($weeks) : $meetings;
     }
 
     private static ?array $quranVerseLines = null;
@@ -1297,11 +1385,13 @@ class ReportController extends Controller
         $studentIds = $students->pluck('id');
 
         // Fetch records for this date
-        $hafalanRecords = HafalanRecord::query()
-            ->with(['surah'])
-            ->whereIn('student_id', $studentIds)
-            ->whereDate('submitted_at', $selectedDate)
-            ->get();
+        $hafalanRecords = HafalanRecord::flattenSurahs(
+            HafalanRecord::query()
+                ->with(['surahs.surah'])
+                ->whereIn('student_id', $studentIds)
+                ->whereDate('submitted_at', $selectedDate)
+                ->get()
+        );
 
         $murajaahRecords = MurajaahRecord::query()
             ->with(['surah'])
@@ -1310,7 +1400,7 @@ class ReportController extends Controller
             ->get();
 
         $ummiRecords = UmmiRecord::query()
-            ->with(['surah'])
+            ->with(['surahs.surah'])
             ->whereIn('student_id', $studentIds)
             ->whereDate('tanggal', $selectedDate)
             ->get();
@@ -1327,8 +1417,8 @@ class ReportController extends Controller
             $firstUmmi = $ummiRecords->first();
             $classUmmiJilid = $firstUmmi->ummi_jilid;
             $classUmmiHalaman = $firstUmmi->ummi_halaman;
-            if ($firstUmmi->surah) {
-                $classUmmiHafalanSurah = $firstUmmi->surah->name_latin;
+            if ($firstUmmi->surahs->isNotEmpty()) {
+                $classUmmiHafalanSurah = $firstUmmi->surahs_label;
             }
         }
 
@@ -1413,35 +1503,6 @@ class ReportController extends Controller
 
     private function getFurthestHafalanRecord(Collection $records, bool $isGrade10Ummi = false): mixed
     {
-        if ($records->isEmpty()) {
-            return null;
-        }
-
-        if ($isGrade10Ummi) {
-            // Khusus Kelas 10 / Metode Ummi di Juz 30 (Surah 78 An-Naba' s/d 114 An-Naas):
-            // Perjalanan dari Surah 114 (An-Naas) menuju 78 (An-Naba').
-            // Capaian tertinggi/terjauh di Juz 30 adalah rekor dengan nomor surah paling kecil (mendekati 78).
-            $juz30Records = $records->filter(function ($r) {
-                $num = $r->surah?->number;
-
-                return $num >= 78 && $num <= 114;
-            });
-
-            if ($juz30Records->isNotEmpty()) {
-                return $juz30Records->sort(function ($a, $b) {
-                    $numA = $a->surah?->number ?? 114;
-                    $numB = $b->surah?->number ?? 114;
-                    if ($numA !== $numB) {
-                        return $numA <=> $numB; // Nomor surah lebih kecil = lebih dekat ke 78 An-Naba'
-                    }
-                    $dateA = $a->submitted_at ? Carbon::parse($a->submitted_at)->timestamp : 0;
-                    $dateB = $b->submitted_at ? Carbon::parse($b->submitted_at)->timestamp : 0;
-
-                    return $dateB <=> $dateA;
-                })->first();
-            }
-        }
-
-        return $records->sortByDesc(fn ($r) => $r->submitted_at ? Carbon::parse($r->submitted_at)->timestamp : 0)->first();
+        return app(QuranLineTargetService::class)->furthestRecord($records, $isGrade10Ummi);
     }
 }

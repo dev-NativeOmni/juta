@@ -172,6 +172,24 @@
                                 <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
                             @enderror
                         </div>
+                        <div>
+                            <label for="hafalan_direction" class="block text-sm font-medium text-gray-700">
+                                Arah Hafalan
+                            </label>
+                            <select
+                                id="hafalan_direction"
+                                name="hafalan_direction"
+                                class="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
+                            >
+                                @foreach (\App\Support\HafalanOrder::directionOptions() as $value => $label)
+                                    <option value="{{ $value }}" @selected(\App\Support\HafalanOrder::normalizeDirection(old('hafalan_direction', 'backward')) === $value)>{{ $label }}</option>
+                                @endforeach
+                            </select>
+                            <p class="mt-1 text-xs text-gray-500">Juz 30 &amp; 29 selalu lebih dulu; pindah ke depan paling lambat setelah Juz 27. Dipakai untuk menghitung target otomatis.</p>
+                            @error('hafalan_direction')
+                                <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                            @enderror
+                        </div>
 
                         <div>
                             <label for="user_id" class="block text-sm font-medium text-gray-700">
@@ -276,9 +294,9 @@
                                 type="button" 
                                 x-show="search.length > 0" 
                                 @click="search = ''; currentPage = 1" 
-                                class="absolute inset-y-0 right-0 pr-3 flex items-center text-xs text-gray-400 hover:text-gray-600 font-bold"
+                                class="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600"
                             >
-                                ✕
+                                <x-heroicon-o-x-mark class="w-4 h-4" />
                             </button>
                         </div>
 

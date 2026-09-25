@@ -33,6 +33,11 @@ class StudentPointController extends Controller
             $studentIds = $parent?->students->pluck('id')->toArray() ?? [];
             $query->whereIn('student_id', $studentIds);
             $visibleStudentIds = collect($studentIds);
+        } elseif ($user->hasRole('wali_kelas') && ! $user->hasAnyRole(['super_admin', 'admin'])) {
+            $visibleStudentIds = Student::where('status', 'active')
+                ->whereHas('classRoom', fn ($q) => $q->where('wali_kelas_user_id', $user->id))
+                ->pluck('id');
+            $query->whereIn('student_id', $visibleStudentIds);
         } else {
             $visibleStudentIds = Student::where('status', 'active')->pluck('id');
         }
@@ -77,6 +82,8 @@ class StudentPointController extends Controller
             $parent = ParentProfile::where('user_id', $user->id)->with('students')->first();
             $studentIds = $parent?->students->pluck('id')->toArray() ?? [];
             $statsQuery->whereIn('student_id', $studentIds);
+        } elseif ($user->hasRole('wali_kelas') && ! $user->hasAnyRole(['super_admin', 'admin'])) {
+            $statsQuery->whereIn('student_id', $visibleStudentIds);
         }
 
         $totalViolations = (clone $statsQuery)->whereIn('type', ['violation', 'lateness', 'attribute'])->sum('points');
@@ -108,11 +115,15 @@ class StudentPointController extends Controller
             ->get()
             ->keyBy('achievement_level');
 
-        // Top Students (Violations vs Rewards)
+        // Top Students (Violations vs Rewards) -- wali_kelas dibatasi ke murid kelasnya saja,
+        // role lain (admin/teacher/headmaster/tanse) tetap melihat leaderboard sekolah.
+        $isWaliKelasOnly = $user->hasRole('wali_kelas') && ! $user->hasAnyRole(['super_admin', 'admin']);
+
         $topAchievers = Student::query()
             ->select('students.id', 'students.name')
             ->join('student_points', 'students.id', '=', 'student_points.student_id')
             ->where('student_points.type', 'reward')
+            ->when($isWaliKelasOnly, fn ($q) => $q->whereIn('students.id', $visibleStudentIds))
             ->selectRaw('sum(student_points.points) as total_points')
             ->groupBy('students.id', 'students.name')
             ->orderByDesc('total_points')
@@ -123,6 +134,7 @@ class StudentPointController extends Controller
             ->select('students.id', 'students.name')
             ->join('student_points', 'students.id', '=', 'student_points.student_id')
             ->whereIn('student_points.type', ['violation', 'lateness', 'attribute'])
+            ->when($isWaliKelasOnly, fn ($q) => $q->whereIn('students.id', $visibleStudentIds))
             ->selectRaw('sum(student_points.points) as total_points')
             ->groupBy('students.id', 'students.name')
             ->orderByDesc('total_points')
@@ -253,6 +265,8 @@ class StudentPointController extends Controller
                 $q->where('pendamping_adab_id', $user->id)
                     ->orWhereHas('pendampingAdabList', fn ($sub) => $sub->where('users.id', $user->id));
             });
+        } elseif ($user->hasRole('wali_kelas') && ! $user->hasAnyRole(['super_admin', 'admin'])) {
+            $classRoomsQuery->where('wali_kelas_user_id', $user->id);
         }
 
         $classRooms = $classRoomsQuery->get();
@@ -260,22 +274,30 @@ class StudentPointController extends Controller
         $allStudentsInScope = $classRooms->flatMap(fn ($c) => $c->students);
         $studentIds = $allStudentsInScope->pluck('id')->toArray();
 
-        // ─── Violations for selected month ───
-        $monthViolations = StudentPoint::violations()
+        // Jenis catatan: pelanggaran (default) atau penghargaan/prestasi. Seluruh laporan
+        // di bawah memakai jenis ini; sub-jenis = tipe pelanggaran / jenis prestasi.
+        $category = $request->input('category') === 'reward' ? 'reward' : 'violation';
+        $typeKey = $category === 'reward' ? 'achievement_type' : 'type';
+        $typeLabels = $category === 'reward'
+            ? ['academic' => 'Akademik', 'non-academic' => 'Non-Akademik', 'other' => 'Lainnya']
+            : ['lateness' => 'Telat', 'attribute' => 'Atribut', 'violation' => 'Tatib'];
+        $typeOf = fn (StudentPoint $point) => $point->{$typeKey} ?: 'other';
+        $pointsQuery = fn () => ($category === 'reward'
+                ? StudentPoint::query()->where('type', 'reward')
+                : StudentPoint::violations())
             ->whereIn('student_id', $studentIds)
-            ->whereYear('date', $year)
-            ->whereMonth('date', $month)
-            ->when($classRoomId, fn ($q) => $q->whereHas('student', fn ($sq) => $sq->where('class_room_id', $classRoomId)))
-            ->get();
+            ->when($classRoomId, fn ($q) => $q->whereHas('student', fn ($sq) => $sq->where('class_room_id', $classRoomId)));
+        $typeCounts = fn ($points) => collect($typeLabels)->map(fn ($label, $key) => $points->filter(fn ($p) => $typeOf($p) === $key)->count())->all();
+        // Catatan terakhir: sanksi untuk pelanggaran, nama prestasi untuk penghargaan.
+        $notesOf = fn ($points) => $category === 'reward'
+            ? $points->sortByDesc('date')->pluck('title')->filter()->unique()->take(3)->values()->all()
+            : $points->pluck('sanction')->filter()->unique()->values()->all();
 
-        $monthViolationsCount = $monthViolations->count();
-        $monthViolationsPoints = $monthViolations->sum('points');
-
-        $typeBreakdown = [
-            'lateness' => $monthViolations->where('type', 'lateness')->count(),
-            'attribute' => $monthViolations->where('type', 'attribute')->count(),
-            'violation' => $monthViolations->where('type', 'violation')->count(),
-        ];
+        // ─── Catatan bulan terpilih ───
+        $monthPoints = $pointsQuery()->whereYear('date', $year)->whereMonth('date', $month)->get();
+        $monthViolationsCount = $monthPoints->count();
+        $monthViolationsPoints = $monthPoints->sum('points');
+        $typeBreakdown = $typeCounts($monthPoints);
 
         $monthsList = [
             1 => 'Januari', 2 => 'Februari', 3 => 'Maret',
@@ -284,115 +306,88 @@ class StudentPointController extends Controller
             10 => 'Oktober', 11 => 'November', 12 => 'Desember',
         ];
 
-        // ─── Violations for entire year (1 Query) ───
-        $allYearViolations = StudentPoint::violations()
-            ->whereIn('student_id', $studentIds)
-            ->whereYear('date', $year)
-            ->when($classRoomId, fn ($q) => $q->whereHas('student', fn ($sq) => $sq->where('class_room_id', $classRoomId)))
-            ->get();
-
-        $violationsByMonth = $allYearViolations->groupBy(fn ($item) => (int) Carbon::parse($item->date)->format('n'));
+        // ─── Tren setahun (1 query) ───
+        $pointsByMonth = $pointsQuery()->whereYear('date', $year)->get()
+            ->groupBy(fn ($item) => (int) Carbon::parse($item->date)->format('n'));
 
         $monthlyTrends = [];
         for ($m = 1; $m <= 12; $m++) {
-            $mViolations = $violationsByMonth->get($m, collect());
+            $mPoints = $pointsByMonth->get($m, collect());
             $monthlyTrends[$m] = [
                 'month_name' => substr($monthsList[$m], 0, 3),
                 'full_month_name' => $monthsList[$m],
-                'count' => $mViolations->count(),
-                'points' => $mViolations->sum('points'),
+                'count' => $mPoints->count(),
+                'points' => $mPoints->sum('points'),
             ];
         }
 
-        // Group month violations by student_id for fast lookup
-        $monthViolationsByStudent = $monthViolations->groupBy('student_id');
+        $monthPointsByStudent = $monthPoints->groupBy('student_id');
 
-        $classReport = $classRooms->map(function ($classRoom) use ($monthViolationsByStudent) {
-            $students = $classRoom->students;
-            $totalStudents = $students->count();
-
-            $studentsDetail = $students->map(function ($student) use ($monthViolationsByStudent) {
-                $stViolations = $monthViolationsByStudent->get($student->id, collect());
-
-                $vCount = $stViolations->count();
-                $vPoints = $stViolations->sum('points');
-
-                $latenessCount = $stViolations->where('type', 'lateness')->count();
-                $attributeCount = $stViolations->where('type', 'attribute')->count();
-                $tatibCount = $stViolations->where('type', 'violation')->count();
+        $classReport = $classRooms->map(function ($classRoom) use ($monthPointsByStudent, $typeCounts, $notesOf) {
+            $studentsDetail = $classRoom->students->map(function ($student) use ($monthPointsByStudent, $typeCounts, $notesOf) {
+                $stPoints = $monthPointsByStudent->get($student->id, collect());
 
                 return [
                     'student' => $student,
-                    'violation_count' => $vCount,
-                    'violation_points' => $vPoints,
-                    'lateness_count' => $latenessCount,
-                    'attribute_count' => $attributeCount,
-                    'tatib_count' => $tatibCount,
-                    'recent_sanctions' => $stViolations->pluck('sanction')->filter()->values()->all(),
+                    'violation_count' => $stPoints->count(),
+                    'violation_points' => $stPoints->sum('points'),
+                    'type_counts' => $typeCounts($stPoints),
+                    'recent_notes' => $notesOf($stPoints),
                 ];
             })->sortByDesc('violation_points')->values()->all();
 
-            $totalViolationCount = collect($studentsDetail)->sum('violation_count');
-            $totalViolationPoints = collect($studentsDetail)->sum('violation_points');
-
             return [
                 'class_room' => $classRoom,
-                'total_students' => $totalStudents,
-                'violation_count' => $totalViolationCount,
-                'violation_points' => $totalViolationPoints,
+                'total_students' => $classRoom->students->count(),
+                'violation_count' => collect($studentsDetail)->sum('violation_count'),
+                'violation_points' => collect($studentsDetail)->sum('violation_points'),
                 'students_detail' => $studentsDetail,
             ];
         })->sortByDesc('violation_count')->values();
 
-        // ─── Student Leaderboard (Rekap Murid Terbanyak Pelanggaran) ───
+        // ─── Peringkat murid ───
         $timeFrame = $request->input('time_frame', 'month'); // 'month' or 'all'
-        $violationType = $request->input('violation_type', 'all'); // 'all', 'lateness', 'attribute', 'violation'
+        $violationType = $request->input('violation_type', 'all'); // sub-jenis, lihat $typeLabels
+        if ($violationType !== 'all' && ! array_key_exists($violationType, $typeLabels)) {
+            $violationType = 'all';
+        }
         $sortBy = $request->input('sort_by', 'count'); // 'count' or 'points'
 
-        $leaderboardViolationsQuery = StudentPoint::violations()
-            ->whereIn('student_id', $studentIds)
-            ->when($timeFrame === 'month', function ($q) use ($year, $month) {
-                $q->whereYear('date', $year)->whereMonth('date', $month);
-            })
-            ->when($violationType !== 'all', function ($q) use ($violationType) {
-                $q->where('type', $violationType);
-            })
-            ->when($classRoomId, fn ($q) => $q->whereHas('student', fn ($sq) => $sq->where('class_room_id', $classRoomId)));
-
-        $leaderboardViolations = $leaderboardViolationsQuery->get()->groupBy('student_id');
+        $leaderboardPoints = $pointsQuery()
+            ->when($timeFrame === 'month', fn ($q) => $q->whereYear('date', $year)->whereMonth('date', $month))
+            ->when($violationType !== 'all', fn ($q) => $violationType === 'other'
+                ? $q->whereNull($typeKey)
+                : $q->where($typeKey, $violationType))
+            ->get()
+            ->groupBy('student_id');
 
         $studentLeaderboard = $allStudentsInScope
             ->when($classRoomId, fn ($collection) => $collection->where('class_room_id', $classRoomId))
-            ->map(function ($student) use ($leaderboardViolations) {
-                $stViolations = $leaderboardViolations->get($student->id, collect());
-                $vCount = $stViolations->count();
-                $vPoints = $stViolations->sum('points');
+            ->map(function ($student) use ($leaderboardPoints, $typeCounts, $notesOf) {
+                $stPoints = $leaderboardPoints->get($student->id, collect());
 
                 return [
                     'student' => $student,
-                    'violation_count' => $vCount,
-                    'violation_points' => $vPoints,
-                    'lateness_count' => $stViolations->where('type', 'lateness')->count(),
-                    'attribute_count' => $stViolations->where('type', 'attribute')->count(),
-                    'tatib_count' => $stViolations->where('type', 'violation')->count(),
-                    'latest_violation_date' => $stViolations->max('date'),
-                    'recent_sanctions' => $stViolations->pluck('sanction')->filter()->unique()->values()->all(),
-                    'recent_titles' => $stViolations->pluck('title')->take(3)->values()->all(),
+                    'violation_count' => $stPoints->count(),
+                    'violation_points' => $stPoints->sum('points'),
+                    'type_counts' => $typeCounts($stPoints),
+                    'latest_violation_date' => $stPoints->max('date'),
+                    'recent_notes' => $notesOf($stPoints),
+                    'recent_titles' => $stPoints->pluck('title')->take(3)->values()->all(),
                 ];
             })
             ->filter(fn ($item) => $item['violation_count'] > 0);
 
-        if ($sortBy === 'points') {
-            $studentLeaderboard = $studentLeaderboard->sortByDesc('violation_points')->values();
-        } else {
-            $studentLeaderboard = $studentLeaderboard->sortByDesc('violation_count')->values();
-        }
+        $studentLeaderboard = $studentLeaderboard
+            ->sortByDesc($sortBy === 'points' ? 'violation_points' : 'violation_count')
+            ->values();
 
         return view('student-points.chart', compact(
             'classReport', 'year', 'month', 'classRoomId',
             'monthViolationsCount', 'monthViolationsPoints',
             'monthlyTrends', 'monthsList', 'classRooms', 'typeBreakdown',
-            'studentLeaderboard', 'timeFrame', 'violationType', 'sortBy'
+            'studentLeaderboard', 'timeFrame', 'violationType', 'sortBy',
+            'category', 'typeLabels'
         ));
     }
 

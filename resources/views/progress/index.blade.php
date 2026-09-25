@@ -32,20 +32,20 @@
         </div>
     </x-slot>
 
-    <div class="py-8">
-        <div class="mx-auto max-w-7xl space-y-6 px-4 sm:px-6 lg:px-8">
+    <div class="py-3 sm:py-6">
+        <div class="mx-auto max-w-7xl space-y-3.5 sm:space-y-5 px-2.5 sm:px-6 lg:px-8">
 
             @if (session('success'))
-                <div class="rounded-lg border border-green-200 bg-green-50 px-4 py-3 text-sm font-medium text-green-700">
+                <div class="rounded-xl border border-green-200 bg-green-50 px-3.5 py-2.5 text-xs sm:text-sm font-medium text-green-700">
                     {{ session('success') }}
                 </div>
             @endif
 
             @if(!auth()->user()->hasAnyRole(['parent', 'student']))
-                <div class="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
-                    <form method="GET" action="{{ route('progress.index') }}" class="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-5">
+                <div class="rounded-xl sm:rounded-2xl border border-gray-200 bg-white p-3.5 sm:p-5 shadow-xs">
+                    <form method="GET" action="{{ route('progress.index') }}" class="grid grid-cols-1 gap-3 md:grid-cols-2 lg:grid-cols-5">
                         <div>
-                            <label for="q" class="mb-1 block text-sm font-semibold text-gray-700">
+                            <label for="q" class="mb-1 block text-xs sm:text-sm font-semibold text-gray-700">
                                 Cari
                             </label>
                             <input id="q"
@@ -53,16 +53,18 @@
                                    name="q"
                                    value="{{ request('q') }}"
                                    placeholder="Nama / nomor murid"
-                                   class="w-full rounded-lg border-gray-300 text-gray-900 shadow-sm focus:border-emerald-500 focus:ring-emerald-500">
+                                   x-on:input.debounce.600ms="$el.form.submit()"
+                                   class="w-full rounded-lg border-gray-300 text-xs sm:text-sm text-gray-900 shadow-xs focus:border-emerald-500 focus:ring-emerald-500">
                         </div>
 
                         <div>
-                            <label for="student_id" class="mb-1 block text-sm font-semibold text-gray-700">
+                            <label for="student_id" class="mb-1 block text-xs sm:text-sm font-semibold text-gray-700">
                                 Murid
                             </label>
                             <select id="student_id"
                                     name="student_id"
-                                    class="w-full rounded-lg border-gray-300 text-gray-900 shadow-sm focus:border-emerald-500 focus:ring-emerald-500">
+                                    onchange="this.form.submit()"
+                                    class="w-full rounded-lg border-gray-300 text-xs sm:text-sm text-gray-900 shadow-xs focus:border-emerald-500 focus:ring-emerald-500">
                                 <option value="">Semua Murid</option>
                                 @foreach ($filterStudents as $student)
                                     <option value="{{ $student->id }}" @selected((string) request('student_id') === (string) $student->id)>
@@ -76,12 +78,13 @@
                         </div>
 
                         <div>
-                            <label for="class_room_id" class="mb-1 block text-sm font-semibold text-gray-700">
+                            <label for="class_room_id" class="mb-1 block text-xs sm:text-sm font-semibold text-gray-700">
                                 Kelas
                             </label>
                             <select id="class_room_id"
                                     name="class_room_id"
-                                    class="w-full rounded-lg border-gray-300 text-gray-900 shadow-sm focus:border-emerald-500 focus:ring-emerald-500">
+                                    onchange="this.form.submit()"
+                                    class="w-full rounded-lg border-gray-300 text-xs sm:text-sm text-gray-900 shadow-xs focus:border-emerald-500 focus:ring-emerald-500">
                                 <option value="">Semua Kelas</option>
                                 @foreach ($classRooms as $classRoom)
                                     <option value="{{ $classRoom->id }}" @selected((string) request('class_room_id') === (string) $classRoom->id)>
@@ -95,12 +98,13 @@
                         </div>
 
                         <div>
-                            <label for="teacher_id" class="mb-1 block text-sm font-semibold text-gray-700">
+                            <label for="teacher_id" class="mb-1 block text-xs sm:text-sm font-semibold text-gray-700">
                                 Halaqoh / Musyrif
                             </label>
                             <select id="teacher_id"
                                     name="teacher_id"
-                                    class="w-full rounded-lg border-gray-300 text-gray-900 shadow-sm focus:border-emerald-500 focus:ring-emerald-500">
+                                    onchange="this.form.submit()"
+                                    class="w-full rounded-lg border-gray-300 text-xs sm:text-sm text-gray-900 shadow-xs focus:border-emerald-500 focus:ring-emerald-500">
                                 <option value="">Semua Halaqoh</option>
                                 @foreach ($teachers as $t)
                                     <option value="{{ $t->id }}" @selected((string) request('teacher_id') === (string) $t->id)>
@@ -111,12 +115,13 @@
                         </div>
 
                         <div>
-                            <label for="sort" class="mb-1 block text-sm font-semibold text-gray-700">
+                            <label for="sort" class="mb-1 block text-xs sm:text-sm font-semibold text-gray-700">
                                 Urutkan
                             </label>
                             <select id="sort"
                                     name="sort"
-                                    class="w-full rounded-lg border-gray-300 text-gray-900 shadow-sm focus:border-emerald-500 focus:ring-emerald-500">
+                                    onchange="this.form.submit()"
+                                    class="w-full rounded-lg border-gray-300 text-xs sm:text-sm text-gray-900 shadow-xs focus:border-emerald-500 focus:ring-emerald-500">
                                 <option value="">Progress Tertinggi</option>
                                 <option value="low_progress" @selected(request('sort') === 'low_progress')>Progress Terendah</option>
                                 <option value="overdue" @selected(request('sort') === 'overdue')>Target Terlambat</option>
@@ -124,14 +129,14 @@
                             </select>
                         </div>
 
-                        <div class="flex items-end gap-2">
+                        <div class="flex items-end gap-2 sm:col-span-2 lg:col-span-1">
                             <button type="submit"
-                                    class="inline-flex w-full items-center justify-center rounded-lg bg-emerald-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-emerald-700">
+                                    class="inline-flex w-full items-center justify-center rounded-lg bg-emerald-600 px-3 py-2 text-xs sm:text-sm font-semibold text-white shadow-xs hover:bg-emerald-700">
                                 Filter
                             </button>
 
                             <a href="{{ route('progress.index') }}"
-                               class="inline-flex items-center justify-center rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-semibold text-gray-700 shadow-sm hover:bg-gray-50">
+                               class="inline-flex items-center justify-center rounded-lg border border-gray-300 bg-white px-3 py-2 text-xs sm:text-sm font-semibold text-gray-700 shadow-xs hover:bg-gray-50">
                                 Reset
                             </a>
                         </div>
@@ -139,31 +144,31 @@
                 </div>
             @endif
 
-            <div class="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
-                <div class="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
-                    <p class="text-sm font-medium text-gray-500">Total Murid</p>
-                    <p class="mt-2 text-3xl font-bold text-gray-900">
+            <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-4">
+                <div class="rounded-xl sm:rounded-2xl border border-gray-200 bg-white p-2.5 sm:p-5 shadow-xs">
+                    <p class="text-[10px] sm:text-sm font-medium text-gray-500 truncate">Total Murid</p>
+                    <p class="mt-0.5 sm:mt-2 text-base sm:text-3xl font-black text-gray-900">
                         {{ number_format($summary['total_students'] ?? 0) }}
                     </p>
                 </div>
 
-                <div class="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
-                    <p class="text-sm font-medium text-gray-500">Total Ayat Hafal</p>
-                    <p class="mt-2 text-3xl font-bold text-gray-900">
+                <div class="rounded-xl sm:rounded-2xl border border-gray-200 bg-white p-2.5 sm:p-5 shadow-xs">
+                    <p class="text-[10px] sm:text-sm font-medium text-gray-500 truncate">Total Ayat</p>
+                    <p class="mt-0.5 sm:mt-2 text-base sm:text-3xl font-black text-gray-900">
                         {{ number_format($summary['total_memorized_ayahs'] ?? 0) }}
                     </p>
                 </div>
 
-                <div class="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
-                    <p class="text-sm font-medium text-gray-500">Rata-rata Progress</p>
-                    <p class="mt-2 text-3xl font-bold text-gray-900">
-                        {{ number_format((float) ($summary['average_progress_percent'] ?? 0), 2) }}%
+                <div class="rounded-xl sm:rounded-2xl border border-gray-200 bg-white p-2.5 sm:p-5 shadow-xs">
+                    <p class="text-[10px] sm:text-sm font-medium text-gray-500 truncate">Rata-rata</p>
+                    <p class="mt-0.5 sm:mt-2 text-base sm:text-3xl font-black text-gray-900">
+                        {{ number_format((float) ($summary['average_progress_percent'] ?? 0), 1) }}%
                     </p>
                 </div>
 
-                <div class="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
-                    <p class="text-sm font-medium text-gray-500">Target Terlambat</p>
-                    <p class="mt-2 text-3xl font-bold text-red-600">
+                <div class="rounded-xl sm:rounded-2xl border border-gray-200 bg-white p-2.5 sm:p-5 shadow-xs">
+                    <p class="text-[10px] sm:text-sm font-medium text-gray-500 truncate">Terlambat</p>
+                    <p class="mt-0.5 sm:mt-2 text-base sm:text-3xl font-black text-red-600">
                         {{ number_format($summary['total_overdue_targets'] ?? 0) }}
                     </p>
                 </div>
@@ -182,11 +187,14 @@
                                     Tampilan khusus Kelas 10 menyajikan Jilid, Halaman, Capaian Hafalan UMMI, dan Ziyadah.
                                 </p>
                             </div>
-                            <div class="flex items-center gap-2">
-                                <button type="button" onclick="downloadUmmiCardProgress()" class="inline-flex items-center gap-1.5 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl shadow transition cursor-pointer">
-                                    📥 Download Gambar (PNG)
-                                </button>
-                            </div>
+                            @if (!auth()->user()->hasAnyRole(['student', 'parent']))
+                                <div class="flex items-center gap-2">
+                                    <button type="button" onclick="downloadUmmiCardProgress()" class="inline-flex items-center gap-1.5 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl shadow transition cursor-pointer">
+                                        <x-heroicon-o-arrow-down-tray class="w-4 h-4" />
+                                        <span>Download Gambar (PNG)</span>
+                                    </button>
+                                </div>
+                            @endif
                         </div>
 
                         @php
@@ -194,13 +202,20 @@
                                 $st = $r['student'] ?? null;
                                 $ziyadahName = '-';
                                 if ($st instanceof \App\Models\Student) {
-                                    $ziyadahName = $st->hafalanRecords()->where('status', 'passed')->latest('submitted_at')->first()?->surah?->name_latin ?? '-';
+                                    $latestPassedHeader = $st->hafalanRecords()
+                                        ->whereHas('surahs', fn ($q) => $q->where('status', 'passed'))
+                                        ->with(['surahs' => fn ($q) => $q->where('status', 'passed')->with('surah')])
+                                        ->latest('submitted_at')
+                                        ->first();
+                                    $ziyadahName = $latestPassedHeader?->surahs->last()?->surah?->name_latin ?? '-';
                                 }
                                 return [
                                     'student' => $st,
                                     'ummi_jilid' => $r['ummi_jilid_num'] ?? '-',
                                     'ummi_halaman' => $r['ummi_halaman'] ?? '-',
-                                    'ummi_capaian' => $r['ummi_record']?->surah?->name_latin ?? ($r['ummi_record']?->materi ?? '-'),
+                                    'ummi_capaian' => ($r['ummi_record'] && $r['ummi_record']->surahs->isNotEmpty())
+                                        ? $r['ummi_record']->surahs_label
+                                        : ($r['ummi_record']?->materi ?? '-'),
                                     'ziyadah' => $ziyadahName,
                                 ];
                             });
@@ -271,9 +286,12 @@
                                 <span class="flex items-center gap-1.5 text-zinc-500">
                                     <span class="w-3.5 h-3.5 bg-emerald-500 rounded"></span> Terealisasi (Lulus)
                                 </span>
-                                <button type="button" onclick="downloadChartWithTitle()" class="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-bold shadow transition flex items-center gap-1 cursor-pointer">
-                                    📥 Download Grafik (PNG)
-                                </button>
+                                @if (!auth()->user()->hasAnyRole(['student', 'parent']))
+                                    <button type="button" onclick="downloadChartWithTitle()" class="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-bold shadow transition inline-flex items-center gap-1.5 cursor-pointer">
+                                        <x-heroicon-o-arrow-down-tray class="w-3.5 h-3.5" />
+                                        <span>Download Grafik (PNG)</span>
+                                    </button>
+                                @endif
                             </div>
                         </div>
 
@@ -407,13 +425,67 @@
     </div>
 
     @if ($progressRows->isNotEmpty())
-        <!-- ChartJS Script -->
-        <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+        @push('scripts')
         <script>
-            document.addEventListener('DOMContentLoaded', function () {
-                const ctx = document.getElementById('progressChart').getContext('2d');
-                
-                const studentsData = @json($chartData);
+            if (typeof Chart === 'undefined') {
+                const s = document.createElement('script');
+                s.src = 'https://cdn.jsdelivr.net/npm/chart.js';
+                document.head.appendChild(s);
+            }
+
+            function downloadChartWithTitle() {
+                const originalCanvas = document.getElementById('progressChart');
+                if (!originalCanvas) return;
+
+                const tempCanvas = document.createElement('canvas');
+                const ctx = tempCanvas.getContext('2d');
+
+                const titleText = "Diagram Progres Hafalan Murid";
+                const subTitleText = "TAD Management System (Tahfizh, Adab, Disiplin) — Tanggal Ekspor: " + new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
+
+                const bannerHeight = 80;
+                tempCanvas.width = originalCanvas.width;
+                tempCanvas.height = originalCanvas.height + bannerHeight;
+
+                ctx.fillStyle = '#FFFFFF';
+                ctx.fillRect(0, 0, tempCanvas.width, tempCanvas.height);
+
+                ctx.textAlign = 'center';
+                ctx.fillStyle = '#111827';
+                ctx.font = 'bold 18px Inter, sans-serif';
+                ctx.fillText(titleText, tempCanvas.width / 2, 35);
+
+                ctx.fillStyle = '#6B7280';
+                ctx.font = '13px Inter, sans-serif';
+                ctx.fillText("TAD-SMAIA7", tempCanvas.width / 2, 58);
+
+                ctx.strokeStyle = '#E5E7EB';
+                ctx.lineWidth = 1;
+                ctx.beginPath();
+                ctx.moveTo(20, 72);
+                ctx.lineTo(tempCanvas.width - 20, 72);
+                ctx.stroke();
+
+                ctx.drawImage(originalCanvas, 0, bannerHeight);
+
+                const a = document.createElement('a');
+                a.download = 'Grafik_Perkembangan_Hafalan.png';
+                a.href = tempCanvas.toDataURL('image/png');
+                a.click();
+            }
+            window.downloadChartWithTitle = downloadChartWithTitle;
+
+            function initProgressChart() {
+                if (typeof Chart === 'undefined') {
+                    setTimeout(initProgressChart, 100);
+                    return;
+                }
+
+                const canvasEl = document.getElementById('progressChart');
+                if (!canvasEl) return;
+
+                const ctx = canvasEl.getContext('2d');
+                const studentsData = @json($chartData ?? []);
 
                 const labels = studentsData.map(item => item.name);
                 const targets = studentsData.map(item => item.target);
@@ -427,7 +499,7 @@
                             {
                                 label: 'Target Setoran',
                                 data: targets,
-                                backgroundColor: 'rgba(99, 102, 241, 0.85)', // Indigo-500
+                                backgroundColor: 'rgba(99, 102, 241, 0.85)',
                                 borderColor: 'rgb(99, 102, 241)',
                                 borderWidth: 1,
                                 borderRadius: 4,
@@ -436,7 +508,7 @@
                             {
                                 label: 'Terealisasi (Lulus)',
                                 data: realized,
-                                backgroundColor: 'rgba(16, 185, 129, 0.85)', // Emerald-500
+                                backgroundColor: 'rgba(16, 185, 129, 0.85)',
                                 borderColor: 'rgb(16, 185, 129)',
                                 borderWidth: 1,
                                 borderRadius: 4,
@@ -449,9 +521,7 @@
                         responsive: true,
                         maintainAspectRatio: false,
                         plugins: {
-                            legend: {
-                                display: false
-                            },
+                            legend: { display: false },
                             tooltip: {
                                 padding: 10,
                                 cornerRadius: 8,
@@ -464,90 +534,25 @@
                         },
                         scales: {
                             x: {
-                                grid: {
-                                    color: 'rgba(243, 244, 246, 1)',
-                                    drawBorder: false,
-                                },
-                                ticks: {
-                                    precision: 0,
-                                    font: {
-                                        family: 'Inter, system-ui, sans-serif',
-                                        size: 11
-                                    }
-                                },
-                                title: {
-                                    display: true,
-                                    text: 'Jumlah Target Setoran',
-                                    font: {
-                                        family: 'Inter, system-ui, sans-serif',
-                                        size: 11,
-                                        weight: '600'
-                                    }
-                                }
+                                grid: { color: 'rgba(243, 244, 246, 1)', drawBorder: false },
+                                ticks: { precision: 0, font: { family: 'Inter, sans-serif', size: 11 } },
+                                title: { display: true, text: 'Jumlah Target Setoran', font: { family: 'Inter, sans-serif', size: 11, weight: '600' } }
                             },
                             y: {
-                                grid: {
-                                    display: false
-                                },
-                                ticks: {
-                                    font: {
-                                        family: 'Inter, system-ui, sans-serif',
-                                        size: 11,
-                                        weight: '500'
-                                    }
-                                }
+                                grid: { display: false },
+                                ticks: { font: { family: 'Inter, sans-serif', size: 11, weight: '500' } }
                             }
                         }
                     }
                 });
-            });
+            }
 
-            function downloadChartWithTitle() {
-                const originalCanvas = document.getElementById('progressChart');
-                if (!originalCanvas) return;
-
-                const tempCanvas = document.createElement('canvas');
-                const ctx = tempCanvas.getContext('2d');
-
-                const titleText = "Diagram Progres Hafalan Murid";
-                const subTitleText = "IMS (Integrated Management System) — Tanggal Ekspor: " + new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
-
-                const bannerHeight = 80;
-                tempCanvas.width = originalCanvas.width;
-                tempCanvas.height = originalCanvas.height + bannerHeight;
-
-                // Background
-                ctx.fillStyle = '#FFFFFF';
-                ctx.fillRect(0, 0, tempCanvas.width, tempCanvas.height);
-
-                // Title
-                ctx.textAlign = 'center';
-                ctx.fillStyle = '#111827';
-                ctx.font = 'bold 18px Inter, sans-serif';
-                ctx.fillText(titleText, tempCanvas.width / 2, 35);
-
-                // Subtitle
-                ctx.fillStyle = '#6B7280';
-                ctx.font = '13px Inter, sans-serif';
-                ctx.fillText("IMS-SMAIA7", tempCanvas.width / 2, 58);
-
-                // Line separator
-                ctx.strokeStyle = '#E5E7EB';
-                ctx.lineWidth = 1;
-                ctx.beginPath();
-                ctx.moveTo(20, 72);
-                ctx.lineTo(tempCanvas.width - 20, 72);
-                ctx.stroke();
-
-                // Draw original chart
-                ctx.drawImage(originalCanvas, 0, bannerHeight);
-
-                // Trigger Download
-                const a = document.createElement('a');
-                a.download = 'Grafik_Perkembangan_Hafalan.png';
-                a.href = tempCanvas.toDataURL('image/png');
-                a.click();
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', initProgressChart);
+            } else {
+                initProgressChart();
             }
         </script>
+        @endpush
     @endif
 </x-app-layout>

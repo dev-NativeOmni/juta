@@ -7,8 +7,9 @@
 
             <div class="flex items-center gap-2">
                 <a href="{{ route('murajaah-records.fast-input') }}"
-                   class="inline-flex items-center justify-center px-4 py-2.5 sm:py-2 bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white rounded-xl font-bold text-xs shadow-md transition duration-150 shrink-0 min-h-[38px]">
-                    ⚡ Input Murajaah Cepat
+                   class="inline-flex items-center justify-center gap-1.5 px-4 py-2.5 sm:py-2 bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white rounded-xl font-bold text-xs shadow-md transition duration-150 shrink-0 min-h-[38px]">
+                    <x-heroicon-o-bolt class="w-4 h-4" />
+                    <span>Input Murajaah Cepat</span>
                 </a>
             </div>
         </div>
@@ -34,16 +35,12 @@
                 <!-- Filter Section -->
                 <div class="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 shadow-sm rounded-xl p-3.5 sm:p-5">
                     <form method="GET" action="{{ route('murajaah-records.index') }}" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-2.5 sm:gap-3">
-                        <div>
+                        <div class="sm:col-span-2 lg:col-span-2">
                             <label class="block text-[10px] sm:text-xs font-semibold uppercase text-zinc-400 dark:text-zinc-500 mb-1">Kelas</label>
-                            <select name="class_room_id" class="w-full rounded-lg border-zinc-300 dark:border-zinc-700 bg-transparent text-xs sm:text-sm text-zinc-900 dark:text-zinc-100 shadow-sm">
-                                <option value="">Semua Kelas</option>
-                                @foreach ($classRooms as $class)
-                                    <option value="{{ $class->id }}" @selected(request('class_room_id') == $class->id)>
-                                        {{ $class->name }}
-                                    </option>
-                                @endforeach
-                            </select>
+                            <x-filter-toggle
+                                name="class_room_id"
+                                :options="['' => 'Semua Kelas'] + $classRooms->pluck('name', 'id')->all()"
+                            />
                         </div>
 
                         <div>
@@ -52,12 +49,13 @@
                                    name="search"
                                    value="{{ request('search') }}"
                                    placeholder="Nama murid / surah..."
+                                   x-on:input.debounce.600ms="$el.form.submit()"
                                    class="w-full rounded-lg border-zinc-300 dark:border-zinc-700 bg-transparent text-xs sm:text-sm text-zinc-900 dark:text-zinc-100 placeholder-zinc-400 shadow-sm">
                         </div>
 
                         <div>
                             <label class="block text-[10px] sm:text-xs font-semibold uppercase text-zinc-400 dark:text-zinc-500 mb-1">Surah</label>
-                            <select name="surah_id" class="w-full rounded-lg border-zinc-300 dark:border-zinc-700 bg-transparent text-xs sm:text-sm text-zinc-900 dark:text-zinc-100 shadow-sm">
+                            <select name="surah_id" onchange="this.form.submit()" class="w-full rounded-lg border-zinc-300 dark:border-zinc-700 bg-transparent text-xs sm:text-sm text-zinc-900 dark:text-zinc-100 shadow-sm">
                                 <option value="">Semua Surah</option>
                                 @foreach ($surahs as $surah)
                                     <option value="{{ $surah->id }}" @selected(request('surah_id') == $surah->id)>
@@ -67,14 +65,13 @@
                             </select>
                         </div>
 
-                        <div>
+                        <div class="sm:col-span-2 lg:col-span-2">
                             <label class="block text-[10px] sm:text-xs font-semibold uppercase text-zinc-400 dark:text-zinc-500 mb-1">Status</label>
-                            <select name="status" class="w-full rounded-lg border-zinc-300 dark:border-zinc-700 bg-transparent text-xs sm:text-sm text-zinc-900 dark:text-zinc-100 shadow-sm">
-                                <option value="">Semua Status</option>
-                                <option value="passed" @selected(request('status') === 'passed')>Lulus</option>
-                                <option value="repeat" @selected(request('status') === 'repeat')>Ulang</option>
-                                <option value="needs_improvement" @selected(request('status') === 'needs_improvement')>Perlu Perbaikan</option>
-                            </select>
+                            <x-filter-toggle
+                                name="status"
+                                :options="['' => 'Semua Status', 'passed' => 'Lulus', 'repeat' => 'Ulang', 'needs_improvement' => 'Perlu Perbaikan']"
+                                :colors="['passed' => 'bg-emerald-600 text-white shadow-sm', 'repeat' => 'bg-rose-600 text-white shadow-sm', 'needs_improvement' => 'bg-amber-600 text-white shadow-sm']"
+                            />
                         </div>
 
                         <div class="flex items-end gap-2 col-span-1 sm:col-span-2 lg:col-span-1">

@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Services\SchoolCalendar;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Cache;
@@ -9,12 +10,6 @@ use Illuminate\Support\Facades\Cache;
 class Setting extends Model
 {
     protected $fillable = ['key', 'value'];
-
-    protected static array $holidaysCache = [];
-
-    protected static array $effectiveDatesSetCache = [];
-
-    protected static array $effectiveDaysCountCache = [];
 
     protected static array $studentAdabScoreCache = [];
 
@@ -31,12 +26,17 @@ class Setting extends Model
     {
         $setting = self::updateOrCreate(['key' => $key], ['value' => $value]);
         Cache::forget("setting:{$key}");
-        self::$holidaysCache = [];
-        self::$effectiveDatesSetCache = [];
-        self::$effectiveDaysCountCache = [];
         self::$studentAdabScoreCache = [];
 
         return $setting;
+    }
+
+    /**
+     * Dipanggil SchoolCalendar saat kalender berubah: skor adab bergantung pada hari efektif.
+     */
+    public static function flushCalendarCaches(): void
+    {
+        self::$studentAdabScoreCache = [];
     }
 
     /**
@@ -104,43 +104,27 @@ class Setting extends Model
     }
 
     /**
-     * Get list of national holidays for a given year.
-     * Checks database setting 'national_holidays_{year}' first, then falls back to defaults.
+     * Tanggal Libur Total (Tahfizh & Adab) setahun. Lihat App\Services\SchoolCalendar.
      */
     public static function getNationalHolidays(int $year): array
     {
-        if (isset(self::$holidaysCache[$year])) {
-            return self::$holidaysCache[$year];
-        }
-
-        $custom = self::get("national_holidays_{$year}");
-        if ($custom) {
-            $decoded = json_decode($custom, true);
-            if (is_array($decoded)) {
-                return self::$holidaysCache[$year] = $decoded;
-            }
-        }
-
-        // Default Indonesian national holidays (fixed dates + common movable holidays estimate)
-        return self::$holidaysCache[$year] = [
-            "{$year}-01-01", // Tahun Baru Masehi
-            "{$year}-05-01", // Hari Buruh
-            "{$year}-06-01", // Hari Lahir Pancasila
-            "{$year}-08-17", // Hari Kemerdekaan RI
-            "{$year}-12-25", // Hari Natal
-        ];
+        return app(SchoolCalendar::class)->totalHolidays($year);
     }
 
     /**
-     * Check if a date is an effective day for Adab questionnaire (Selasa-Jumat, excluding national holidays).
+     * Libur Tahfizh khusus kelas ('Y-m-d' => [class_room_id, ...]). Lihat App\Services\SchoolCalendar.
      */
-    public static function isEffectiveAdabDay(Carbon $date, array $holidays = []): bool
+    public static function getClassHolidays(int $year): array
     {
-        // ISO day of week: 1=Senin, 2=Selasa, 3=Rabu, 4=Kamis, 5=Jumat, 6=Sabtu, 7=Minggu
-        $dayIso = $date->dayOfWeekIso;
-        $isTuesdayToFriday = ($dayIso >= 2 && $dayIso <= 5);
+        return app(SchoolCalendar::class)->classDays($year);
+    }
 
-        return $isTuesdayToFriday && ! in_array($date->toDateString(), $holidays, true);
+    /**
+     * Hari efektif kuisioner Adab: hari pengisian Adab (Kalender), bukan libur Adab (lihat SchoolCalendar).
+     */
+    public static function isEffectiveAdabDay(Carbon $date): bool
+    {
+        return app(SchoolCalendar::class)->isAdabEffectiveDay($date);
     }
 
     /**
@@ -148,52 +132,15 @@ class Setting extends Model
      */
     public static function getEffectiveDatesSet(int $year, int $month, ?string $untilDate = null): array
     {
-        $cacheKey = "{$year}_{$month}_".($untilDate ?? 'full');
-        if (isset(self::$effectiveDatesSetCache[$cacheKey])) {
-            return self::$effectiveDatesSetCache[$cacheKey];
-        }
-
-        $startDate = Carbon::createFromDate($year, $month, 1)->startOfDay();
-        $daysInMonth = $startDate->daysInMonth;
-
-        $now = Carbon::now();
-        $isCurrentMonth = ($year === (int) $now->format('Y') && $month === (int) $now->format('n'));
-
-        if ($untilDate) {
-            $endDate = Carbon::parse($untilDate)->endOfDay();
-        } elseif ($isCurrentMonth) {
-            $endDate = $now->copy()->endOfDay();
-        } else {
-            $endDate = Carbon::createFromDate($year, $month, $daysInMonth)->endOfDay();
-        }
-
-        $holidays = self::getNationalHolidays($year);
-        $set = [];
-
-        $current = $startDate->copy();
-        while ($current->lte($endDate) && $current->month === $month) {
-            if (self::isEffectiveAdabDay($current, $holidays)) {
-                $set[$current->toDateString()] = true;
-            }
-            $current->addDay();
-        }
-
-        return self::$effectiveDatesSetCache[$cacheKey] = $set;
+        return app(SchoolCalendar::class)->adabEffectiveDates($year, $month, $untilDate);
     }
 
     /**
-     * Calculate count of effective workdays (Selasa-Jumat, excluding national holidays) for a month.
+     * Jumlah hari efektif kuisioner Adab dalam sebulan (lihat SchoolCalendar::isAdabEffectiveDay).
      */
     public static function getEffectiveDaysCount(int $year, int $month, ?string $untilDate = null): int
     {
-        $cacheKey = "{$year}_{$month}_".($untilDate ?? 'full');
-        if (isset(self::$effectiveDaysCountCache[$cacheKey])) {
-            return self::$effectiveDaysCountCache[$cacheKey];
-        }
-
-        $datesSet = self::getEffectiveDatesSet($year, $month, $untilDate);
-
-        return self::$effectiveDaysCountCache[$cacheKey] = max(1, count($datesSet));
+        return max(1, count(self::getEffectiveDatesSet($year, $month, $untilDate)));
     }
 
     /**
@@ -281,12 +228,6 @@ class Setting extends Model
 
     /**
      * Batch variant of calculateAdabScore() for many students at once.
-     *
-     * Dashboards that loop over every active student calling
-     * calculateAdabScore() individually turn into 2-3 queries PER STUDENT
-     * (hundreds of queries for a school of any real size). This computes
-     * the same result with at most 2 queries total, regardless of how many
-     * students are passed in.
      *
      * @param  array<int>  $studentIds
      * @return array<int, array> keyed by student_id, same shape as calculateAdabScore()
@@ -472,5 +413,79 @@ class Setting extends Model
         $decoded = is_string($val) ? json_decode($val, true) : $val;
 
         return is_array($decoded) ? array_replace_recursive($default, $decoded) : $default;
+    }
+
+    /**
+     * Get tahfizh final-grade scoring configuration: how much of the
+     * combined score (max 100) comes from target completion vs the exam,
+     * and how many points an incomplete target still earns.
+     */
+    public static function getTahfizhScoringConfig(): array
+    {
+        $default = [
+            'target_weight' => 50,
+            'exam_weight' => 50,
+            'target_incomplete_score' => 40,
+        ];
+
+        $val = self::get('tahfizh_scoring_config');
+        if (! $val) {
+            return $default;
+        }
+
+        $decoded = is_string($val) ? json_decode($val, true) : $val;
+
+        return is_array($decoded) ? array_replace_recursive($default, $decoded) : $default;
+    }
+
+    /**
+     * Combine a student's latest target-completion status with their
+     * latest exam score into the final tahfizh grade (max 100) shown on
+     * the report card.
+     */
+    public static function calculateTahfizhScore(Student $student): array
+    {
+        $config = self::getTahfizhScoringConfig();
+
+        $latestTarget = HafalanTarget::query()
+            ->where('student_id', $student->id)
+            ->whereNotNull('surah_id')
+            ->orderByDesc('target_date')
+            ->orderByDesc('id')
+            ->first();
+
+        $targetScore = null;
+        if ($latestTarget) {
+            $targetScore = $latestTarget->status === 'completed'
+                ? $config['target_weight']
+                : $config['target_incomplete_score'];
+            $targetScore = min($targetScore, $config['target_weight']);
+        }
+
+        $latestExam = TahfizhExam::query()
+            ->where('student_id', $student->id)
+            ->orderByDesc('exam_date')
+            ->orderByDesc('id')
+            ->first();
+
+        $examScore = null;
+        if ($latestExam) {
+            // Defensive cap: exams recorded before the scoring simplification
+            // may still hold a legacy 0-100 average-of-5 value.
+            $examScore = min((float) $latestExam->total_score, $config['exam_weight']);
+        }
+
+        return [
+            'target_score' => $targetScore,
+            'target_weight' => $config['target_weight'],
+            'target_status' => $latestTarget?->status,
+            'target_label' => $latestTarget ? ($latestTarget->status === 'completed' ? 'Tuntas' : 'Belum Tuntas') : null,
+            'exam_score' => $examScore,
+            'exam_weight' => $config['exam_weight'],
+            'exam_date' => $latestExam?->exam_date,
+            'has_target' => (bool) $latestTarget,
+            'has_exam' => (bool) $latestExam,
+            'final_score' => round(($targetScore ?? 0) + ($examScore ?? 0), 1),
+        ];
     }
 }

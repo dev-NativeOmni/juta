@@ -54,6 +54,57 @@
                 </div>
             @endif
 
+            {{-- Aturan target otomatis (dipakai Target Bulanan, Target Triwulan & semua laporan) --}}
+            <form method="POST" action="{{ route('settings.target-rules.update') }}" class="bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 rounded-2xl p-5 shadow-sm space-y-4"
+                  onsubmit="return confirm('Simpan aturan dan hitung ulang semua target otomatis triwulan berjalan?')">
+                @csrf
+                <div>
+                    <h3 class="text-base font-bold text-gray-900 dark:text-white">Aturan Target Otomatis</h3>
+                    <p class="text-xs text-gray-500 dark:text-zinc-400 mt-1">
+                        Target = pertemuan aktif × baris per pertemuan. Urutan hafalan: Juz 30 sampai juz wajib, lalu murid memilih terus ke belakang
+                        atau pindah ke Juz 1 (paling lambat setelah batas pindah). Setelah disimpan, target otomatis triwulan berjalan dihitung ulang;
+                        target yang diatur guru tidak berubah.
+                    </p>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-5 gap-3">
+                    @foreach (\App\Support\TargetRules::LEVELS as $level => $label)
+                        <div>
+                            <label class="block text-xs font-bold text-gray-600 dark:text-zinc-300 mb-1">{{ $label }} <span class="font-normal">(baris/pertemuan)</span></label>
+                            <input type="number" min="1" max="60" name="level_lines[{{ $level }}]" value="{{ old('level_lines.'.$level, $levelLines[$level]) }}" @disabled(! $canEditTargetRules)
+                                   class="w-full rounded-xl border-gray-300 dark:border-zinc-700 dark:bg-zinc-800 dark:text-white text-sm">
+                        </div>
+                    @endforeach
+                    <div>
+                        <label class="block text-xs font-bold text-gray-600 dark:text-zinc-300 mb-1">Juz wajib: 30 sampai</label>
+                        <select name="mandatory_until" @disabled(! $canEditTargetRules) class="w-full rounded-xl border-gray-300 dark:border-zinc-700 dark:bg-zinc-800 dark:text-white text-sm">
+                            @for ($juz = 30; $juz >= 2; $juz--)
+                                <option value="{{ $juz }}" @selected((int) old('mandatory_until', $mandatoryUntil) === $juz)>Juz {{ $juz }}</option>
+                            @endfor
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-gray-600 dark:text-zinc-300 mb-1">Batas pindah paling akhir</label>
+                        <select name="latest_switch" @disabled(! $canEditTargetRules) class="w-full rounded-xl border-gray-300 dark:border-zinc-700 dark:bg-zinc-800 dark:text-white text-sm">
+                            @for ($juz = 30; $juz >= 2; $juz--)
+                                <option value="{{ $juz }}" @selected((int) old('latest_switch', $latestSwitch) === $juz)>Setelah Juz {{ $juz }}</option>
+                            @endfor
+                        </select>
+                    </div>
+                </div>
+                @if ($errors->hasAny(['level_lines.*', 'mandatory_until', 'latest_switch']))
+                    <p class="text-xs text-red-600">{{ $errors->first('latest_switch') ?: $errors->first('mandatory_until') ?: $errors->first('level_lines.*') }}</p>
+                @endif
+                <p class="text-xs text-gray-500">
+                    Pilihan murid saat ini: terus ke belakang, atau pindah ke depan setelah
+                    {{ collect(\App\Support\TargetRules::switchOptions())->map(fn ($j) => 'Juz '.$j)->implode(', ') }}.
+                </p>
+                @if ($canEditTargetRules)
+                    <div class="flex justify-end">
+                        <button type="submit" class="px-5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-bold shadow-sm cursor-pointer">Simpan &amp; Hitung Ulang</button>
+                    </div>
+                @endif
+            </form>
+
             <form method="POST" action="{{ route('settings.hafalan-targets.update') }}" class="space-y-6">
                 @csrf
 
@@ -63,19 +114,22 @@
                             @click="activeGrade = 'grade_10'"
                             :class="activeGrade === 'grade_10' ? 'bg-white dark:bg-zinc-900 text-gray-900 dark:text-white shadow-sm font-bold' : 'text-gray-600 dark:text-zinc-400 hover:text-gray-900 font-medium'"
                             class="flex-1 py-2.5 px-4 rounded-xl text-sm transition-all duration-150 cursor-pointer flex items-center justify-center gap-2">
-                        <span>🌱 Kelas 10 (Fase E)</span>
+                        <x-heroicon-o-academic-cap class="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                        <span>Kelas 10 (Fase E)</span>
                     </button>
                     <button type="button"
                             @click="activeGrade = 'grade_11'"
                             :class="activeGrade === 'grade_11' ? 'bg-white dark:bg-zinc-900 text-gray-900 dark:text-white shadow-sm font-bold' : 'text-gray-600 dark:text-zinc-400 hover:text-gray-900 font-medium'"
                             class="flex-1 py-2.5 px-4 rounded-xl text-sm transition-all duration-150 cursor-pointer flex items-center justify-center gap-2">
-                        <span>🌿 Kelas 11 (Fase F)</span>
+                        <x-heroicon-o-academic-cap class="w-4 h-4 text-teal-600 dark:text-teal-400" />
+                        <span>Kelas 11 (Fase F)</span>
                     </button>
                     <button type="button"
                             @click="activeGrade = 'grade_12'"
                             :class="activeGrade === 'grade_12' ? 'bg-white dark:bg-zinc-900 text-gray-900 dark:text-white shadow-sm font-bold' : 'text-gray-600 dark:text-zinc-400 hover:text-gray-900 font-medium'"
                             class="flex-1 py-2.5 px-4 rounded-xl text-sm transition-all duration-150 cursor-pointer flex items-center justify-center gap-2">
-                        <span>🌳 Kelas 12 (Fase F Akhir)</span>
+                        <x-heroicon-o-academic-cap class="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
+                        <span>Kelas 12 (Fase F Akhir)</span>
                     </button>
                 </div>
 

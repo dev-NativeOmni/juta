@@ -1,9 +1,14 @@
 @php
     $circleImgPath = public_path('images/logo-alazhar7-circle.png');
+    $gemilangImgPath = public_path('images/logo-gemilang-banner.png');
 
     $circleLogoBase64 = file_exists($circleImgPath) 
         ? 'data:image/png;base64,' . base64_encode(file_get_contents($circleImgPath))
         : asset('images/logo-alazhar7-circle.png');
+
+    $gemilangLogoBase64 = file_exists($gemilangImgPath) 
+        ? 'data:image/png;base64,' . base64_encode(file_get_contents($gemilangImgPath))
+        : asset('images/logo-gemilang-banner.png');
 
     $className = $selectedClass?->name ?? '';
     $hideZiyadah = (bool) preg_match('/(E2|E3|X\.?E2|X\.?E3|E-2|E-3)/i', $className);
@@ -12,9 +17,12 @@
 <div id="ummiGrade10ReportCard" class="mx-auto max-w-5xl rounded-[28px] p-5 sm:p-8 shadow-2xl relative font-sans border-[5px] border-amber-400" style="background-color: #ffffff !important; color: #0f172a !important; box-sizing: border-box !important;">
     
     <!-- Top Header Bar with Centered Logos -->
-    <div class="flex items-center justify-center border-b-2 border-amber-300 pb-3 mb-3 text-center">
-        <!-- Logo Bulat -->
-        <img src="{{ $circleLogoBase64 }}" alt="Logo Lembaga" class="w-12 h-12 sm:w-14 sm:h-14 object-contain shrink-0" style="height: 48px !important; width: 48px !important; max-height: 48px !important; max-width: 48px !important;">
+    <div class="flex items-center justify-center gap-3 sm:gap-5 border-b-2 border-amber-300 pb-3 mb-3 text-center">
+        <!-- Logo Bulat (Left) -->
+        <img src="{{ $circleLogoBase64 }}" alt="Logo Al Azhar 7" class="w-12 h-12 sm:w-14 sm:h-14 object-contain shrink-0" style="height: 48px !important; width: 48px !important; max-height: 48px !important; max-width: 48px !important;">
+
+        <!-- Logo Gemilang (Right of Logo Bulat) -->
+        <img src="{{ $gemilangLogoBase64 }}" alt="SMA Islam Al Azhar 7 GEMILANG" class="h-10 sm:h-12 object-contain shrink-0" style="height: 44px !important; max-width: 320px !important; max-height: 44px !important;">
     </div>
 
     <!-- Main Title Section -->
@@ -25,7 +33,7 @@
 
         <!-- Subtitle Badge UMMI -->
         <div class="inline-flex items-center gap-2 bg-slate-900 text-amber-400 text-xs font-black px-5 py-1 rounded-xl shadow-sm mt-2 border border-amber-400 uppercase tracking-widest" style="background-color: #0f172a !important; color: #fbbf24 !important;">
-            <span>❖</span> PEMBELAJARAN UMMI <span>❖</span>
+            <span>PEMBELAJARAN UMMI</span>
         </div>
 
         <!-- Badges: Kelas & Bulan -->
@@ -104,7 +112,7 @@
         <!-- Left: Hadits Emblem Badge -->
         <div class="rounded-xl p-2.5 shadow-sm flex items-center gap-2.5 max-w-lg border-2 border-amber-400" style="background-color: #0f172a !important; color: #ffffff !important;">
             <div class="w-8 h-8 rounded-full flex items-center justify-center font-black text-sm shrink-0" style="background-color: #d97706 !important; color: #0f172a !important;">
-                📖
+                <x-heroicon-o-book-open class="w-4 h-4 text-slate-900" />
             </div>
             <div>
                 <p class="font-bold text-[11px] tracking-wide" style="color: #fbbf24 !important;">"خَيْرُكُمْ مَنْ تَعَلَّمَ الْقُرْآنَ وَعَلَّمَهُ"</p>
@@ -114,8 +122,8 @@
 
         <!-- Right: Social Media Contacts -->
         <div class="text-right text-[10px] font-semibold space-y-0.5" style="color: #334155 !important;">
-            <p class="font-bold text-sm" style="color: #0f172a !important;">{{ \App\Models\Setting::get('nama_instansi', 'Lembaga Pendidikan Tahfizh') }}</p>
-            <p>🌐 smaialazhar7.sch.id | 📞 0812-2347-0077</p>
+            <p class="font-bold text-sm" style="color: #0f172a !important;">SMA Islam Al Azhar 7 Solo Baru</p>
+            <p class="inline-flex items-center gap-1.5 justify-end"><x-heroicon-o-globe-alt class="w-3 h-3 text-emerald-600 inline" /> <span>smaialazhar7.sch.id</span> <span class="mx-1">|</span> <x-heroicon-o-phone class="w-3 h-3 text-emerald-600 inline" /> <span>0812-2347-0077</span></p>
             <p class="text-[9px]" style="color: #64748b !important;">@smaialazhar7</p>
         </div>
     </div>

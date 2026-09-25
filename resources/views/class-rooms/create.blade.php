@@ -67,6 +67,26 @@
                         @enderror
                     </div>
 
+
+                    <!-- Wali Kelas (satu kelas satu wali kelas) -->
+                    <div>
+                        <label for="wali_kelas_user_id" class="block text-sm font-medium text-gray-700">Wali Kelas</label>
+                        <select id="wali_kelas_user_id" name="wali_kelas_user_id" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm">
+                            <option value="">-- Belum ditentukan --</option>
+                            @foreach ($waliKelasList as $w)
+                                <option value="{{ $w->id }}" @selected((string) old('wali_kelas_user_id', '') === (string) $w->id)>
+                                    {{ $w->name }}
+                                </option>
+                            @endforeach
+                        </select>
+                        @if ($waliKelasList->isEmpty())
+                            <p class="mt-1 text-xs text-amber-600">Belum ada user dengan peran Wali Kelas yang tersedia (semua sudah ditugaskan, atau belum ada user berperan Wali Kelas).</p>
+                        @endif
+                        @error('wali_kelas_user_id')
+                            <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                        @enderror
+                    </div>
+
                     <!-- Pendamping Adab (Bisa lebih dari 1) -->
                     <div class="rounded-xl border border-zinc-200 dark:border-zinc-700/80 p-4 bg-zinc-50/50 dark:bg-zinc-800/40 space-y-2.5">
                         <div class="flex items-center justify-between">

@@ -10,7 +10,7 @@
             <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg p-6">
                 <h3 class="text-lg font-bold">Selamat datang, Super Admin</h3>
                 <p class="mt-2 text-gray-600">
-                    Anda memiliki akses penuh ke sistem IMS.
+                    Anda memiliki akses penuh ke sistem TAD.
                 </p>
             </div>
         </div>

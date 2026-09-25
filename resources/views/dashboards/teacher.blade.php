@@ -29,21 +29,21 @@
                 </div>
             @endif
 
-            {{-- 🌟 TEACHER HERO BENTO WITH CLASS CIRCULAR PROGRESS RING 🌟 --}}
+            {{-- TEACHER HERO BENTO WITH CLASS CIRCULAR PROGRESS RING --}}
             <div class="grid grid-cols-1 lg:grid-cols-12 gap-4 sm:gap-5">
                 
                 {{-- Left 4-col: Class Average Completion Ring --}}
-                <div class="lg:col-span-4 glass-liquid-card rounded-2xl sm:rounded-3xl p-5 sm:p-6 flex flex-col items-center justify-between text-center relative overflow-hidden border border-teal-500/20 shadow-md">
+                <div class="lg:col-span-4 glass-liquid-card rounded-2xl sm:rounded-3xl p-4 sm:p-6 flex flex-col items-center justify-between text-center relative overflow-hidden border border-teal-500/20 shadow-md">
                     <div class="w-full flex items-center justify-between mb-2">
-                        <span class="inline-flex items-center gap-1 text-[10px] sm:text-xs font-bold uppercase tracking-wider text-teal-700 dark:text-teal-400 bg-teal-500/10 px-2.5 py-1 rounded-xl">
-                            <span>📊</span> Rata-Rata Bimbingan
+                        <span class="inline-flex items-center gap-1.5 text-[10px] sm:text-xs font-bold uppercase tracking-wider text-teal-700 dark:text-teal-400 bg-teal-500/10 px-2.5 py-1 rounded-xl">
+                            <x-heroicon-o-chart-bar class="w-3.5 h-3.5" /> Rata-Rata Bimbingan
                         </span>
                         <span class="text-xs font-bold px-2 py-0.5 rounded-lg bg-emerald-500/15 text-emerald-700 dark:text-emerald-300">
                             {{ $studentsProgress->count() }} Murid
                         </span>
                     </div>
 
-                    <div class="relative w-36 h-36 sm:w-40 sm:h-40 my-3 flex items-center justify-center">
+                    <div class="relative w-28 h-28 sm:w-40 sm:h-40 my-2 sm:my-3 flex items-center justify-center">
                         @php
                             $dashTeacher = 2 * 3.14159 * 44;
                             $offsetTeacher = $dashTeacher - ($avgClassProgress / 100) * $dashTeacher;
@@ -59,8 +59,8 @@
                             </defs>
                         </svg>
                         <div class="absolute flex flex-col items-center justify-center text-center">
-                            <span class="text-3xl sm:text-4xl font-black text-zinc-900 dark:text-white tracking-tight">{{ round($avgClassProgress) }}%</span>
-                            <span class="text-[10px] font-bold text-teal-600 dark:text-teal-400 uppercase">Tuntas Target</span>
+                            <span class="text-2xl sm:text-4xl font-black text-zinc-900 dark:text-white tracking-tight">{{ round($avgClassProgress) }}%</span>
+                            <span class="text-[9px] sm:text-[10px] font-bold text-teal-600 dark:text-teal-400 uppercase">Tuntas Target</span>
                         </div>
                     </div>
 
@@ -76,7 +76,7 @@
                         <div class="flex items-center justify-between gap-1">
                             <p class="text-[11px] sm:text-xs font-bold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">Setoran Hari Ini</p>
                             <div class="w-8 h-8 rounded-xl bg-emerald-500/10 dark:bg-emerald-400/15 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0 shadow-xs">
-                                <span>📖</span>
+                                <x-heroicon-o-book-open class="w-4 h-4" />
                             </div>
                         </div>
                         <div class="mt-3">
@@ -92,7 +92,7 @@
                         <div class="flex items-center justify-between gap-1">
                             <p class="text-[11px] sm:text-xs font-bold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">Murajaah Hari Ini</p>
                             <div class="w-8 h-8 rounded-xl bg-amber-500/10 dark:bg-amber-400/15 text-amber-600 dark:text-amber-400 flex items-center justify-center shrink-0 shadow-xs">
-                                <span>🔄</span>
+                                <x-heroicon-o-arrow-path class="w-4 h-4" />
                             </div>
                         </div>
                         <div class="mt-3">
@@ -108,7 +108,7 @@
                         <div class="flex items-center justify-between gap-1">
                             <p class="text-[11px] sm:text-xs font-bold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">Target Aktif</p>
                             <div class="w-8 h-8 rounded-xl bg-teal-500/10 dark:bg-teal-400/15 text-teal-600 dark:text-teal-400 flex items-center justify-center shrink-0 shadow-xs">
-                                <span>🎯</span>
+                                <x-heroicon-o-check-circle class="w-4 h-4" />
                             </div>
                         </div>
                         <div class="mt-3">
@@ -124,7 +124,7 @@
                         <div class="flex items-center justify-between gap-1">
                             <p class="text-[11px] sm:text-xs font-bold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">Butuh Perhatian</p>
                             <div class="w-8 h-8 rounded-xl bg-rose-500/10 dark:bg-rose-400/15 text-rose-600 dark:text-rose-400 flex items-center justify-center shrink-0 shadow-xs">
-                                <span>⚠️</span>
+                                <x-heroicon-o-exclamation-triangle class="w-4 h-4" />
                             </div>
                         </div>
                         <div class="mt-3">
@@ -262,7 +262,7 @@
                                         ? 'bg-gradient-to-r from-teal-600 to-emerald-600 text-white font-bold shadow-sm shadow-teal-500/20 ring-1 ring-teal-500' 
                                         : 'glass-liquid-inner text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white hover:bg-white/60 font-medium'"
                                     class="px-3 py-1.5 rounded-xl text-xs flex items-center gap-1.5 transition-all cursor-pointer shrink-0 border border-transparent">
-                                <span>🏢 Semua Kelas</span>
+                                <x-heroicon-o-building-office-2 class="w-3.5 h-3.5" /> <span>Semua Kelas</span>
                                 <span class="px-1.5 py-0.2 rounded-md text-[10px] font-bold" 
                                       :class="selectedClass === 'all' ? 'bg-white/20 text-white' : 'bg-zinc-200/80 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300'">
                                     {{ $studentsProgress->count() }}
@@ -281,7 +281,7 @@
                                             ? 'bg-gradient-to-r from-teal-600 to-emerald-600 text-white font-bold shadow-sm shadow-teal-500/20 ring-1 ring-teal-500' 
                                             : 'glass-liquid-inner text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white hover:bg-white/60 font-medium'"
                                         class="px-3 py-1.5 rounded-xl text-xs flex items-center gap-1.5 transition-all cursor-pointer shrink-0 border border-transparent">
-                                    <span>📖 {{ $clsName }}</span>
+                                    <x-heroicon-o-academic-cap class="w-3.5 h-3.5" /> <span>{{ $clsName }}</span>
                                     <span class="px-1.5 py-0.2 rounded-md text-[10px] font-bold" 
                                           :class="selectedClass === '{{ $clsKey }}' ? 'bg-white/20 text-white' : 'bg-zinc-200/80 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300'">
                                         {{ $countInClass }}
@@ -412,7 +412,7 @@
                 <div class="glass-liquid-card rounded-[1.75rem] overflow-hidden">
                     <div class="px-5 py-4 border-b border-zinc-200/70 dark:border-white/10 flex items-center justify-between">
                         <h3 class="font-bold text-sm sm:text-base text-zinc-900 dark:text-white flex items-center gap-1.5">
-                            <span>🎯</span> Target Terdekat
+                            <x-heroicon-o-check-circle class="w-4 h-4 text-teal-600 dark:text-teal-400" /> Target Terdekat
                         </h3>
                         <a href="{{ url('/hafalan-targets') }}" class="text-xs text-teal-600 dark:text-teal-400 font-bold hover:underline">Lihat Semua &rarr;</a>
                     </div>
@@ -423,7 +423,9 @@
                                     <div class="min-w-0">
                                         <p class="font-bold text-xs sm:text-sm text-zinc-900 dark:text-white truncate">{{ $target->student?->name ?? '-' }}</p>
                                         @if ($target->ummi_jilid)
-                                            <p class="text-xs font-semibold text-teal-700 dark:text-teal-400 mt-0.5">📗 {{ $target->ummi_jilid }} (Hal: {{ $target->halaman_buku ?? '-' }})</p>
+                                            <p class="text-xs font-semibold text-teal-700 dark:text-teal-400 mt-0.5 flex items-center gap-1">
+                                                <x-heroicon-o-book-open class="w-3.5 h-3.5 text-teal-600 dark:text-teal-400 shrink-0" /> {{ $target->ummi_jilid }} (Hal: {{ $target->halaman_buku ?? '-' }})
+                                            </p>
                                         @else
                                             <p class="text-xs text-zinc-600 dark:text-zinc-400 mt-0.5">QS. {{ $target->surah?->name_latin ?? '-' }} ayat {{ $target->ayah_range }}</p>
                                         @endif
@@ -446,7 +448,7 @@
                 <div class="glass-liquid-card rounded-[1.75rem] overflow-hidden">
                     <div class="px-5 py-4 border-b border-zinc-200/70 dark:border-white/10 flex items-center justify-between">
                         <h3 class="font-bold text-sm sm:text-base text-zinc-900 dark:text-white flex items-center gap-1.5">
-                            <span>📖</span> Setoran Terbaru
+                            <x-heroicon-o-book-open class="w-4 h-4 text-emerald-600 dark:text-emerald-400" /> Setoran Terbaru
                         </h3>
                         <a href="{{ url('/hafalan-records') }}" class="text-xs text-orange-600 dark:text-orange-400 font-bold hover:underline">Semua &rarr;</a>
                     </div>
@@ -476,7 +478,7 @@
                 <div class="glass-liquid-card rounded-[1.75rem] overflow-hidden">
                     <div class="px-5 py-4 border-b border-zinc-200/70 dark:border-white/10 flex items-center justify-between">
                         <h3 class="font-bold text-sm sm:text-base text-zinc-900 dark:text-white flex items-center gap-1.5">
-                            <span>🔄</span> Murajaah Terbaru
+                            <x-heroicon-o-arrow-path class="w-4 h-4 text-amber-600 dark:text-amber-400" /> Murajaah Terbaru
                         </h3>
                         <a href="{{ url('/murajaah-records') }}" class="text-xs text-amber-600 dark:text-amber-400 font-bold hover:underline">Semua &rarr;</a>
                     </div>

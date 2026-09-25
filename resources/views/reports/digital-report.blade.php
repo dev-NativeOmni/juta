@@ -14,19 +14,21 @@
                 <a href="{{ route('digital-reports.index') }}" class="inline-flex items-center justify-center px-4 py-2 border border-gray-300 dark:border-zinc-700 rounded-xl text-sm font-semibold text-gray-700 dark:text-zinc-300 bg-white dark:bg-zinc-800 hover:bg-gray-50 dark:hover:bg-zinc-700 transition">
                     Kembali
                 </a>
-                <a 
-                    href="{{ route('digital-reports.print', [$student, 'academic_year' => $academicYear, 'semester' => $semester]) }}" 
-                    target="_blank"
-                    class="inline-flex items-center gap-1.5 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-sm font-bold shadow-sm transition"
-                >
-                    🖨️ Cetak / Simpan PDF
-                </a>
+                @if (\App\Http\Controllers\StudentReportController::canPrint(auth()->user()))
+                    <a 
+                        href="{{ route('digital-reports.print', [$student, 'academic_year' => $academicYear, 'semester' => $semester, 'term' => $tanseTerm['term']]) }}" 
+                        target="_blank"
+                        class="inline-flex items-center gap-1.5 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-sm font-bold shadow-sm transition"
+                    >
+                        <x-heroicon-o-printer class="w-4 h-4" /> Cetak / Simpan PDF
+                    </a>
+                @endif
             </div>
         </div>
     </x-slot>
 
-    <div class="py-8">
-        <div class="max-w-7xl mx-auto sm:px-6 lg:px-8 space-y-6">
+    <div class="py-4 sm:py-8">
+        <div class="max-w-7xl mx-auto sm:px-6 lg:px-8 space-y-3 sm:space-y-6">
 
             @if (session('success'))
                 <div class="p-4 bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800 rounded-lg text-emerald-800 dark:text-emerald-300 text-sm">
@@ -35,9 +37,9 @@
             @endif
 
             <!-- Profile and Semester Selector -->
-            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-3 sm:gap-6">
                 <!-- Profile Card -->
-                <div class="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl p-6 shadow-sm flex flex-col justify-between lg:col-span-2">
+                <div class="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl p-4 sm:p-6 shadow-sm flex flex-col justify-between lg:col-span-2">
                     <div>
                         <span class="text-xs font-bold uppercase tracking-wider text-indigo-600 dark:text-indigo-400">Murid yang Dipantau</span>
                         <h3 class="text-2xl font-black text-gray-900 dark:text-white mt-1">{{ $student->name }}</h3>
@@ -61,22 +63,36 @@
                 </div>
 
                 <!-- Semester Selector -->
-                <div class="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl p-6 shadow-sm lg:col-span-1">
+                <div class="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl p-4 sm:p-6 shadow-sm lg:col-span-1">
                     <span class="text-xs font-bold uppercase tracking-wider text-gray-500">Filter Periode Akademik</span>
                     <form method="GET" action="{{ route('digital-reports.show', $student) }}" class="space-y-4 mt-4">
                         <div>
                             <label class="block text-xs font-semibold text-gray-700 dark:text-zinc-300 mb-1">Tahun Ajaran</label>
-                            <select name="academic_year" class="block w-full rounded-xl border-gray-300 dark:border-zinc-700 dark:bg-zinc-950/40 text-sm">
+                            <select name="academic_year" onchange="this.form.submit()" class="block w-full rounded-xl border-gray-300 dark:border-zinc-700 dark:bg-zinc-950/40 text-sm">
                                 <option value="2025/2026" {{ $academicYear === '2025/2026' ? 'selected' : '' }}>2025/2026</option>
                                 <option value="2026/2027" {{ $academicYear === '2026/2027' ? 'selected' : '' }}>2026/2027</option>
                             </select>
                         </div>
                         <div>
                             <label class="block text-xs font-semibold text-gray-700 dark:text-zinc-300 mb-1">Semester</label>
-                            <select name="semester" class="block w-full rounded-xl border-gray-300 dark:border-zinc-700 dark:bg-zinc-950/40 text-sm">
+                            <select name="semester" onchange="this.form.submit()" class="block w-full rounded-xl border-gray-300 dark:border-zinc-700 dark:bg-zinc-950/40 text-sm">
                                 <option value="1" {{ $semester === 1 ? 'selected' : '' }}>1 (Ganjil)</option>
                                 <option value="2" {{ $semester === 2 ? 'selected' : '' }}>2 (Genap)</option>
                             </select>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-gray-700 dark:text-zinc-300 mb-1">Triwulan (Tanse)</label>
+                            <select name="term" onchange="this.form.submit()" class="block w-full rounded-xl border-gray-300 dark:border-zinc-700 dark:bg-zinc-950/40 text-sm">
+                                @foreach ($tanseTerm['terms'] as $termValue => $termLabel)
+                                    <option value="{{ $termValue }}" @selected($tanseTerm['term'] === $termValue)>{{ $termLabel }}</option>
+                                @endforeach
+                            </select>
+                            <p class="mt-1.5 text-[11px] {{ $reportDate['is_set'] ? 'text-gray-500 dark:text-zinc-400' : 'text-amber-600 dark:text-amber-400' }}">
+                                Tanggal rapor (BLP {{ $reportDate['exam'] }}): <span class="font-semibold">{{ $reportDate['date'] }}</span>
+                                @unless ($reportDate['is_set'])
+                                    &mdash; belum diatur, memakai tanggal hari ini.
+                                @endunless
+                            </p>
                         </div>
                         <button type="submit" class="w-full inline-flex items-center justify-center px-4 py-2 bg-zinc-800 hover:bg-zinc-950 dark:bg-zinc-700 dark:hover:bg-zinc-650 text-white font-bold rounded-xl text-sm transition">
                             Terapkan Periode
@@ -86,10 +102,10 @@
             </div>
 
             <!-- Unified Report Summary Sections -->
-            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-3 sm:gap-6">
 
                 <!-- Module 1: Tahfizh -->
-                <div class="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl p-6 shadow-sm">
+                <div class="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl sm:rounded-2xl p-4 sm:p-6 shadow-sm">
                     <h4 class="text-sm font-bold text-gray-900 dark:text-white uppercase tracking-wider mb-4 border-b pb-2 flex items-center gap-1.5">
                         <x-heroicon-o-book-open class="w-5 h-5 text-indigo-500" /> Perkembangan Tahfizh
                     </h4>
@@ -131,7 +147,7 @@
                 </div>
 
                 <!-- Module 2: Adab & Akhlak -->
-                <div class="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl p-6 shadow-sm">
+                <div class="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl sm:rounded-2xl p-4 sm:p-6 shadow-sm">
                     <h4 class="text-sm font-bold text-gray-900 dark:text-white uppercase tracking-wider mb-4 border-b pb-2 flex items-center gap-1.5">
                         <x-heroicon-o-sparkles class="w-5 h-5 text-amber-500" /> Kepatuhan Adab Harian
                     </h4>
@@ -173,9 +189,9 @@
                 </div>
 
                 <!-- Module 3: Tanse Disiplin -->
-                <div class="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl p-6 shadow-sm">
+                <div class="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl sm:rounded-2xl p-4 sm:p-6 shadow-sm">
                     <h4 class="text-sm font-bold text-gray-900 dark:text-white uppercase tracking-wider mb-4 border-b pb-2 flex items-center gap-1.5">
-                        <span class="text-red-500">⚠️</span> Kedisiplinan & Prestasi (Tanse)
+                        <x-heroicon-o-exclamation-triangle class="w-5 h-5 text-rose-500" /> Kedisiplinan &amp; Prestasi (Tanse)
                     </h4>
                     
                     <div class="space-y-4">
@@ -208,40 +224,41 @@
             </div>
 
             <!-- Automated Tanse Report Narrative -->
-            <div class="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl p-6 shadow-sm">
-                <div class="flex items-center justify-between border-b pb-3 dark:border-zinc-800 mb-4">
-                    <h4 class="text-sm font-bold text-gray-900 dark:text-white uppercase tracking-wider flex items-center gap-2">
-                        <x-heroicon-o-shield-check class="w-5 h-5 text-indigo-600 dark:text-indigo-400" /> Catatan Evaluasi Kedisiplinan &amp; Ketahanan Sekolah (Tanse)
+            <div class="bg-white dark:bg-zinc-900 border border-zinc-200/80 dark:border-zinc-800 rounded-xl sm:rounded-2xl p-4 sm:p-6 shadow-xs">
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between border-b pb-3 dark:border-zinc-800 mb-4 gap-2">
+                    <h4 class="text-xs sm:text-sm font-bold text-gray-900 dark:text-white uppercase tracking-wider flex items-center gap-2">
+                        <x-heroicon-o-shield-check class="w-5 h-5 text-indigo-600 dark:text-indigo-400 shrink-0" /> Catatan Evaluasi Kedisiplinan &amp; Ketahanan Sekolah (Tanse)
+                        <span class="normal-case font-semibold text-gray-500 dark:text-zinc-400">· {{ $tanseTerm['label'] }}</span>
                     </h4>
-                    <span class="px-3 py-1 rounded-full text-xs font-black {{ $tanseScore >= 80 ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300' : 'bg-rose-100 text-rose-700 dark:bg-rose-950/60 dark:text-rose-300' }}">
+                    <span class="px-2.5 py-1 rounded-full text-xs font-black self-start sm:self-auto {{ $tanseScore >= 80 ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300' : 'bg-rose-100 text-rose-700 dark:bg-rose-950/60 dark:text-rose-300' }}">
                         Skor Tanse: {{ $tanseScore }} (Predikat {{ $tanseGrade }})
                     </span>
                 </div>
-                <div class="p-4 bg-indigo-50/60 dark:bg-indigo-950/30 border border-indigo-100 dark:border-indigo-900/40 rounded-xl text-xs text-indigo-900 dark:text-indigo-200 leading-relaxed font-medium">
+                <div class="p-3 sm:p-4 bg-indigo-50/60 dark:bg-indigo-950/30 border border-indigo-100 dark:border-indigo-900/40 rounded-xl text-xs text-indigo-900 dark:text-indigo-200 leading-relaxed font-medium">
                     {{ $autoTanseNotes }}
                 </div>
             </div>
 
             <!-- Detailed Logs (Violations & Rewards) -->
-            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-6">
                 <!-- Violations Log -->
-                <div class="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl p-6 shadow-sm">
-                    <h4 class="text-sm font-bold text-gray-900 dark:text-white uppercase tracking-wider mb-4 border-b pb-2 flex items-center gap-1.5">
-                        <x-heroicon-o-exclamation-triangle class="w-5 h-5 text-red-500" /> Catatan Pelanggaran Tata Tertib
+                <div class="bg-white dark:bg-zinc-900 border border-zinc-200/80 dark:border-zinc-800 rounded-xl sm:rounded-2xl p-4 sm:p-6 shadow-xs">
+                    <h4 class="text-xs sm:text-sm font-bold text-gray-900 dark:text-white uppercase tracking-wider mb-4 border-b pb-2 flex items-center gap-1.5">
+                        <x-heroicon-o-exclamation-triangle class="w-4 h-4 sm:w-5 sm:h-5 text-red-500" /> Catatan Pelanggaran Tata Tertib
                     </h4>
                     @if($violations->isEmpty())
-                        <p class="text-xs text-gray-500 dark:text-zinc-500 text-center py-8 italic">Tidak ada catatan pelanggaran.</p>
+                        <p class="text-xs text-gray-500 dark:text-zinc-500 text-center py-6 sm:py-8 italic">Tidak ada catatan pelanggaran.</p>
                     @else
-                        <div class="space-y-4 max-h-[300px] overflow-y-auto">
+                        <div class="space-y-3 sm:space-y-4 max-h-[300px] overflow-y-auto">
                             @foreach($violations as $v)
-                                <div class="bg-zinc-50 dark:bg-zinc-800/40 rounded-xl p-3 border dark:border-zinc-800 text-xs relative">
+                                <div class="bg-zinc-50 dark:bg-zinc-800/40 rounded-xl p-2.5 sm:p-3 border dark:border-zinc-800 text-xs relative">
                                     <div class="flex justify-between font-bold mb-1">
                                         <span class="text-gray-800 dark:text-zinc-250">{{ $v->title }}</span>
                                         <span class="text-red-600 dark:text-rose-400 font-extrabold">-{{ $v->points }} Poin</span>
                                     </div>
                                     <p class="text-gray-500 dark:text-zinc-400 text-[11px] mb-2">{{ $v->description ?: 'Tanpa deskripsi.' }}</p>
                                     <div class="flex justify-between items-center text-[10px] text-gray-400 font-semibold border-t dark:border-zinc-800 pt-1.5">
-                                        <span>📍 {{ $v->location ?: '-' }} · Kategori: {{ ucfirst((string) $v->category) ?: '-' }}</span>
+                                        <span class="inline-flex items-center gap-1"><x-heroicon-o-map-pin class="w-3.5 h-3.5 text-zinc-400" /> {{ $v->location ?: '-' }} · Kategori: {{ ucfirst((string) $v->category) ?: '-' }}</span>
                                         <span>{{ $v->date?->format('d M Y') }}</span>
                                     </div>
                                     @if($v->sanction)
@@ -256,16 +273,16 @@
                 </div>
 
                 <!-- Rewards Log -->
-                <div class="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl p-6 shadow-sm">
-                    <h4 class="text-sm font-bold text-gray-900 dark:text-white uppercase tracking-wider mb-4 border-b pb-2 flex items-center gap-1.5">
-                        <span class="text-green-500">🏆</span> Catatan Penghargaan & Prestasi
+                <div class="bg-white dark:bg-zinc-900 border border-zinc-200/80 dark:border-zinc-800 rounded-xl sm:rounded-2xl p-4 sm:p-6 shadow-xs">
+                    <h4 class="text-xs sm:text-sm font-bold text-gray-900 dark:text-white uppercase tracking-wider mb-4 border-b pb-2 flex items-center gap-1.5">
+                        <x-heroicon-o-trophy class="w-4 h-4 sm:w-5 sm:h-5 text-amber-500" /> Catatan Penghargaan &amp; Prestasi
                     </h4>
                     @if($rewards->isEmpty())
-                        <p class="text-xs text-gray-500 dark:text-zinc-500 text-center py-8 italic">Tidak ada catatan penghargaan.</p>
+                        <p class="text-xs text-gray-500 dark:text-zinc-500 text-center py-6 sm:py-8 italic">Tidak ada catatan penghargaan.</p>
                     @else
-                        <div class="space-y-4 max-h-[300px] overflow-y-auto">
+                        <div class="space-y-3 sm:space-y-4 max-h-[300px] overflow-y-auto">
                             @foreach($rewards as $r)
-                                <div class="bg-zinc-50 dark:bg-zinc-800/40 rounded-xl p-3 border dark:border-zinc-800 text-xs relative">
+                                <div class="bg-zinc-50 dark:bg-zinc-800/40 rounded-xl p-2.5 sm:p-3 border dark:border-zinc-800 text-xs relative">
                                     <div class="flex justify-between font-bold mb-1">
                                         <span class="text-gray-800 dark:text-zinc-250">{{ $r->title }}</span>
                                         <span class="text-green-600 dark:text-emerald-400 font-extrabold">+{{ $r->points }} Poin</span>
@@ -283,9 +300,9 @@
             </div>
 
             <!-- Wali Kelas / Teacher Review & Status -->
-            <div class="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl p-6 shadow-sm">
-                <h4 class="text-sm font-bold text-gray-900 dark:text-white uppercase tracking-wider mb-4 border-b pb-2">
-                    📝 Catatan Evaluasi Wali Kelas & Otorisasi Rapor
+            <div class="bg-white dark:bg-zinc-900 border border-zinc-200/80 dark:border-zinc-800 rounded-xl sm:rounded-2xl p-4 sm:p-6 shadow-xs">
+                <h4 class="text-sm font-bold text-gray-900 dark:text-white uppercase tracking-wider mb-4 border-b pb-2 flex items-center gap-2">
+                    <x-heroicon-o-pencil-square class="w-5 h-5 text-indigo-600 dark:text-indigo-400" /> Catatan Evaluasi Wali Kelas &amp; Otorisasi Rapor
                 </h4>
 
                 @if($canEditNotes)
@@ -349,7 +366,7 @@
                         <div class="flex justify-between items-center text-xs border-t dark:border-zinc-800 pt-3">
                             <span>Status Rapor: <strong class="uppercase text-indigo-600 dark:text-indigo-400">{{ $report->status }}</strong></span>
                             @if($report->status === 'locked')
-                                <span class="text-rose-500 font-bold">🔒 Catatan Terkunci</span>
+                                <span class="text-rose-500 font-bold inline-flex items-center gap-1"><x-heroicon-o-lock-closed class="w-3.5 h-3.5" /> Catatan Terkunci</span>
                             @else
                                 <span class="text-gray-400">Hanya guru kelas yang dapat memperbarui catatan ini.</span>
                             @endif

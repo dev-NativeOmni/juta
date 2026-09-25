@@ -4,6 +4,7 @@ namespace App\Http\Requests;
 
 use App\Models\Student;
 use App\Models\Surah;
+use App\Models\TeacherProfile;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -16,9 +17,9 @@ class UpdateHafalanRecordRequest extends FormRequest
 
     protected function prepareForValidation(): void
     {
-        if ($this->user()?->hasRole('teacher')) {
+        if ($this->user()?->teacherProfile?->id) {
             $this->merge([
-                'teacher_id' => $this->user()->teacherProfile?->id,
+                'teacher_id' => $this->user()->teacherProfile->id,
             ]);
         } else {
             $student = Student::find($this->input('student_id'));
@@ -44,46 +45,78 @@ class UpdateHafalanRecordRequest extends FormRequest
                 'integer',
                 Rule::exists('teacher_profiles', 'id'),
             ],
-            'surah_id' => [
+            'surah_ids' => [
+                'required',
+                'array',
+                'min:1',
+            ],
+            'surah_ids.*' => [
                 'required',
                 'integer',
                 Rule::exists('surahs', 'id'),
             ],
-            'ayah_start' => [
+            'ayah_starts' => [
+                'required',
+                'array',
+                'min:1',
+            ],
+            'ayah_starts.*' => [
                 'required',
                 'integer',
                 'min:1',
             ],
-            'ayah_end' => [
+            'ayah_ends' => [
+                'required',
+                'array',
+                'min:1',
+            ],
+            'ayah_ends.*' => [
                 'required',
                 'integer',
                 'min:1',
-                'gte:ayah_start',
             ],
-            'submission_type' => [
+            'submission_types' => [
+                'required',
+                'array',
+                'min:1',
+            ],
+            'submission_types.*' => [
                 'required',
                 Rule::in(['new', 'continuation', 'revision']),
             ],
-            'score' => [
+            'scores' => [
+                'nullable',
+                'array',
+            ],
+            'scores.*' => [
                 'nullable',
                 'numeric',
                 'min:0',
                 'max:100',
             ],
-            'status' => [
+            'statuses' => [
+                'required',
+                'array',
+                'min:1',
+            ],
+            'statuses.*' => [
                 'required',
                 Rule::in(['passed', 'repeat', 'needs_improvement']),
+            ],
+            'baris' => [
+                'nullable',
+                'array',
+            ],
+            'baris.*' => [
+                'nullable',
+                'numeric',
+                'min:0',
+                'max:500',
             ],
             'notes' => [
                 'nullable',
                 'string',
                 'max:2000',
-            ],
-            'baris' => [
-                'nullable',
-                'numeric',
-                'min:0',
-                'max:500',
             ],
             'submitted_at' => [
                 'required',
@@ -96,13 +129,32 @@ class UpdateHafalanRecordRequest extends FormRequest
     public function withValidator($validator): void
     {
         $validator->after(function ($validator) {
-            $surah = Surah::find($this->input('surah_id'));
+            $surahIds = $this->input('surah_ids') ?: [];
+            $ayahStarts = $this->input('ayah_starts') ?: [];
+            $ayahEnds = $this->input('ayah_ends') ?: [];
 
-            if ($surah && (int) $this->input('ayah_end') > $surah->total_ayah) {
-                $validator->errors()->add(
-                    'ayah_end',
-                    'Ayat akhir tidak boleh melebihi jumlah ayat surah '.$surah->name_latin.' ('.$surah->total_ayah.' ayat).'
-                );
+            foreach ($surahIds as $idx => $surahId) {
+                $surah = Surah::find($surahId);
+                if ($surah) {
+                    $ayahStart = $ayahStarts[$idx] ?? null;
+                    $ayahEnd = $ayahEnds[$idx] ?? null;
+
+                    if ($ayahStart !== null && $ayahEnd !== null) {
+                        if ((int) $ayahEnd < (int) $ayahStart) {
+                            $validator->errors()->add(
+                                "ayah_ends.{$idx}",
+                                'Ayat akhir harus lebih besar atau sama dengan ayat mulai.'
+                            );
+                        }
+
+                        if ((int) $ayahEnd > $surah->total_ayah) {
+                            $validator->errors()->add(
+                                "ayah_ends.{$idx}",
+                                'Ayat akhir tidak boleh melebihi jumlah ayat surah '.$surah->name_latin.' ('.$surah->total_ayah.' ayat).'
+                            );
+                        }
+                    }
+                }
             }
 
             $student = Student::find($this->input('student_id'));
@@ -144,12 +196,13 @@ class UpdateHafalanRecordRequest extends FormRequest
     {
         return [
             'student_id' => 'murid',
-            'surah_id' => 'surah',
-            'ayah_start' => 'ayat mulai',
-            'ayah_end' => 'ayat akhir',
-            'submission_type' => 'jenis setoran',
-            'score' => 'nilai',
-            'status' => 'status setoran',
+            'surah_ids' => 'surah',
+            'surah_ids.*' => 'surah',
+            'ayah_starts.*' => 'ayat mulai',
+            'ayah_ends.*' => 'ayat akhir',
+            'submission_types.*' => 'jenis setoran',
+            'scores.*' => 'nilai',
+            'statuses.*' => 'status setoran',
             'notes' => 'catatan',
             'submitted_at' => 'tanggal setoran',
         ];

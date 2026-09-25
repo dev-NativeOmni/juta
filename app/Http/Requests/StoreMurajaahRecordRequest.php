@@ -16,9 +16,9 @@ class StoreMurajaahRecordRequest extends FormRequest
 
     protected function prepareForValidation(): void
     {
-        if ($this->user()?->hasRole('teacher')) {
+        if ($this->user()?->teacherProfile?->id) {
             $this->merge([
-                'teacher_id' => $this->user()->teacherProfile?->id,
+                'teacher_id' => $this->user()->teacherProfile->id,
             ]);
         } else {
             $student = Student::find($this->input('student_id'));

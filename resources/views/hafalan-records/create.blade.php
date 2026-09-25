@@ -4,15 +4,12 @@
             <h2 class="font-semibold text-xl text-gray-800 dark:text-zinc-200 leading-tight">
                 Input Setoran Hafalan
             </h2>
-            <a href="{{ route('hafalan-records.index') }}" class="inline-flex items-center px-3 py-1.5 bg-gray-100 dark:bg-zinc-800 text-gray-700 dark:text-zinc-300 rounded-lg text-xs font-semibold hover:bg-gray-200 transition">
-                ← Kembali ke List
+            <a href="{{ route('hafalan-records.index') }}" class="inline-flex items-center gap-1 px-3 py-1.5 bg-gray-100 dark:bg-zinc-800 text-gray-700 dark:text-zinc-300 rounded-lg text-xs font-semibold hover:bg-gray-200 transition">
+                <x-heroicon-m-arrow-left class="w-3.5 h-3.5 shrink-0" />
+                <span>Kembali ke List</span>
             </a>
         </div>
     </x-slot>
-
-    <script>
-        window.latestTatapMukaPerStudent = @json($latestTatapMukaPerStudent ?? []);
-    </script>
 
     <div class="py-8" x-data="{
         method: '{{ old('method', request('method', 'reguler')) }}',
@@ -20,7 +17,22 @@
         selectedStudent: '{{ old('student_id') }}',
         selectedDate: '{{ now()->format('Y-m-d') }}',
         tatapMuka: {{ old('tatap_muka', 1) }},
-        latestTatapMukaPerStudent: window.latestTatapMukaPerStudent || {},
+        tatapMukaLoading: false,
+        refreshTatapMuka() {
+            if (!this.selectedClass || !this.selectedDate) {
+                return;
+            }
+            this.tatapMukaLoading = true;
+            fetch(`{{ route('ummi-records.tatap-muka-suggestion') }}?class_room_id=${this.selectedClass}&date=${this.selectedDate}`)
+                .then(res => res.json())
+                .then(data => {
+                    if (typeof data.tatap_muka === 'number') {
+                        this.tatapMuka = data.tatap_muka;
+                    }
+                })
+                .catch(err => console.error('Gagal memuat saran Tatap Muka:', err))
+                .finally(() => { this.tatapMukaLoading = false; });
+        },
         attendances: {},
         isLoadingAttendance: false,
         fetchAttendances() {
@@ -251,29 +263,22 @@
             let s = allStudents.find(x => x.id == selectedStudent);
             if (s) {
                 selectedClass = s.classId;
-                tatapMuka = (latestTatapMukaPerStudent[selectedStudent] || 0) + 1;
             }
         }
+        this.refreshTatapMuka();
 
         $watch('selectedStudent', (val) => {
             if (val) {
-                tatapMuka = (latestTatapMukaPerStudent[val] || 0) + 1;
+                let s = allStudents.find(x => x.id == val);
+                if (s) {
+                    selectedClass = s.classId;
+                }
             }
         });
 
         $watch('selectedClass', (val) => {
             fetchAttendances();
-            if (val && !selectedStudent) {
-                let classStudents = allStudents.filter(s => s.classId == val);
-                let maxTatap = 0;
-                classStudents.forEach(s => {
-                    let studentTatap = latestTatapMukaPerStudent[s.id] || 0;
-                    if (studentTatap > maxTatap) {
-                        maxTatap = studentTatap;
-                    }
-                });
-                tatapMuka = maxTatap + 1;
-            }
+            this.refreshTatapMuka();
         });
 
         $watch('hafalans', (val) => {
@@ -298,6 +303,7 @@
 
         $watch('selectedDate', (val) => {
             fetchAttendances();
+            this.refreshTatapMuka();
         });
 
         if (selectedClass) {
@@ -482,8 +488,9 @@
                                 </template>
                             </select>
                             <template x-if="selectedClass && filteredStudents.length === 0">
-                                <p class="mt-1.5 text-xs text-rose-600 dark:text-rose-400 font-semibold leading-relaxed">
-                                    ⚠️ Belum ada murid yang ditandai Hadir hari ini. Silakan tandai kehadiran 'Hadir' pada tabel presensi di atas.
+                                <p class="mt-1.5 text-xs text-rose-600 dark:text-rose-400 font-semibold leading-relaxed inline-flex items-center gap-1.5">
+                                    <x-heroicon-o-exclamation-triangle class="w-4 h-4 shrink-0 text-amber-500" />
+                                    <span>Belum ada murid yang ditandai Hadir hari ini. Silakan tandai kehadiran 'Hadir' pada tabel presensi di atas.</span>
                                 </p>
                             </template>
                             @error('student_id')
@@ -736,16 +743,18 @@
                                     </template>
                                 </select>
                                 <template x-if="selectedClass && filteredStudents.length === 0">
-                                    <p class="mt-1.5 text-xs text-rose-600 dark:text-rose-400 font-semibold leading-relaxed">
-                                        ⚠️ Belum ada murid yang ditandai Hadir hari ini. Silakan tandai kehadiran 'Hadir' pada tabel presensi di atas.
+                                    <p class="mt-1.5 text-xs text-rose-600 dark:text-rose-400 font-semibold leading-relaxed inline-flex items-center gap-1.5">
+                                        <x-heroicon-o-exclamation-triangle class="w-4 h-4 shrink-0 text-amber-500" />
+                                        <span>Belum ada murid yang ditandai Hadir hari ini. Silakan tandai kehadiran 'Hadir' pada tabel presensi di atas.</span>
                                     </p>
                                 </template>
                             </div>
 
-                            <div class="grid grid-cols-2 gap-4">
+                            <div class="grid grid-cols-1 xs:grid-cols-2 gap-4">
                                 <div>
                                     <label for="ummi_tatap_muka" class="block text-sm font-medium text-gray-700 dark:text-zinc-300 mb-1">
                                         Tatap Muka (Ke-)
+                                        <span x-show="tatapMukaLoading" class="text-xs text-gray-400 font-normal">(menghitung...)</span>
                                     </label>
                                     <input id="ummi_tatap_muka"
                                            type="number"
@@ -754,6 +763,7 @@
                                            required
                                            x-model.number="tatapMuka"
                                            class="block w-full rounded-md border-gray-300 dark:border-zinc-700 bg-transparent text-sm focus:border-indigo-500 focus:ring-indigo-500 dark:text-white">
+                                    <p class="mt-1 text-[11px] text-gray-400 dark:text-zinc-500">Otomatis dihitung dari hari efektif kelas, bisa diubah manual bila perlu.</p>
                                 </div>
                                 <div>
                                     <label for="ummi_tanggal" class="block text-sm font-medium text-gray-700 dark:text-zinc-300 mb-1">
@@ -857,7 +867,7 @@
                                 </template>
                             </div>
 
-                            <div class="grid grid-cols-2 gap-4">
+                            <div class="grid grid-cols-1 xs:grid-cols-2 gap-4">
                                 <div>
                                     <label for="ummi_jilid" class="block text-sm font-medium text-gray-700 dark:text-zinc-300 mb-1">
                                         UMMI (Jilid)
@@ -897,7 +907,7 @@
                                        class="block w-full rounded-md border-gray-300 dark:border-zinc-700 bg-transparent text-sm focus:border-indigo-500 focus:ring-indigo-500 dark:text-white">
                             </div>
 
-                            <div class="grid grid-cols-2 gap-4">
+                            <div class="grid grid-cols-1 xs:grid-cols-2 gap-4">
                                 <div>
                                     <label for="ummi_nilai" class="block text-sm font-medium text-gray-700 dark:text-zinc-300 mb-1">
                                         Nilai Evaluasi
@@ -918,7 +928,7 @@
                                     </select>
                                 </div>
 
-                                <div class="grid grid-cols-2 gap-2">
+                                <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
                                     <div>
                                         <label for="ummi_disimak_guru" class="block text-xs font-medium text-gray-700 dark:text-zinc-300 mb-1">
                                             Simak Guru
@@ -964,8 +974,9 @@
                     <template x-if="selectedClass && !selectedStudent && filteredStudents.length === 0">
                         <div class="border-t border-gray-200 dark:border-zinc-800 pt-5 mt-4">
                             <div class="p-4 bg-rose-50 dark:bg-rose-950/20 border border-rose-200 dark:border-rose-800 rounded-xl text-center">
-                                <p class="text-xs text-rose-600 dark:text-rose-400 font-semibold">
-                                    ⚠️ Tidak ada murid yang ditandai Hadir di kelas ini untuk hari ini. Silakan tandai kehadiran 'Hadir' pada tabel presensi di atas.
+                                <p class="text-xs text-rose-600 dark:text-rose-400 font-semibold inline-flex items-center justify-center gap-1.5">
+                                    <x-heroicon-o-exclamation-triangle class="w-4 h-4 shrink-0 text-amber-500" />
+                                    <span>Tidak ada murid yang ditandai Hadir di kelas ini untuk hari ini. Silakan tandai kehadiran 'Hadir' pada tabel presensi di atas.</span>
                                 </p>
                             </div>
                         </div>
@@ -1051,7 +1062,7 @@
                  x-transition:leave="transition ease-in duration-200 transform"
                  x-transition:leave-start="translate-y-0 opacity-100 scale-100"
                  x-transition:leave-end="translate-y-12 opacity-0 scale-95"
-                 class="fixed bottom-20 md:bottom-6 left-1/2 -translate-x-1/2 z-[60] bg-zinc-900/95 text-white dark:bg-white/95 dark:text-zinc-900 px-5 py-3 rounded-2xl shadow-2xl backdrop-blur-md border border-zinc-700/80 dark:border-zinc-300 flex items-center gap-4 text-xs font-bold"
+                 class="fixed bottom-24 xl:bottom-6 left-1/2 -translate-x-1/2 z-[60] bg-zinc-900/95 text-white dark:bg-white/95 dark:text-zinc-900 px-5 py-3 rounded-2xl shadow-2xl backdrop-blur-md border border-zinc-700/80 dark:border-zinc-300 flex items-center gap-4 text-xs font-bold"
                  style="display: none;">
                 <div class="flex items-center gap-2">
                     <span class="w-2.5 h-2.5 rounded-full bg-amber-400 animate-ping"></span>
@@ -1060,7 +1071,8 @@
                 <button type="button" @click="submitCurrentForm()" :disabled="isSaving" :class="method === 'ummi' ? 'bg-emerald-600 hover:bg-emerald-700' : 'bg-indigo-600 hover:bg-indigo-700'" class="disabled:bg-gray-400 text-white px-4 py-2 rounded-xl font-bold transition shadow-lg cursor-pointer flex items-center gap-1.5">
                     <template x-if="!isSaving">
                         <span class="inline-flex items-center gap-1.5">
-                            💾 Simpan Sekarang
+                            <x-heroicon-o-check class="w-4 h-4" />
+                            <span>Simpan Sekarang</span>
                         </span>
                     </template>
                     <template x-if="isSaving">

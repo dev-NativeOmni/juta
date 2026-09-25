@@ -72,8 +72,7 @@ class CoordinatorTahfizhTest extends TestCase
             'student_id' => $student->id,
             'teacher_id' => $teacherProfile->id,
             'surah_id' => $surah->id,
-            'ayah_start' => 1,
-            'ayah_end' => 5,
+            'ayah' => 5,
             'target_date' => now()->addDays(7),
             'status' => 'planned',
         ]);

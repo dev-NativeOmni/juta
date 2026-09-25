@@ -23,11 +23,14 @@ class Student extends Model
         'birth_date',
         'status',
         'tahfizh_level',
+        'hafalan_direction',
+        'juz_orders',
     ];
 
     protected function casts(): array
     {
         return [
+            'juz_orders' => 'array',
             'birth_date' => 'date',
         ];
     }
@@ -57,6 +60,11 @@ class Student extends Model
     public function hafalanRecords(): HasMany
     {
         return $this->hasMany(HafalanRecord::class);
+    }
+
+    public function tahfizhExams(): HasMany
+    {
+        return $this->hasMany(TahfizhExam::class);
     }
 
     public function murajaahRecords(): HasMany

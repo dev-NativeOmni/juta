@@ -55,6 +55,7 @@
                         name="search"
                         value="{{ request('search') }}"
                         placeholder="Cari nama, username, telepon, alamat"
+                        x-on:input.debounce.600ms="$el.form.submit()"
                         class="rounded-md border-gray-300 shadow-sm md:w-96"
                     >
 

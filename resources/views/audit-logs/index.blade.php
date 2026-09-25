@@ -5,7 +5,7 @@
                 Audit Log
             </h2>
             <p class="text-sm text-gray-600 mt-1">
-                Riwayat aktivitas penting pada sistem IMS.
+                Riwayat aktivitas penting pada sistem TAD.
             </p>
         </div>
     </x-slot>
@@ -54,6 +54,7 @@
                                name="search"
                                value="{{ request('search') }}"
                                placeholder="User, objek, IP, URL..."
+                               x-on:input.debounce.600ms="$el.form.submit()"
                                class="w-full rounded-lg border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm">
                     </div>
 
@@ -63,6 +64,7 @@
                         </label>
                         <select id="event"
                                 name="event"
+                                onchange="this.form.submit()"
                                 class="w-full rounded-lg border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm">
                             <option value="">Semua</option>
 
@@ -87,6 +89,7 @@
                         </label>
                         <select id="auditable_label"
                                 name="auditable_label"
+                                onchange="this.form.submit()"
                                 class="w-full rounded-lg border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm">
                             <option value="">Semua</option>
 
@@ -106,6 +109,7 @@
                                type="date"
                                name="date_from"
                                value="{{ request('date_from') }}"
+                               onchange="this.form.submit()"
                                class="w-full rounded-lg border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm">
                     </div>
 
@@ -117,6 +121,7 @@
                                type="date"
                                name="date_to"
                                value="{{ request('date_to') }}"
+                               onchange="this.form.submit()"
                                class="w-full rounded-lg border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm">
                     </div>
 

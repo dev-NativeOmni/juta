@@ -2,7 +2,7 @@
 
 namespace App\Services;
 
-use App\Models\HafalanRecord;
+use App\Models\HafalanRecordSurah;
 use App\Models\HafalanTarget;
 use App\Models\InternalNotification;
 use App\Models\MurajaahRecord;
@@ -42,7 +42,7 @@ class InternalNotificationSyncService
                 foreach ($targets as $target) {
                     $studentName = $target->student?->name ?? 'Murid';
                     $surahName = $target->surah?->name_latin ?? 'Surah';
-                    $ayahRange = $target->ayah_range ?? ($target->ayah_start.' - '.$target->ayah_end);
+                    $ayahRange = $target->ayah_range;
                     $targetDate = $target->target_date?->format('d M Y') ?? '-';
 
                     $users = $this->usersForStudentAndTeacher(
@@ -71,18 +71,22 @@ class InternalNotificationSyncService
     {
         $count = 0;
 
-        HafalanRecord::query()
+        HafalanRecordSurah::query()
+            ->select('hafalan_record_surahs.*')
+            ->join('hafalan_records', 'hafalan_records.id', '=', 'hafalan_record_surahs.hafalan_record_id')
+            ->whereNull('hafalan_records.deleted_at')
             ->with([
-                'student.user',
-                'student.parents.user',
-                'student.teacher.user',
-                'teacher.user',
+                'hafalanRecord.student.user',
+                'hafalanRecord.student.parents.user',
+                'hafalanRecord.student.teacher.user',
+                'hafalanRecord.teacher.user',
                 'surah',
             ])
-            ->whereIn('status', ['repeat', 'needs_improvement'])
-            ->orderByDesc('submitted_at')
+            ->whereIn('hafalan_record_surahs.status', ['repeat', 'needs_improvement'])
+            ->orderByDesc('hafalan_records.submitted_at')
             ->chunkById(100, function ($records) use (&$count) {
                 foreach ($records as $record) {
+                    $record->applyHeaderOverlay();
                     $studentName = $record->student?->name ?? 'Murid';
                     $surahName = $record->surah?->name_latin ?? 'Surah';
                     $ayahRange = $record->ayah_range ?? ($record->ayah_start.' - '.$record->ayah_end);
@@ -99,13 +103,13 @@ class InternalNotificationSyncService
                             type: 'hafalan_follow_up',
                             title: 'Hafalan perlu follow-up',
                             message: "Setoran hafalan {$studentName} pada {$surahName} ayat {$ayahRange} berstatus {$statusLabel}.",
-                            actionUrl: $this->actionUrlForUser($user, 'hafalan', $record->id),
+                            actionUrl: $this->actionUrlForUser($user, 'hafalan', $record->hafalan_record_id),
                             priority: 'normal',
                             source: $record
                         );
                     }
                 }
-            });
+            }, 'hafalan_record_surahs.id', 'id');
 
         return $count;
     }

@@ -163,20 +163,11 @@
                         </p>
                     </div>
 
-                    <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700">Ayat Mulai</label>
-                            <input type="number" name="ayah_start" value="{{ old('ayah_start', $target->ayah_start) }}"
-                                   min="1" required data-ayah-start
-                                   class="mt-1 w-full rounded-lg border-gray-300 text-sm">
-                        </div>
-
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700">Ayat Akhir</label>
-                            <input type="number" name="ayah_end" value="{{ old('ayah_end', $target->ayah_end) }}"
-                                   min="1" required data-ayah-end
-                                   class="mt-1 w-full rounded-lg border-gray-300 text-sm">
-                        </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">Ayat (hafal dari awal surah sampai ayat ini)</label>
+                        <input type="number" name="ayah" value="{{ old('ayah', $target->ayah) }}"
+                               min="1" required data-ayah
+                               class="mt-1 w-full rounded-lg border-gray-300 text-sm">
                     </div>
 
                     <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
@@ -223,8 +214,7 @@
     <script>
         document.addEventListener('DOMContentLoaded', function () {
             const surahSelect = document.querySelector('[data-surah-select]');
-            const ayahStart = document.querySelector('[data-ayah-start]');
-            const ayahEnd = document.querySelector('[data-ayah-end]');
+            const ayah = document.querySelector('[data-ayah]');
             const totalLabel = document.querySelector('[data-total-ayah-label]');
 
             function syncAyahLimit() {
@@ -233,13 +223,11 @@
 
                 if (!totalAyah) {
                     totalLabel.textContent = 'Pilih surah untuk melihat batas ayat.';
-                    ayahStart.removeAttribute('max');
-                    ayahEnd.removeAttribute('max');
+                    ayah.removeAttribute('max');
                     return;
                 }
 
-                ayahStart.setAttribute('max', totalAyah);
-                ayahEnd.setAttribute('max', totalAyah);
+                ayah.setAttribute('max', totalAyah);
                 totalLabel.textContent = 'Maksimal ' + totalAyah + ' ayat untuk surah ini.';
             }
 

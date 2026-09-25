@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\AdabRecord;
 use App\Models\ClassRoom;
 use App\Models\HafalanRecord;
+use App\Models\HafalanRecordSurah;
 use App\Models\HafalanTarget;
 use App\Models\MurajaahRecord;
 use App\Models\ParentProfile;
@@ -13,7 +14,9 @@ use App\Models\Setting;
 use App\Models\Student;
 use App\Models\StudentPoint;
 use App\Models\TeacherProfile;
+use App\Models\UmmiRecord;
 use App\Models\User;
+use Carbon\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Cache;
 
@@ -52,8 +55,8 @@ class DashboardService
                     'total_programs' => Program::query()->count(),
                     'total_class_rooms' => ClassRoom::query()->count(),
 
-                    'hafalan_today' => HafalanRecord::query()
-                        ->whereDate('submitted_at', $today)
+                    'hafalan_today' => HafalanRecordSurah::query()
+                        ->whereHas('hafalanRecord', fn ($q) => $q->whereDate('submitted_at', $today))
                         ->count(),
 
                     'murajaah_today' => MurajaahRecord::query()
@@ -73,7 +76,7 @@ class DashboardService
                         ->where('status', 'completed')
                         ->count(),
 
-                    'hafalan_need_attention' => HafalanRecord::query()
+                    'hafalan_need_attention' => HafalanRecordSurah::query()
                         ->whereIn('status', [
                             'repeat',
                             'needs_improvement',
@@ -87,16 +90,18 @@ class DashboardService
                         ])
                         ->count(),
 
-                    'latest_hafalan_records' => HafalanRecord::query()
-                        ->with([
-                            'student.classRoom.program',
-                            'teacher.user',
-                            'surah',
-                        ])
-                        ->latest('submitted_at')
-                        ->latest()
-                        ->limit(8)
-                        ->get(),
+                    'latest_hafalan_records' => HafalanRecord::flattenSurahs(
+                        HafalanRecord::query()
+                            ->with([
+                                'student.classRoom.program',
+                                'teacher.user',
+                                'surahs.surah',
+                            ])
+                            ->latest('submitted_at')
+                            ->latest()
+                            ->limit(8)
+                            ->get()
+                    ),
 
                     'latest_murajaah_records' => MurajaahRecord::query()
                         ->with([
@@ -168,9 +173,8 @@ class DashboardService
 
             $studentIds = $students->pluck('id');
 
-            $hafalanToday = HafalanRecord::query()
-                ->whereIn('student_id', $studentIds)
-                ->whereDate('submitted_at', $today)
+            $hafalanToday = HafalanRecordSurah::query()
+                ->whereHas('hafalanRecord', fn ($q) => $q->whereIn('student_id', $studentIds)->whereDate('submitted_at', $today))
                 ->count();
 
             $murajaahToday = MurajaahRecord::query()
@@ -178,8 +182,8 @@ class DashboardService
                 ->whereDate('reviewed_at', $today)
                 ->count();
 
-            $hafalanNeedAttention = HafalanRecord::query()
-                ->whereIn('student_id', $studentIds)
+            $hafalanNeedAttention = HafalanRecordSurah::query()
+                ->whereHas('hafalanRecord', fn ($q) => $q->whereIn('student_id', $studentIds))
                 ->whereIn('status', ['repeat', 'needs_improvement'])
                 ->count();
 
@@ -222,17 +226,19 @@ class DashboardService
                     ->limit(8)
                     ->get(),
 
-                'latest_hafalan_records' => HafalanRecord::query()
-                    ->with([
-                        'student.classRoom.program',
-                        'teacher.user',
-                        'surah',
-                    ])
-                    ->whereIn('student_id', $studentIds)
-                    ->latest('submitted_at')
-                    ->latest()
-                    ->limit(8)
-                    ->get(),
+                'latest_hafalan_records' => HafalanRecord::flattenSurahs(
+                    HafalanRecord::query()
+                        ->with([
+                            'student.classRoom.program',
+                            'teacher.user',
+                            'surahs.surah',
+                        ])
+                        ->whereIn('student_id', $studentIds)
+                        ->latest('submitted_at')
+                        ->latest()
+                        ->limit(8)
+                        ->get()
+                ),
 
                 'latest_murajaah_records' => MurajaahRecord::query()
                     ->with([
@@ -312,11 +318,52 @@ class DashboardService
                 ->get();
 
             // Recent Hafalan & Murajaah for this student specifically
-            $recentHafalan = HafalanRecord::with('surah')
+            $recentHafalan = HafalanRecord::flattenSurahs(
+                HafalanRecord::with(['surahs.surah', 'teacher.user'])
+                    ->where('student_id', $student->id)
+                    ->latest('submitted_at')
+                    ->latest()
+                    ->take(6)
+                    ->get()
+            );
+
+            $recentUmmiHafalan = UmmiRecord::query()
+                ->with(['teacher.user', 'surahs.surah'])
                 ->where('student_id', $student->id)
-                ->latest('submitted_at')
-                ->take(5)
-                ->get();
+                ->whereHas('surahs')
+                ->latest('tanggal')
+                ->latest()
+                ->take(6)
+                ->get()
+                ->flatMap(function ($u) {
+                    return $u->surahs->map(function ($surahEntry) use ($u) {
+                        $parts = explode('-', str_replace(' ', '', (string) $surahEntry->hafalan_ayah));
+                        $start = isset($parts[0]) && is_numeric($parts[0]) ? (int) $parts[0] : 1;
+                        $end = isset($parts[1]) && is_numeric($parts[1]) ? (int) $parts[1] : $start;
+
+                        $rec = new HafalanRecord;
+                        $rec->id = $surahEntry->id;
+                        $rec->student_id = $u->student_id;
+                        $rec->teacher_id = $u->teacher_id;
+                        $rec->surah_id = $surahEntry->surah_id;
+                        $rec->ayah_start = $start;
+                        $rec->ayah_end = $end;
+                        $rec->submitted_at = $u->tanggal;
+                        $rec->status = $u->nilai ? 'Lulus (Nilai: '.$u->nilai.')' : 'passed';
+                        $rec->score = is_numeric($u->nilai) ? (float) $u->nilai : null;
+                        $rec->setRelation('surah', $surahEntry->surah);
+                        $rec->setRelation('teacher', $u->teacher);
+
+                        return $rec;
+                    });
+                });
+
+            if ($recentUmmiHafalan->isNotEmpty()) {
+                $recentHafalan = $recentHafalan->concat($recentUmmiHafalan)
+                    ->sortByDesc(fn ($item) => $item->submitted_at ? Carbon::parse($item->submitted_at)->timestamp : 0)
+                    ->take(6)
+                    ->values();
+            }
 
             $recentMurajaah = MurajaahRecord::with('surah')
                 ->where('student_id', $student->id)
@@ -382,17 +429,19 @@ class DashboardService
                 ->limit(8)
                 ->get(),
 
-            'latest_hafalan_records' => HafalanRecord::query()
-                ->with([
-                    'student.classRoom.program',
-                    'teacher.user',
-                    'surah',
-                ])
-                ->whereIn('student_id', $studentIds)
-                ->latest('submitted_at')
-                ->latest()
-                ->limit(8)
-                ->get(),
+            'latest_hafalan_records' => HafalanRecord::flattenSurahs(
+                HafalanRecord::query()
+                    ->with([
+                        'student.classRoom.program',
+                        'teacher.user',
+                        'surahs.surah',
+                    ])
+                    ->whereIn('student_id', $studentIds)
+                    ->latest('submitted_at')
+                    ->latest()
+                    ->limit(8)
+                    ->get()
+            ),
 
             'latest_murajaah_records' => MurajaahRecord::query()
                 ->with([
@@ -463,16 +512,56 @@ class DashboardService
             ->limit(8)
             ->get();
 
-        $latestHafalanRecords = HafalanRecord::query()
-            ->with([
-                'teacher.user',
-                'surah',
-            ])
+        $latestHafalanRecords = HafalanRecord::flattenSurahs(
+            HafalanRecord::query()
+                ->with([
+                    'teacher.user',
+                    'surahs.surah',
+                ])
+                ->where('student_id', $student->id)
+                ->latest('submitted_at')
+                ->latest()
+                ->limit(8)
+                ->get()
+        );
+
+        $latestUmmiRecords = UmmiRecord::query()
+            ->with(['teacher.user', 'surahs.surah'])
             ->where('student_id', $student->id)
-            ->latest('submitted_at')
+            ->whereHas('surahs')
+            ->latest('tanggal')
             ->latest()
             ->limit(8)
-            ->get();
+            ->get()
+            ->flatMap(function ($u) {
+                return $u->surahs->map(function ($surahEntry) use ($u) {
+                    $parts = explode('-', str_replace(' ', '', (string) $surahEntry->hafalan_ayah));
+                    $start = isset($parts[0]) && is_numeric($parts[0]) ? (int) $parts[0] : 1;
+                    $end = isset($parts[1]) && is_numeric($parts[1]) ? (int) $parts[1] : $start;
+
+                    $rec = new HafalanRecord;
+                    $rec->id = $surahEntry->id;
+                    $rec->student_id = $u->student_id;
+                    $rec->teacher_id = $u->teacher_id;
+                    $rec->surah_id = $surahEntry->surah_id;
+                    $rec->ayah_start = $start;
+                    $rec->ayah_end = $end;
+                    $rec->submitted_at = $u->tanggal;
+                    $rec->status = $u->nilai ? 'Lulus (Nilai: '.$u->nilai.')' : 'Lulus';
+                    $rec->score = is_numeric($u->nilai) ? (float) $u->nilai : null;
+                    $rec->setRelation('surah', $surahEntry->surah);
+                    $rec->setRelation('teacher', $u->teacher);
+
+                    return $rec;
+                });
+            });
+
+        if ($latestUmmiRecords->isNotEmpty()) {
+            $latestHafalanRecords = $latestHafalanRecords->concat($latestUmmiRecords)
+                ->sortByDesc(fn ($item) => $item->submitted_at ? Carbon::parse($item->submitted_at)->timestamp : 0)
+                ->take(8)
+                ->values();
+        }
 
         $latestMurajaahRecords = MurajaahRecord::query()
             ->with([

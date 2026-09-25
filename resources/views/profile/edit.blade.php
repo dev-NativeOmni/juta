@@ -19,6 +19,14 @@
                 </div>
             </div>
 
+            @if ($canSign)
+                <div class="p-4 sm:p-6 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 shadow-sm rounded-xl">
+                    <div class="max-w-xl">
+                        @include('profile.partials.update-signature-form')
+                    </div>
+                </div>
+            @endif
+
             <div class="p-4 sm:p-6 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 shadow-sm rounded-xl">
                 <div class="max-w-xl">
                     @include('profile.partials.update-password-form')

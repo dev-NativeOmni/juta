@@ -3,7 +3,7 @@
 namespace App\Services\Api\V1;
 
 use App\Models\ClassRoom;
-use App\Models\HafalanRecord;
+use App\Models\HafalanRecordSurah;
 use App\Models\HafalanTarget;
 use App\Models\MurajaahRecord;
 use App\Models\ParentProfile;
@@ -12,6 +12,7 @@ use App\Models\Student;
 use App\Models\SystemNotification;
 use App\Models\TeacherProfile;
 use App\Models\User;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Schema;
 
@@ -157,22 +158,17 @@ class DashboardApiService
             'total_students' => $studentIds->count(),
             'active_students' => $this->activeStudentCount($ids),
 
-            'total_hafalan_records' => HafalanRecord::query()
-                ->whereIn('student_id', $ids)
-                ->count(),
+            'total_hafalan_records' => $this->hafalanSurahQuery($ids)->count(),
 
-            'passed_hafalan_records' => HafalanRecord::query()
-                ->whereIn('student_id', $ids)
+            'passed_hafalan_records' => $this->hafalanSurahQuery($ids)
                 ->where('status', 'passed')
                 ->count(),
 
-            'repeat_hafalan_records' => HafalanRecord::query()
-                ->whereIn('student_id', $ids)
+            'repeat_hafalan_records' => $this->hafalanSurahQuery($ids)
                 ->whereIn('status', ['repeat', 'needs_improvement'])
                 ->count(),
 
-            'average_hafalan_score' => round((float) HafalanRecord::query()
-                ->whereIn('student_id', $ids)
+            'average_hafalan_score' => round((float) $this->hafalanSurahQuery($ids)
                 ->whereNotNull('score')
                 ->avg('score'), 2),
 
@@ -224,9 +220,8 @@ class DashboardApiService
         return [
             'date' => $today,
 
-            'hafalan_submitted_today' => HafalanRecord::query()
-                ->whereIn('student_id', $ids)
-                ->whereDate('submitted_at', $today)
+            'hafalan_submitted_today' => $this->hafalanSurahQuery($ids)
+                ->whereDate('hafalan_records.submitted_at', $today)
                 ->count(),
 
             'murajaah_reviewed_today' => MurajaahRecord::query()
@@ -250,12 +245,9 @@ class DashboardApiService
     {
         $ids = $studentIds->all();
 
-        $totalHafalan = HafalanRecord::query()
-            ->whereIn('student_id', $ids)
-            ->count();
+        $totalHafalan = $this->hafalanSurahQuery($ids)->count();
 
-        $passedHafalan = HafalanRecord::query()
-            ->whereIn('student_id', $ids)
+        $passedHafalan = $this->hafalanSurahQuery($ids)
             ->where('status', 'passed')
             ->count();
 
@@ -296,14 +288,17 @@ class DashboardApiService
     {
         $ids = $studentIds->all();
 
-        $latestHafalan = HafalanRecord::query()
-            ->with(['student', 'surah', 'teacher.user'])
-            ->whereIn('student_id', $ids)
-            ->latest('submitted_at')
-            ->latest()
+        $latestHafalan = HafalanRecordSurah::query()
+            ->select('hafalan_record_surahs.*')
+            ->join('hafalan_records', 'hafalan_records.id', '=', 'hafalan_record_surahs.hafalan_record_id')
+            ->whereNull('hafalan_records.deleted_at')
+            ->with(['hafalanRecord.student', 'surah', 'hafalanRecord.teacher.user'])
+            ->whereIn('hafalan_records.student_id', $ids)
+            ->orderByDesc('hafalan_records.submitted_at')
+            ->orderByDesc('hafalan_record_surahs.id')
             ->limit(5)
             ->get()
-            ->map(fn (HafalanRecord $record) => $this->hafalanSummary($record))
+            ->map(fn (HafalanRecordSurah $record) => $this->hafalanSummary($record->applyHeaderOverlay()))
             ->values()
             ->all();
 
@@ -355,8 +350,7 @@ class DashboardApiService
                 ->whereDate('target_date', '<', now()->toDateString())
                 ->count(),
 
-            'hafalan_needs_improvement' => HafalanRecord::query()
-                ->whereIn('student_id', $ids)
+            'hafalan_needs_improvement' => $this->hafalanSurahQuery($ids)
                 ->whereIn('status', ['repeat', 'needs_improvement'])
                 ->count(),
 
@@ -365,6 +359,19 @@ class DashboardApiService
                 ->whereIn('status', ['repeat', 'needs_improvement'])
                 ->count(),
         ];
+    }
+
+    /**
+     * Base query over hafalan_record_surahs (joined to their header) scoped to the
+     * given student ids, for counting/averaging per-surah submissions the same way
+     * the old flat hafalan_records rows were counted.
+     */
+    private function hafalanSurahQuery(array $studentIds): Builder
+    {
+        return HafalanRecordSurah::query()
+            ->join('hafalan_records', 'hafalan_records.id', '=', 'hafalan_record_surahs.hafalan_record_id')
+            ->whereNull('hafalan_records.deleted_at')
+            ->whereIn('hafalan_records.student_id', $studentIds);
     }
 
     private function activeStudentCount(array $studentIds): int
@@ -427,7 +434,7 @@ class DashboardApiService
         return $modelClass::query()->count();
     }
 
-    private function hafalanSummary(HafalanRecord $record): array
+    private function hafalanSummary(HafalanRecordSurah $record): array
     {
         return [
             'id' => $record->id,
@@ -470,8 +477,8 @@ class DashboardApiService
             'student_name' => $target->student?->name,
             'surah_id' => $target->surah_id,
             'surah_name' => $target->surah?->name_latin,
-            'ayah_start' => $target->ayah_start,
-            'ayah_end' => $target->ayah_end,
+            'ayah' => $target->ayah,
+            'ayah_range' => $target->ayah_range,
             'target_date' => optional($target->target_date)->format('Y-m-d'),
             'status' => $target->status,
             'completed_at' => optional($target->completed_at)->toISOString(),

@@ -25,8 +25,6 @@ export default () => ({
                 this.closeLoginModal();
             }
         });
-        
-        console.log('IMS ScrollLayout component loaded with Theme Switcher and Login Modal support!');
     },
 
     openLoginModal() {

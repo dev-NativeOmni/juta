@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\ProfileUpdateRequest;
+use App\Support\Signatures;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Redirect;
@@ -16,9 +17,46 @@ class ProfileController extends Controller
      */
     public function edit(Request $request): View
     {
+        $user = $request->user();
+
         return view('profile.edit', [
-            'user' => $request->user(),
+            'user' => $user,
+            'canSign' => $this->canSign($user),
+            'signaturePreview' => Signatures::dataUri($user->signature_path),
         ]);
+    }
+
+    /**
+     * Unggah/ganti tanda tangan guru (untuk Laporan Triwulan).
+     */
+    public function updateSignature(Request $request): RedirectResponse
+    {
+        $user = $request->user();
+        abort_unless($this->canSign($user), 403);
+
+        $request->validate(['signature' => ['required', ...array_slice(Signatures::UPLOAD_RULES, 1)]]);
+
+        Signatures::delete($user->signature_path);
+        $user->update(['signature_path' => Signatures::store($request->file('signature'), 'teachers')]);
+
+        return Redirect::route('profile.edit')->with('status', 'signature-updated');
+    }
+
+    public function destroySignature(Request $request): RedirectResponse
+    {
+        $user = $request->user();
+        Signatures::delete($user->signature_path);
+        $user->update(['signature_path' => null]);
+
+        return Redirect::route('profile.edit')->with('status', 'signature-deleted');
+    }
+
+    /**
+     * Tanda tangan hanya relevan untuk akun yang terhubung ke profil guru.
+     */
+    private function canSign($user): bool
+    {
+        return $user?->teacherProfile !== null;
     }
 
     /**

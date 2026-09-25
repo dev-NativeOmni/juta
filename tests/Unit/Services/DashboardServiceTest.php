@@ -98,14 +98,16 @@ class DashboardServiceTest extends TestCase
         $teacherUser = $this->teacherUser;
         $student = $this->student;
 
-        HafalanRecord::create([
+        $record1 = HafalanRecord::create([
             'student_id' => $student->id,
             'teacher_id' => $this->teacherProfile->id,
+            'submitted_at' => now(),
+        ]);
+        $record1->surahs()->create([
             'surah_id' => $this->surah->id,
             'ayah_start' => 1,
             'ayah_end' => 3,
             'status' => 'passed',
-            'submitted_at' => now(),
         ]);
 
         MurajaahRecord::create([
@@ -118,14 +120,16 @@ class DashboardServiceTest extends TestCase
             'reviewed_at' => now(),
         ]);
 
-        HafalanRecord::create([
+        $record2 = HafalanRecord::create([
             'student_id' => $student->id,
             'teacher_id' => $this->teacherProfile->id,
+            'submitted_at' => now()->subDay(),
+        ]);
+        $record2->surahs()->create([
             'surah_id' => $this->surah->id,
             'ayah_start' => 1,
             'ayah_end' => 3,
             'status' => 'repeat',
-            'submitted_at' => now()->subDay(),
         ]);
 
         $stats = $this->service->teacherStats($teacherUser);

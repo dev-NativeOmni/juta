@@ -38,16 +38,19 @@ class HafalanMurajaahApiTest extends TestCase
         $teacher = TeacherProfile::first();
         $surah = Surah::first();
 
-        $record = HafalanRecord::create([
+        $hafalanRecord = HafalanRecord::create([
             'student_id' => $student->id,
             'teacher_id' => $teacher->id,
+            'submitted_at' => now()->toDateString(),
+        ]);
+
+        $record = $hafalanRecord->surahs()->create([
             'surah_id' => $surah->id,
             'ayah_start' => 1,
             'ayah_end' => 5,
             'submission_type' => 'new',
             'score' => 90.00,
             'status' => 'passed',
-            'submitted_at' => now()->toDateString(),
         ]);
 
         $user = User::where('username', 'santri')->first();
@@ -147,8 +150,7 @@ class HafalanMurajaahApiTest extends TestCase
             'student_id' => $student->id,
             'teacher_id' => $teacher->id,
             'surah_id' => $surah->id,
-            'ayah_start' => 1,
-            'ayah_end' => 5,
+            'ayah' => 5,
             'target_date' => now()->addDays(2)->toDateString(),
             'status' => 'active',
         ]);

@@ -48,9 +48,9 @@ class Surah extends Model
         return $this->hasMany(Ayah::class);
     }
 
-    public function hafalanRecords(): HasMany
+    public function hafalanRecordSurahs(): HasMany
     {
-        return $this->hasMany(HafalanRecord::class);
+        return $this->hasMany(HafalanRecordSurah::class);
     }
 
     public function murajaahRecords(): HasMany

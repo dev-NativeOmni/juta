@@ -11,7 +11,10 @@ use App\Models\Surah;
 use App\Models\TeacherProfile;
 use App\Models\UmmiRecord;
 use App\Models\User;
+use App\Services\AcademicCalendarService;
 use App\Services\StudentProgressService;
+use Carbon\Carbon;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -30,10 +33,12 @@ class HafalanRecordController extends Controller
                 ->with([
                     'student.classRoom.program',
                     'teacher.user',
-                    'surah',
+                    'surahs.surah',
                 ])
                 ->when($user->hasRole('teacher'), function ($query) use ($user) {
-                    $query->where('teacher_id', $user->teacherProfile?->id);
+                    $query->whereHas('student', function ($q) use ($user) {
+                        $q->where('teacher_id', $user->teacherProfile?->id);
+                    });
                 })
                 ->when($request->filled('class_room_id'), function ($query) use ($request) {
                     $query->whereHas('student', function ($q) use ($request) {
@@ -44,7 +49,9 @@ class HafalanRecordController extends Controller
                     $query->where('student_id', $request->integer('student_id'));
                 })
                 ->when($request->filled('surah_id'), function ($query) use ($request) {
-                    $query->where('hafalan_surah_id', $request->integer('surah_id'));
+                    $query->whereHas('surahs', function ($q) use ($request) {
+                        $q->where('surah_id', $request->integer('surah_id'));
+                    });
                 })
                 ->when($request->filled('date'), function ($query) use ($request) {
                     $query->whereDate('tanggal', $request->input('date'));
@@ -55,7 +62,7 @@ class HafalanRecordController extends Controller
                         $q->whereHas('student', function ($sub) use ($search) {
                             $sub->where('name', 'like', "%{$search}%");
                         })
-                            ->orWhereHas('surah', function ($sub) use ($search) {
+                            ->orWhereHas('surahs.surah', function ($sub) use ($search) {
                                 $sub->where('name_latin', 'like', "%{$search}%");
                             })
                             ->orWhere('ummi_jilid', 'like', "%{$search}%")
@@ -71,10 +78,12 @@ class HafalanRecordController extends Controller
                 ->with([
                     'student.classRoom.program',
                     'teacher.user',
-                    'surah',
+                    'surahs.surah',
                 ])
                 ->when($user->hasRole('teacher'), function ($query) use ($user) {
-                    $query->where('teacher_id', $user->teacherProfile?->id);
+                    $query->whereHas('student', function ($q) use ($user) {
+                        $q->where('teacher_id', $user->teacherProfile?->id);
+                    });
                 })
                 ->when($request->filled('class_room_id'), function ($query) use ($request) {
                     $query->whereHas('student', function ($q) use ($request) {
@@ -85,10 +94,15 @@ class HafalanRecordController extends Controller
                     $query->where('student_id', $request->integer('student_id'));
                 })
                 ->when($request->filled('surah_id'), function ($query) use ($request) {
-                    $query->where('surah_id', $request->integer('surah_id'));
+                    $query->whereHas('surahs', function ($q) use ($request) {
+                        $q->where('surah_id', $request->integer('surah_id'));
+                    });
                 })
                 ->when($request->filled('status'), function ($query) use ($request) {
-                    $query->where('status', $request->string('status')->toString());
+                    $status = $request->string('status')->toString();
+                    $query->whereHas('surahs', function ($q) use ($status) {
+                        $q->where('status', $status);
+                    });
                 })
                 ->when($request->filled('date'), function ($query) use ($request) {
                     $query->whereDate('submitted_at', $request->input('date'));
@@ -99,7 +113,7 @@ class HafalanRecordController extends Controller
                         $q->whereHas('student', function ($sub) use ($search) {
                             $sub->where('name', 'like', "%{$search}%");
                         })
-                            ->orWhereHas('surah', function ($sub) use ($search) {
+                            ->orWhereHas('surahs.surah', function ($sub) use ($search) {
                                 $sub->where('name_latin', 'like', "%{$search}%");
                             });
                     });
@@ -156,23 +170,27 @@ class HafalanRecordController extends Controller
             $statuses,
             $baris
         ) {
+            $hafalanRecord = HafalanRecord::query()->create([
+                'student_id' => $studentId,
+                'teacher_id' => $teacherId,
+                'notes' => $notes,
+                'submitted_at' => $submittedAt,
+            ]);
+
             foreach ($surahIds as $idx => $surahId) {
                 if (empty($surahId)) {
                     continue;
                 }
 
-                HafalanRecord::query()->create([
-                    'student_id' => $studentId,
-                    'teacher_id' => $teacherId,
+                $hafalanRecord->surahs()->create([
                     'surah_id' => (int) $surahId,
                     'ayah_start' => (int) ($ayahStarts[$idx] ?? 1),
                     'ayah_end' => (int) ($ayahEnds[$idx] ?? 1),
                     'submission_type' => $submissionTypes[$idx] ?? 'new',
                     'score' => isset($scores[$idx]) && $scores[$idx] !== '' ? $scores[$idx] : null,
                     'status' => $statuses[$idx] ?? 'passed',
-                    'notes' => $notes,
-                    'submitted_at' => $submittedAt,
                     'baris' => isset($baris[$idx]) && $baris[$idx] !== '' ? (float) $baris[$idx] : null,
+                    'sort_order' => $idx,
                 ]);
             }
         });
@@ -189,7 +207,7 @@ class HafalanRecordController extends Controller
         $hafalanRecord->load([
             'student.classRoom.program',
             'teacher.user',
-            'surah',
+            'surahs.surah',
         ]);
 
         return view('hafalan-records.show', [
@@ -200,6 +218,8 @@ class HafalanRecordController extends Controller
     public function edit(Request $request, HafalanRecord $hafalanRecord): View
     {
         $this->authorize('update', $hafalanRecord);
+
+        $hafalanRecord->load('surahs.surah');
 
         return view('hafalan-records.edit', array_merge(
             [
@@ -213,7 +233,43 @@ class HafalanRecordController extends Controller
     {
         $this->authorize('update', $hafalanRecord);
 
-        $hafalanRecord->update($request->validated());
+        $validated = $request->validated();
+
+        DB::transaction(function () use ($hafalanRecord, $validated) {
+            $hafalanRecord->update([
+                'student_id' => $validated['student_id'],
+                'teacher_id' => $validated['teacher_id'] ?? $hafalanRecord->teacher_id,
+                'notes' => $validated['notes'] ?? null,
+                'submitted_at' => $validated['submitted_at'],
+            ]);
+
+            $hafalanRecord->surahs()->delete();
+
+            $surahIds = $validated['surah_ids'] ?? [];
+            $ayahStarts = $validated['ayah_starts'] ?? [];
+            $ayahEnds = $validated['ayah_ends'] ?? [];
+            $submissionTypes = $validated['submission_types'] ?? [];
+            $scores = $validated['scores'] ?? [];
+            $statuses = $validated['statuses'] ?? [];
+            $baris = $validated['baris'] ?? [];
+
+            foreach ($surahIds as $idx => $surahId) {
+                if (empty($surahId)) {
+                    continue;
+                }
+
+                $hafalanRecord->surahs()->create([
+                    'surah_id' => (int) $surahId,
+                    'ayah_start' => (int) ($ayahStarts[$idx] ?? 1),
+                    'ayah_end' => (int) ($ayahEnds[$idx] ?? 1),
+                    'submission_type' => $submissionTypes[$idx] ?? 'new',
+                    'score' => isset($scores[$idx]) && $scores[$idx] !== '' ? $scores[$idx] : null,
+                    'status' => $statuses[$idx] ?? 'passed',
+                    'baris' => isset($baris[$idx]) && $baris[$idx] !== '' ? (float) $baris[$idx] : null,
+                    'sort_order' => $idx,
+                ]);
+            }
+        });
 
         return redirect()
             ->route('hafalan-records.index')
@@ -231,18 +287,6 @@ class HafalanRecordController extends Controller
             ->with('success', 'Data hafalan berhasil dihapus.');
     }
 
-    public function editUmmi(Request $request, UmmiRecord $ummiRecord): View
-    {
-        $this->authorize('create', HafalanRecord::class);
-
-        return view('hafalan-records.edit-ummi', array_merge(
-            [
-                'ummiRecord' => $ummiRecord,
-            ],
-            $this->formData($request->user())
-        ));
-    }
-
     public function updateUmmi(Request $request, UmmiRecord $ummiRecord): RedirectResponse
     {
         $this->authorize('create', HafalanRecord::class);
@@ -251,21 +295,56 @@ class HafalanRecordController extends Controller
             'student_id' => ['required', 'integer', 'exists:students,id'],
             'tanggal' => ['required', 'date'],
             'tatap_muka' => ['nullable', 'integer', 'min:1'],
-            'ummi_jilid' => ['nullable', 'string', 'max:50'],
-            'ummi_halaman' => ['nullable', 'string', 'max:50'],
+            'ummi_jilid' => ['nullable', 'string', 'max:150'],
+            'ummi_halaman' => ['nullable', 'string', 'max:100'],
             'materi' => ['nullable', 'string', 'max:255'],
-            'nilai' => ['nullable', 'string', 'max:10'],
-            'hafalan_surah_id' => ['nullable', 'integer', 'exists:surahs,id'],
-            'hafalan_ayah' => ['nullable', 'string', 'max:50'],
+            'nilai' => ['nullable', 'string', 'max:50'],
+            'hafalan_surah_ids' => ['nullable', 'array'],
+            'hafalan_surah_ids.*' => ['nullable', 'integer', 'exists:surahs,id'],
+            'hafalan_ayahs' => ['nullable', 'array'],
+            'hafalan_ayahs.*' => ['nullable', 'string', 'max:100'],
+            'hafalan_baris' => ['nullable', 'array'],
+            'hafalan_baris.*' => ['nullable', 'numeric', 'min:0'],
             'disimak_guru' => ['required', Rule::in(['Ya', 'Tidak'])],
             'disimak_ortu' => ['required', Rule::in(['Ya', 'Tidak'])],
             'catatan' => ['nullable', 'string'],
         ]);
 
-        $ummiRecord->update($validated);
+        DB::transaction(function () use ($ummiRecord, $validated) {
+            $ummiRecord->update([
+                'student_id' => $validated['student_id'],
+                'tanggal' => $validated['tanggal'],
+                'tatap_muka' => $validated['tatap_muka'] ?? $ummiRecord->tatap_muka,
+                'ummi_jilid' => $validated['ummi_jilid'] ?? null,
+                'ummi_halaman' => $validated['ummi_halaman'] ?? null,
+                'materi' => $validated['materi'] ?? null,
+                'nilai' => $validated['nilai'] ?? null,
+                'disimak_guru' => $validated['disimak_guru'],
+                'disimak_ortu' => $validated['disimak_ortu'],
+                'keterangan' => $validated['catatan'] ?? null,
+            ]);
 
-        return redirect()
-            ->route('hafalan-records.index', ['category' => 'ummi'])
+            $ummiRecord->surahs()->delete();
+
+            $surahIds = $validated['hafalan_surah_ids'] ?? [];
+            $ayahs = $validated['hafalan_ayahs'] ?? [];
+            $baris = $validated['hafalan_baris'] ?? [];
+
+            foreach ($surahIds as $idx => $surahId) {
+                if (empty($surahId)) {
+                    continue;
+                }
+
+                $ummiRecord->surahs()->create([
+                    'surah_id' => (int) $surahId,
+                    'hafalan_ayah' => $ayahs[$idx] ?? null,
+                    'baris' => isset($baris[$idx]) && $baris[$idx] !== '' ? (float) $baris[$idx] : null,
+                    'sort_order' => $idx,
+                ]);
+            }
+        });
+
+        return back()
             ->with('success', 'Data progres UMMI berhasil diperbarui.');
     }
 
@@ -376,18 +455,31 @@ class HafalanRecordController extends Controller
             })->values();
         }
 
-        $latestTatapMukaPerStudent = DB::table('ummi_records')
-            ->select('student_id', DB::raw('MAX(tatap_muka) as max_tatap_muka'))
-            ->groupBy('student_id')
-            ->pluck('max_tatap_muka', 'student_id');
-
         return [
             'students' => $students,
             'teachers' => $teachers,
             'surahs' => $surahs,
             'classRooms' => $classRooms,
-            'latestTatapMukaPerStudent' => $latestTatapMukaPerStudent,
         ];
+    }
+
+    /**
+     * Saran nomor Tatap Muka (TM) untuk kelas & tanggal tertentu, dihitung
+     * dari kalender hari efektif kelas (bukan riwayat TM murid) -- lihat
+     * AcademicCalendarService::tatapMukaNumber().
+     */
+    public function suggestTatapMuka(Request $request, AcademicCalendarService $calendar): JsonResponse
+    {
+        $validated = $request->validate([
+            'class_room_id' => ['required', 'integer', 'exists:class_rooms,id'],
+            'date' => ['required', 'date'],
+        ]);
+
+        $classRoom = ClassRoom::query()->with('program')->findOrFail($validated['class_room_id']);
+
+        return response()->json([
+            'tatap_muka' => $calendar->tatapMukaNumber($classRoom, Carbon::parse($validated['date']), forUmmi: true),
+        ]);
     }
 
     public function ummiCard(Request $request, Student $student): View
@@ -408,7 +500,7 @@ class HafalanRecordController extends Controller
             'teacher.user',
         ]);
 
-        $records = UmmiRecord::with('surah')
+        $records = UmmiRecord::with('surahs.surah')
             ->where('student_id', $student->id)
             ->orderBy('tanggal')
             ->orderBy('tatap_muka')

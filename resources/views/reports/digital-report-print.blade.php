@@ -54,6 +54,12 @@
     </style>
 </head>
 <body class="bg-zinc-100 text-gray-900 p-4 sm:p-8" x-data="{ paperSize: 'f4' }" :class="{ 'max-w-[215mm]': paperSize === 'f4', 'max-w-[210mm]': paperSize === 'a4' }">
+    @php
+        // Tanda tangan pejabat (Pengaturan Umum); dihitung sekali untuk seluruh halaman.
+        $signatureUris = collect(\App\Support\Signatures::OFFICIALS)
+            ->map(fn ($official, $key) => \App\Support\Signatures::dataUri(\App\Support\Signatures::officialFile($key)))
+            ->all();
+    @endphp
 
     <!-- Floating Action Toolbar for print preview (hidden during print) -->
     <div class="max-w-4xl mx-auto mb-6 flex flex-wrap justify-between items-center gap-3 no-print bg-white/95 dark:bg-zinc-900/95 backdrop-blur-md p-4 rounded-2xl border border-zinc-200 dark:border-zinc-800 shadow-lg">
@@ -61,7 +67,8 @@
             <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
             <div>
                 <h4 class="text-sm font-bold text-gray-900 dark:text-white flex items-center gap-1.5">
-                    <span>📄</span> Pratinjau Cetak Rapor Digital
+                    <x-heroicon-o-document-text class="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
+                    <span>Pratinjau Cetak Rapor Digital</span>
                 </h4>
                 <p class="text-xs text-gray-500 dark:text-zinc-400">
                     {{ $student->name }} &bull; {{ $student->classRoom?->name ?: '-' }}
@@ -80,19 +87,20 @@
                 </button>
             </div>
 
-            <button onclick="window.close()" class="px-3.5 py-2 border border-gray-200 dark:border-zinc-700 rounded-xl text-xs font-semibold text-gray-700 dark:text-zinc-300 bg-white dark:bg-zinc-800 hover:bg-gray-50 transition">
+            <button onclick="window.close()" class="px-3.5 py-2 border border-gray-200 dark:border-zinc-700 rounded-xl text-xs font-semibold text-gray-700 dark:text-zinc-300 bg-white dark:bg-zinc-800 hover:bg-gray-50 transition cursor-pointer">
                 Tutup
             </button>
-            <button onclick="window.print()" class="px-4 py-2 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white rounded-xl text-xs font-bold shadow-md shadow-emerald-600/20 transition flex items-center gap-1.5">
-                <span>🖨️</span> Cetak / Simpan PDF
+            <button onclick="window.print()" class="px-4 py-2 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white rounded-xl text-xs font-bold shadow-md shadow-emerald-600/20 transition flex items-center gap-1.5 cursor-pointer">
+                <x-heroicon-o-printer class="w-4 h-4" />
+                <span>Cetak / Simpan PDF</span>
             </button>
         </div>
     </div>
 
     @php
         $reportMainTitle = \App\Models\Setting::get('report_main_title', 'LAPORAN TAHFIDZ, ADAB DAN TANSE');
-        $reportSchoolName = \App\Models\Setting::get('report_school_name') ?: (\App\Models\Setting::get('nama_instansi') ?: 'Lembaga Pendidikan Tahfizh');
-        $reportCity = \App\Models\Setting::get('report_city', 'Kota');
+        $reportSchoolName = \App\Models\Setting::get('report_school_name', 'SMA ISLAM AL AZHAR 7 SUKOHARJO');
+        $reportCity = \App\Models\Setting::get('report_city', 'Sukoharjo');
 
         $coordTahfizhName = \App\Models\Setting::get('report_coord_tahfizh_name', 'Zainal Arifin, S.Pd');
         $coordTahfizhNik = \App\Models\Setting::get('report_coord_tahfizh_nik', '15.06.0393');
@@ -100,14 +108,12 @@
         $coordKeagamaanName = \App\Models\Setting::get('report_coord_keagamaan_name', 'Rifqi Ihsan, S.Pd., Gr.');
         $coordKeagamaanNik = \App\Models\Setting::get('report_coord_keagamaan_nik', '15.06.0393');
 
-        $headmasterTitle = \App\Models\Setting::get('report_headmaster_title') ?: ('Kepala ' . (\App\Models\Setting::get('nama_instansi') ?: 'Sekolah'));
+        $headmasterTitle = \App\Models\Setting::get('report_headmaster_title', 'Kepala SMA Islam Al Azhar 7 Sukoharjo');
         $headmasterName = \App\Models\Setting::get('report_headmaster_name', 'Moh Pandoyo, S.Si., M.Pd., Gr.');
         $headmasterNik = \App\Models\Setting::get('report_headmaster_nik', '08.04.0160');
 
         $coordTanseName = \App\Models\Setting::get('report_coord_tanse_name', 'Yatim Hermawan, S.E., S.Kom');
         $coordTanseNik = \App\Models\Setting::get('report_coord_tanse_nik', '15.06.0393');
-
-        $printLogo = \App\Models\Setting::get('logo') ? asset('storage/' . \App\Models\Setting::get('logo')) : asset('images/logo_alazhar7.png');
     @endphp
 
     <!-- Official Report Card Layout -->
@@ -115,9 +121,9 @@
         
         <!-- Kop Surat Terpadu -->
         <div class="grid grid-cols-[85px_1fr_85px] items-center border-b border-black pb-4 mb-6">
-            <!-- Left Logo -->
+            <!-- Left Logo: SMA Islam Al Azhar 7 -->
             <div class="shrink-0 flex justify-start">
-                <img src="{{ $printLogo }}" class="h-20 w-auto object-contain" alt="{{ $reportSchoolName }}" />
+                <img src="{{ asset('images/logo_alazhar7.png') }}" class="h-20 w-auto object-contain" alt="Logo SMA Islam Al Azhar 7" />
             </div>
             
             <!-- Title & Basmalah -->
@@ -182,14 +188,10 @@
                         <tr class="border-b border-black">
                             <td class="p-1.5 border-r border-black text-center align-middle">{{ $idx + 1 }}</td>
                             <td class="p-1.5 border-r border-black align-middle font-semibold">
-                                QS. {{ $target->surah?->name_latin ?? '-' }} (Ayat {{ $target->ayah_start }}-{{ $target->ayah_end }})
+                                @include('reports.partials.tahfizh-target-capaian-cell', ['target' => $target, 'mode' => 'target'])
                             </td>
                             <td class="p-1.5 border-r border-black align-middle font-semibold">
-                                @if($target->matching_record)
-                                    QS. {{ $target->matching_record->surah?->name_latin ?? '-' }} (Ayat {{ $target->matching_record->ayah_start }}-{{ $target->matching_record->ayah_end }})
-                                @else
-                                    {{ $latestCapaianText ?: '-' }}
-                                @endif
+                                @include('reports.partials.tahfizh-target-capaian-cell', ['target' => $target, 'mode' => 'capaian'])
                             </td>
                             <td class="p-1.5 border-r border-black text-center align-middle font-bold {{ $target->status === 'completed' ? 'text-green-700' : 'text-amber-700' }}">
                                 {{ $target->status === 'completed' ? 'Tuntas' : 'Dalam Proses' }}
@@ -206,31 +208,11 @@
                 </tbody>
             </table>
 
-            <!-- Table 2: Nilai Ujian (Recent Exams) -->
-            <table class="w-full table-fixed border border-black text-xs text-left mt-4">
-                <thead>
-                    <tr class="bg-gray-100 border-b border-black text-center font-bold">
-                        <th class="p-1.5 border-r border-black w-[8%]">No.</th>
-                        <th class="p-1.5 border-r border-black w-[35%]">NILAI UJIAN</th>
-                        <th class="p-1.5 border-r border-black w-[20%]">KETERANGAN</th>
-                        <th class="p-1.5 w-[37%]">Deskripsi</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @forelse($tahfizhExams as $idx => $exam)
-                        <tr class="border-b border-black">
-                            <td class="p-1.5 border-r border-black text-center">{{ $idx + 1 }}</td>
-                            <td class="p-1.5 border-r border-black font-semibold">{{ $exam->exam_range }}</td>
-                            <td class="p-1.5 border-r border-black text-center font-bold text-indigo-750">Skor: {{ round($exam->total_score) }}</td>
-                            <td class="p-1.5 text-gray-600">{{ $exam->notes ?: 'Lulus ujian tahfizh' }}</td>
-                        </tr>
-                    @empty
-                        <tr class="border-b border-black">
-                            <td colspan="4" class="p-3 text-center text-gray-500 italic">Belum ada data nilai ujian tahfizh.</td>
-                        </tr>
-                    @endforelse
-                </tbody>
-            </table>
+            <!-- Nilai Akhir Tahfizh -->
+            <div class="border border-black rounded p-3 mt-4 flex items-center justify-between bg-gray-50">
+                <div class="text-xs font-black uppercase">Nilai Akhir Tahfizh</div>
+                <div class="text-2xl font-black">{{ $tahfizhScore['final_score'] }}<span class="text-xs font-semibold"> / 100</span></div>
+            </div>
         </div>
 
         <!-- II. PENILAIAN ADAB -->
@@ -282,7 +264,7 @@
 
         <!-- III. LAPORAN TANSE -->
         <div class="mb-6 space-y-3">
-            <h3 class="text-xs font-black uppercase text-black">III. LAPORAN TANSE</h3>
+            <h3 class="text-xs font-black uppercase text-black">III. LAPORAN TANSE <span class="font-semibold normal-case">&mdash; {{ $tanseTerm['label'] }}</span></h3>
             
             <table class="w-full border border-black text-xs text-left">
                 <thead>
@@ -298,33 +280,16 @@
                         <td class="p-2 border-r border-black text-center">1</td>
                         <td class="p-2 border-r border-black font-bold">Penghargaan</td>
                         <td class="p-2 border-r border-black text-center font-bold text-emerald-700">{{ $rewards->sum('points') }}</td>
-                        <td class="p-2 text-gray-700">
-                            @if($rewards->isNotEmpty())
-                                <ul class="list-disc list-inside">
-                                    @foreach($rewards as $r)
-                                        <li>{{ $r->notes }} (+{{ $r->points }} Poin)</li>
-                                    @endforeach
-                                </ul>
-                            @else
-                                Nihil - Tidak memiliki catatan penghargaan/prestasi.
-                            @endif
+                        {{-- Satu deskripsi untuk seluruh Tanse, berdasarkan predikat triwulan. --}}
+                        <td rowspan="2" class="p-2 text-gray-900 align-top">
+                            <p class="font-black">Predikat {{ $tanseGrade }}</p>
+                            <p class="mt-1 leading-relaxed">{{ $autoTanseNotes }}</p>
                         </td>
                     </tr>
                     <tr class="border-b border-black">
                         <td class="p-2 border-r border-black text-center">2</td>
                         <td class="p-2 border-r border-black font-bold">Pelanggaran</td>
                         <td class="p-2 border-r border-black text-center font-bold text-rose-700">{{ $violations->sum('points') }}</td>
-                        <td class="p-2 text-gray-700">
-                            @if($violations->isNotEmpty())
-                                <ul class="list-disc list-inside text-rose-700">
-                                    @foreach($violations as $v)
-                                        <li>{{ $v->notes }} (-{{ $v->points }} Poin)</li>
-                                    @endforeach
-                                </ul>
-                            @else
-                                Nihil - Tidak memiliki catatan pelanggaran perilaku negatif.
-                            @endif
-                        </td>
                     </tr>
                 </tbody>
             </table>
@@ -343,16 +308,16 @@
             <!-- Row 1 -->
             <div class="grid grid-cols-2 gap-8 text-center">
                 <div>
-                    <p class="invisible select-none">{{ $reportCity }}, {{ \Carbon\Carbon::now()->translatedFormat('d F Y') }}</p>
+                    <p class="invisible select-none">{{ $reportCity }}, {{ $reportDate['date'] }}</p>
                     <p class="font-semibold">Koordinator Tahfidz</p>
-                    <div class="h-16 print:h-12"></div>
+                    @include('reports.partials.signature-slot', ['uri' => $signatureUris['coord_tahfizh']])
                     <p class="font-bold underline text-black">{{ $coordTahfizhName }}</p>
                     <p class="text-[10px] text-gray-600">NIK. {{ $coordTahfizhNik }}</p>
                 </div>
                 <div>
-                    <p>{{ $reportCity }}, {{ \Carbon\Carbon::now()->translatedFormat('d F Y') }}</p>
+                    <p>{{ $reportCity }}, {{ $reportDate['date'] }}</p>
                     <p class="font-semibold">Koordinator Keagamaan</p>
-                    <div class="h-16 print:h-12"></div>
+                    @include('reports.partials.signature-slot', ['uri' => $signatureUris['coord_keagamaan']])
                     <p class="font-bold underline text-black">{{ $coordKeagamaanName }}</p>
                     <p class="text-[10px] text-gray-600">NIK. {{ $coordKeagamaanNik }}</p>
                 </div>
@@ -363,14 +328,14 @@
                 <div>
                     <p>Mengetahui,</p>
                     <p class="font-semibold">{{ $headmasterTitle }}</p>
-                    <div class="h-16 print:h-12"></div>
+                    @include('reports.partials.signature-slot', ['uri' => $signatureUris['headmaster']])
                     <p class="font-bold underline text-black">{{ $headmasterName }}</p>
                     <p class="text-[10px] text-gray-600">NIK. {{ $headmasterNik }}</p>
                 </div>
                 <div>
                     <p class="invisible select-none">Mengetahui,</p>
                     <p class="font-semibold">Koordinator Tanse</p>
-                    <div class="h-16 print:h-12"></div>
+                    @include('reports.partials.signature-slot', ['uri' => $signatureUris['coord_tanse']])
                     <p class="font-bold underline text-black">{{ $coordTanseName }}</p>
                     <p class="text-[10px] text-gray-600">NIK. {{ $coordTanseNik }}</p>
                 </div>

@@ -85,16 +85,21 @@ class HafalanRecordObserver
 
     private function makeAuditableLabel(HafalanRecord $hafalanRecord): string
     {
-        $hafalanRecord->loadMissing(['student', 'surah']);
+        $hafalanRecord->loadMissing(['student', 'surahs.surah']);
 
         $studentName = $hafalanRecord->student?->name
             ?? 'Murid ID '.$hafalanRecord->student_id;
 
-        $surahName = $hafalanRecord->surah?->name_latin
-            ?? $hafalanRecord->surah?->name
-            ?? 'Surah ID '.$hafalanRecord->surah_id;
+        $dateLabel = $hafalanRecord->submitted_at?->format('d M Y') ?? '-';
 
-        return $studentName.' - '.$surahName.' ayat '.$hafalanRecord->ayah_start.'-'.$hafalanRecord->ayah_end;
+        // At the "created" event the header row exists but its surah lines haven't
+        // been attached yet (they're created right after), so the label falls back
+        // to a generic "Setoran" tag rather than listing surahs in that case.
+        $surahsLabel = $hafalanRecord->surahs->isNotEmpty() ? $hafalanRecord->surahs_label : null;
+
+        return $surahsLabel
+            ? "{$studentName} - {$surahsLabel} ({$dateLabel})"
+            : "{$studentName} - Setoran {$dateLabel}";
     }
 
     private function trackedFields(): array
@@ -103,12 +108,6 @@ class HafalanRecordObserver
             'id',
             'student_id',
             'teacher_id',
-            'surah_id',
-            'ayah_start',
-            'ayah_end',
-            'submission_type',
-            'score',
-            'status',
             'notes',
             'submitted_at',
             'deleted_at',

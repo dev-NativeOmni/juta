@@ -15,13 +15,15 @@
                 $canRecord = $isAdmin || auth()->user()->hasRole('teacher');
             @endphp
             @if($isAdmin || !empty($config['google_drive_id']))
-                <div class="inline-flex rounded-lg bg-gray-100 dark:bg-gray-800 p-0.5" x-data="{}">
-                    <button @click="$dispatch('set-tab', 'mushaf')" 
+                <div class="inline-flex rounded-lg bg-gray-100 dark:bg-gray-800 p-0.5" 
+                     x-data="{ activeTab: 'mushaf' }"
+                     @set-tab.window="activeTab = $event.detail">
+                    <button @click="activeTab = 'mushaf'; $dispatch('set-tab', 'mushaf')" 
                             :class="activeTab === 'mushaf' ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700'"
                             class="px-3 py-1.5 rounded-md text-xs font-semibold transition-all">
                         Mushaf Interaktif
                     </button>
-                    <button @click="$dispatch('set-tab', 'pdf')" 
+                    <button @click="activeTab = 'pdf'; $dispatch('set-tab', 'pdf')" 
                             :class="activeTab === 'pdf' ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700'"
                             class="px-3 py-1.5 rounded-md text-xs font-semibold transition-all">
                         PDF Dokumen Sekolah
@@ -339,7 +341,7 @@
                                                 
                                                 <!-- Action links -->
                                                 <div class="flex items-center gap-2" x-show="canRecord">
-                                                    <!-- Catat Hafalan (IMS Quick Integration) -->
+                                                    <!-- Catat Hafalan (TAD Quick Integration) -->
                                                     <a :href="`{{ route('hafalan-records.create') }}?surah_id=${getSurahIdFromKey(verse.verse_key)}&ayah_start=${getAyahNumFromKey(verse.verse_key)}&ayah_end=${getAyahNumFromKey(verse.verse_key)}`"
                                                        class="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-600 hover:text-emerald-700 bg-emerald-500/10 px-2 py-0.5 rounded transition-all">
                                                         <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -1040,6 +1042,12 @@
                 }
             };
         }
+        window.mushafApp = mushafApp;
+        document.addEventListener('alpine:init', () => {
+            if (window.Alpine) {
+                window.Alpine.data('mushafApp', mushafApp);
+            }
+        });
     </script>
 
     <!-- Custom CSS styles -->

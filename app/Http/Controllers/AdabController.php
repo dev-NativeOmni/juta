@@ -83,24 +83,28 @@ class AdabController extends Controller
             $studentQuery->where('name', 'like', "%{$search}%");
         }
 
+        $today = now()->toDateString();
+
+        $fillStatus = $request->input('fill_status');
+        $fillStatus = in_array($fillStatus, ['belum', 'sudah'], true) ? $fillStatus : null;
+
+        if ($fillStatus === 'belum') {
+            $studentQuery->whereDoesntHave('adabRecords', fn ($q) => $q->whereDate('assessment_date', $today));
+        } elseif ($fillStatus === 'sudah') {
+            $studentQuery->whereHas('adabRecords', fn ($q) => $q->whereDate('assessment_date', $today));
+        }
+
         $students = $studentQuery->orderBy('name')->paginate(20)->withQueryString();
 
-        $today = now()->toDateString();
         $year = $request->integer('year', (int) now()->format('Y'));
         $month = $request->integer('month', (int) now()->format('n'));
 
-        $studentIds = $students->pluck('id');
-        $todayRecords = AdabRecord::whereIn('student_id', $studentIds)
-            ->where('assessment_date', $today)
-            ->get()
-            ->keyBy('student_id');
-
-        $scoresByStudent = Setting::calculateAdabScoresForStudents($studentIds->all(), $year, $month);
-
         foreach ($students as $student) {
-            $student->today_record = $todayRecords->get($student->id);
+            $student->today_record = AdabRecord::where('student_id', $student->id)
+                ->where('assessment_date', $today)
+                ->first();
 
-            $adabScoreData = $scoresByStudent[$student->id] ?? Setting::calculateAdabScore($student->id, $year, $month);
+            $adabScoreData = Setting::calculateAdabScore($student->id, $year, $month);
             $student->adab_attendance_rate = $adabScoreData['attendance_rate'];
             $student->mentor_score = $adabScoreData['mentor_score'];
             $student->average_adab_score = $adabScoreData['final_score'];
@@ -136,25 +140,21 @@ class AdabController extends Controller
                 $classRankings = collect();
             } else {
                 $classRankings = Cache::remember("adab_class_rankings_{$year}_{$month}", 180, function () use ($year, $month) {
-                    $classRooms = ClassRoom::query()
+                    return ClassRoom::query()
                         ->with(['students' => fn ($q) => $q->where('status', 'active')])
-                        ->get();
-
-                    $allStudentIds = $classRooms->flatMap(fn ($classRoom) => $classRoom->students->pluck('id'))->all();
-
-                    try {
-                        $scoresByStudent = Setting::calculateAdabScoresForStudents($allStudentIds, $year, $month);
-                    } catch (\Throwable $e) {
-                        $scoresByStudent = [];
-                    }
-
-                    return $classRooms
-                        ->map(function ($classRoom) use ($scoresByStudent) {
+                        ->get()
+                        ->map(function ($classRoom) use ($year, $month) {
                             $st = $classRoom->students;
                             if ($st->isEmpty()) {
                                 return ['name' => $classRoom->name, 'avg_score' => 0];
                             }
-                            $scores = $st->map(fn ($s) => $scoresByStudent[$s->id]['final_score'] ?? 0);
+                            $scores = $st->map(function ($s) use ($year, $month) {
+                                try {
+                                    return Setting::calculateAdabScore($s->id, $year, $month)['final_score'] ?? 0;
+                                } catch (\Throwable $e) {
+                                    return 0;
+                                }
+                            });
 
                             return [
                                 'name' => $classRoom->name,
@@ -174,7 +174,7 @@ class AdabController extends Controller
 
         return view('adab.index', compact(
             'students', 'classRooms', 'isAdmin', 'isSupervisor', 'canEvaluateMentor',
-            'today', 'year', 'month', 'catStats', 'categories', 'classRankings'
+            'today', 'year', 'month', 'catStats', 'categories', 'classRankings', 'fillStatus'
         ));
     }
 
@@ -201,6 +201,8 @@ class AdabController extends Controller
                 $q->where('pendamping_adab_id', $user->id)
                     ->orWhereHas('pendampingAdabList', fn ($sub) => $sub->where('users.id', $user->id));
             });
+        } elseif ($user->hasRole('wali_kelas') && ! $user->hasAnyRole(['super_admin', 'admin', 'supervisor'])) {
+            $classRoomsQuery->where('wali_kelas_user_id', $user->id);
         }
 
         $classRooms = $classRoomsQuery->get();
@@ -208,9 +210,6 @@ class AdabController extends Controller
         $allStudentsInScope = $classRooms->flatMap(fn ($c) => $c->students);
         $totalScopeStudents = $allStudentsInScope->count();
         $studentIds = $allStudentsInScope->pluck('id')->toArray();
-
-        // Fetch national holidays for this year once
-        $holidays = Setting::getNationalHolidays($year);
 
         // Fetch effective days count for the selected month
         $effectiveDaysTotal = Setting::getEffectiveDaysCount($year, $month);
@@ -473,6 +472,8 @@ class AdabController extends Controller
         } elseif ($user->hasRole('pendamping_adab') && ($student->classRoom?->pendamping_adab_id === $user->id || $student->classRoom?->pendamping_adab_id === null)) {
             $visible = true;
         } elseif ($user->hasRole('teacher') && $student->teacher_id === $user->teacherProfile?->id) {
+            $visible = true;
+        } elseif ($user->hasRole('wali_kelas') && $student->classRoom?->wali_kelas_user_id === $user->id) {
             $visible = true;
         } elseif ($user->hasRole('parent') && $student->parents->contains($user->parentProfile?->id)) {
             $visible = true;

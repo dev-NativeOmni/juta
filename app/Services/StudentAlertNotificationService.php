@@ -2,7 +2,7 @@
 
 namespace App\Services;
 
-use App\Models\HafalanRecord;
+use App\Models\HafalanRecordSurah;
 use App\Models\HafalanTarget;
 use App\Models\MurajaahRecord;
 use App\Models\Student;
@@ -118,8 +118,8 @@ class StudentAlertNotificationService
         ?string $actionUrl,
         bool $dryRun
     ): int {
-        $count = HafalanRecord::query()
-            ->where('student_id', $student->id)
+        $count = HafalanRecordSurah::query()
+            ->whereHas('hafalanRecord', fn ($q) => $q->where('student_id', $student->id))
             ->whereIn('status', ['repeat', 'needs_improvement'])
             ->count();
 

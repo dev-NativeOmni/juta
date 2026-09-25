@@ -86,8 +86,9 @@
                 autocomplete="name" 
             />
             @if (! $isAdmin)
-                <p class="mt-1.5 text-xs text-amber-600 dark:text-amber-400 font-semibold flex items-center gap-1">
-                    🔒 Nama hanya dapat diubah oleh Admin atau Super Admin.
+                <p class="mt-1.5 text-xs text-amber-600 dark:text-amber-400 font-semibold flex items-center gap-1.5">
+                    <x-heroicon-o-lock-closed class="w-3.5 h-3.5 shrink-0" />
+                    <span>Nama hanya dapat diubah oleh Admin atau Super Admin.</span>
                 </p>
             @endif
             <x-input-error class="mt-2" :messages="$errors->get('name')" />
@@ -101,13 +102,14 @@
                 type="text" 
                 class="mt-1 block w-full {{ ! $isAdmin ? 'bg-zinc-100 dark:bg-zinc-800/80 text-zinc-500 dark:text-zinc-400 cursor-not-allowed border-zinc-200 dark:border-zinc-800' : '' }}" 
                 :value="old('username', $user->username)" 
-                :disabled="! $isAdmin"
+                :disabled="! $isAdmin" 
                 required 
                 autocomplete="username" 
             />
             @if (! $isAdmin)
-                <p class="mt-1.5 text-xs text-amber-600 dark:text-amber-400 font-semibold flex items-center gap-1">
-                    🔒 Username hanya dapat diubah oleh Admin atau Super Admin.
+                <p class="mt-1.5 text-xs text-amber-600 dark:text-amber-400 font-semibold flex items-center gap-1.5">
+                    <x-heroicon-o-lock-closed class="w-3.5 h-3.5 shrink-0" />
+                    <span>Username hanya dapat diubah oleh Admin atau Super Admin.</span>
                 </p>
             @endif
             <x-input-error class="mt-2" :messages="$errors->get('username')" />
@@ -120,7 +122,8 @@
 
             @if (session('status') === 'profile-updated')
                 <div class="p-3 bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200 dark:border-emerald-800 text-emerald-800 dark:text-emerald-300 rounded-xl text-xs font-bold flex items-center gap-2">
-                    ✓ Profil berhasil diperbarui!
+                    <x-heroicon-o-check class="w-4 h-4 shrink-0" />
+                    <span>Profil berhasil diperbarui!</span>
                 </div>
             @endif
         </div>

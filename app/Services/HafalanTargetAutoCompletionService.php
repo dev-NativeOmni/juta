@@ -2,43 +2,11 @@
 
 namespace App\Services;
 
-use App\Models\HafalanRecord;
+use App\Models\HafalanRecordSurah;
 use App\Models\HafalanTarget;
 
 class HafalanTargetAutoCompletionService
 {
-    public function completeTargetsFromRecord(HafalanRecord $record): int
-    {
-        if ($record->status !== 'passed') {
-            return 0;
-        }
-
-        if (
-            ! $record->student_id ||
-            ! $record->surah_id ||
-            ! $record->ayah_start ||
-            ! $record->ayah_end
-        ) {
-            return 0;
-        }
-
-        $completedAt = $record->submitted_at
-            ? $record->submitted_at->copy()->endOfDay()
-            : now();
-
-        return HafalanTarget::query()
-            ->where('student_id', $record->student_id)
-            ->where('surah_id', $record->surah_id)
-            ->where('status', 'active')
-            ->where('ayah_start', '>=', $record->ayah_start)
-            ->where('ayah_end', '<=', $record->ayah_end)
-            ->update([
-                'status' => 'completed',
-                'completed_at' => $completedAt,
-                'updated_at' => now(),
-            ]);
-    }
-
     public function syncExistingTargets(bool $dryRun = false): int
     {
         $matchedTargets = 0;
@@ -60,10 +28,12 @@ class HafalanTargetAutoCompletionService
                         continue;
                     }
 
+                    $submittedAt = $record->hafalanRecord?->submitted_at;
+
                     $target->update([
                         'status' => 'completed',
-                        'completed_at' => $record->submitted_at
-                            ? $record->submitted_at->copy()->endOfDay()
+                        'completed_at' => $submittedAt
+                            ? $submittedAt->copy()->endOfDay()
                             : now(),
                     ]);
                 }
@@ -72,16 +42,19 @@ class HafalanTargetAutoCompletionService
         return $matchedTargets;
     }
 
-    public function matchingPassedRecordForTarget(HafalanTarget $target): ?HafalanRecord
+    public function matchingPassedRecordForTarget(HafalanTarget $target): ?HafalanRecordSurah
     {
-        return HafalanRecord::query()
-            ->where('student_id', $target->student_id)
-            ->where('surah_id', $target->surah_id)
-            ->where('status', 'passed')
-            ->where('ayah_start', '<=', $target->ayah_start)
-            ->where('ayah_end', '>=', $target->ayah_end)
-            ->orderBy('submitted_at')
-            ->orderBy('id')
+        return HafalanRecordSurah::query()
+            ->select('hafalan_record_surahs.*')
+            ->join('hafalan_records', 'hafalan_records.id', '=', 'hafalan_record_surahs.hafalan_record_id')
+            ->whereNull('hafalan_records.deleted_at')
+            ->where('hafalan_records.student_id', $target->student_id)
+            ->where('hafalan_record_surahs.surah_id', $target->surah_id)
+            ->where('hafalan_record_surahs.status', 'passed')
+            ->where('hafalan_record_surahs.ayah_end', '>=', $target->ayah)
+            ->with('hafalanRecord')
+            ->orderBy('hafalan_records.submitted_at')
+            ->orderBy('hafalan_record_surahs.id')
             ->first();
     }
 }

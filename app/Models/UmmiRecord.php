@@ -2,10 +2,10 @@
 
 namespace App\Models;
 
-use App\Http\Controllers\ReportController;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class UmmiRecord extends Model
 {
@@ -16,8 +16,6 @@ class UmmiRecord extends Model
         'teacher_id',
         'tatap_muka',
         'tanggal',
-        'hafalan_surah_id',
-        'hafalan_ayah',
         'ummi_jilid',
         'ummi_halaman',
         'materi',
@@ -25,7 +23,6 @@ class UmmiRecord extends Model
         'disimak_guru',
         'disimak_ortu',
         'keterangan',
-        'baris',
     ];
 
     protected function casts(): array
@@ -35,38 +32,23 @@ class UmmiRecord extends Model
             'teacher_id' => 'integer',
             'tatap_muka' => 'integer',
             'tanggal' => 'date',
-            'hafalan_surah_id' => 'integer',
-            'baris' => 'decimal:2',
         ];
     }
 
     public function getLinesCountAttribute(): float
     {
-        if ($this->baris !== null) {
-            return (float) $this->baris;
-        }
-        if (! $this->surah || ! $this->hafalan_ayah) {
-            return 0.0;
-        }
-        $clean = str_replace(' ', '', $this->hafalan_ayah);
-        if (str_contains($clean, '-')) {
-            $parts = explode('-', $clean);
-            $start = (int) $parts[0];
-            $end = (int) $parts[1];
-        } else {
-            $start = (int) $clean;
-            $end = (int) $clean;
-        }
-        if ($start <= 0 || $end <= 0 || $start > $end) {
-            return 0.0;
-        }
+        return (float) $this->surahs->sum(fn (UmmiRecordSurah $surah) => $surah->lines_count);
+    }
 
-        return ReportController::calculateLines(
-            $this->surah->number,
-            $start,
-            $end,
-            $this->surah->total_ayah
-        );
+    public function getSurahsLabelAttribute(): string
+    {
+        return $this->surahs
+            ->map(function (UmmiRecordSurah $surah) {
+                $label = $surah->surah?->name_latin ?? '-';
+
+                return $surah->hafalan_ayah ? "{$label} ({$surah->hafalan_ayah})" : $label;
+            })
+            ->implode(', ');
     }
 
     public function student(): BelongsTo
@@ -79,8 +61,8 @@ class UmmiRecord extends Model
         return $this->belongsTo(TeacherProfile::class, 'teacher_id');
     }
 
-    public function surah(): BelongsTo
+    public function surahs(): HasMany
     {
-        return $this->belongsTo(Surah::class, 'hafalan_surah_id');
+        return $this->hasMany(UmmiRecordSurah::class)->orderBy('sort_order')->orderBy('id');
     }
 }

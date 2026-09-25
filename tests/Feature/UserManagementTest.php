@@ -171,8 +171,6 @@ class UserManagementTest extends TestCase
             'status' => 'active',
         ]);
 
-        // plain_password is encrypted at rest, so compare it through the
-        // model's cast rather than the raw DB column.
         $newUser = User::where('username', 'gurubaru')->firstOrFail();
         $this->assertEquals('secretpwd123', $newUser->plain_password);
     }
@@ -300,5 +298,22 @@ class UserManagementTest extends TestCase
         $this->actingAs($admin)
             ->delete(route('users.destroy', $teacher))
             ->assertStatus(403);
+    }
+
+    public function test_user_list_is_ordered_by_username(): void
+    {
+        $superAdmin = User::where('username', 'superadmin')->first();
+        $teacherRole = Role::where('name', 'teacher')->first();
+
+        User::factory()->create(['role_id' => $teacherRole->id, 'name' => 'Zaid', 'username' => 'walas10e2', 'status' => 'active']);
+        User::factory()->create(['role_id' => $teacherRole->id, 'name' => 'Ahmad', 'username' => 'walas10e1', 'status' => 'active']);
+        User::factory()->create(['role_id' => $teacherRole->id, 'name' => 'Budi', 'username' => 'walas10e3', 'status' => 'active']);
+
+        $response = $this->actingAs($superAdmin)->get(route('users.index', ['search' => 'walas10']));
+
+        $response->assertStatus(200);
+        $usernames = $response->viewData('users')->pluck('username')->all();
+
+        $this->assertSame(['walas10e1', 'walas10e2', 'walas10e3'], $usernames);
     }
 }

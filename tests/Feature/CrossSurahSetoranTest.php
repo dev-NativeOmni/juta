@@ -77,7 +77,8 @@ class CrossSurahSetoranTest extends TestCase
 
         $response->assertRedirect(route('hafalan-records.index'));
         $this->assertDatabaseCount('hafalan_records', 1);
-        $this->assertDatabaseHas('hafalan_records', [
+        $this->assertDatabaseCount('hafalan_record_surahs', 1);
+        $this->assertDatabaseHas('hafalan_record_surahs', [
             'surah_id' => $this->surah1->id,
             'ayah_start' => 1,
             'ayah_end' => 5,
@@ -100,19 +101,20 @@ class CrossSurahSetoranTest extends TestCase
 
         $response->assertRedirect(route('hafalan-records.index'));
 
-        // Should create 2 records:
-        // Record 1: Surah 1, Ayah 5 to 7 (end of Al-Fatihah)
-        // Record 2: Surah 2, Ayah 1 to 10
-        $this->assertDatabaseCount('hafalan_records', 2);
+        // A single submission session (one header row), with 2 surah lines:
+        // Line 1: Surah 1, Ayah 5 to 7 (end of Al-Fatihah)
+        // Line 2: Surah 2, Ayah 1 to 10
+        $this->assertDatabaseCount('hafalan_records', 1);
+        $this->assertDatabaseCount('hafalan_record_surahs', 2);
 
-        $this->assertDatabaseHas('hafalan_records', [
+        $this->assertDatabaseHas('hafalan_record_surahs', [
             'surah_id' => $this->surah1->id,
             'ayah_start' => 5,
             'ayah_end' => 7,
             'score' => 95.00,
         ]);
 
-        $this->assertDatabaseHas('hafalan_records', [
+        $this->assertDatabaseHas('hafalan_record_surahs', [
             'surah_id' => $this->surah2->id,
             'ayah_start' => 1,
             'ayah_end' => 10,
@@ -136,25 +138,26 @@ class CrossSurahSetoranTest extends TestCase
 
         $response->assertRedirect(route('hafalan-records.index'));
 
-        // Should create 3 records:
-        // Record 1: Surah 1, Ayah 6 to 7
-        // Record 2: Surah 2, Ayah 1 to 286 (entire Surah 2)
-        // Record 3: Surah 3, Ayah 1 to 15
-        $this->assertDatabaseCount('hafalan_records', 3);
+        // A single submission session (one header row), with 3 surah lines:
+        // Line 1: Surah 1, Ayah 6 to 7
+        // Line 2: Surah 2, Ayah 1 to 286 (entire Surah 2)
+        // Line 3: Surah 3, Ayah 1 to 15
+        $this->assertDatabaseCount('hafalan_records', 1);
+        $this->assertDatabaseCount('hafalan_record_surahs', 3);
 
-        $this->assertDatabaseHas('hafalan_records', [
+        $this->assertDatabaseHas('hafalan_record_surahs', [
             'surah_id' => $this->surah1->id,
             'ayah_start' => 6,
             'ayah_end' => 7,
         ]);
 
-        $this->assertDatabaseHas('hafalan_records', [
+        $this->assertDatabaseHas('hafalan_record_surahs', [
             'surah_id' => $this->surah2->id,
             'ayah_start' => 1,
             'ayah_end' => 286,
         ]);
 
-        $this->assertDatabaseHas('hafalan_records', [
+        $this->assertDatabaseHas('hafalan_record_surahs', [
             'surah_id' => $this->surah3->id,
             'ayah_start' => 1,
             'ayah_end' => 15,

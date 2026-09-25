@@ -81,10 +81,8 @@ class ClassScheduleTest extends TestCase
     public function test_holidays_are_excluded_from_spreadsheet_and_reports(): void
     {
         $year = (int) date('Y');
-        Setting::set("national_holidays_{$year}", json_encode([
-            "{$year}-08-17",
-            "{$year}-08-20",
-        ]));
+        $this->markHoliday("{$year}-08-17");
+        $this->markHoliday("{$year}-08-20");
 
         $holidays = Setting::getNationalHolidays($year);
         $this->assertContains("{$year}-08-17", $holidays);

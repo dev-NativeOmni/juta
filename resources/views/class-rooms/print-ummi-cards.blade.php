@@ -126,7 +126,7 @@
                                 <div class="flex items-center">
                                     <span class="font-bold w-16">Tempat</span>
                                     <span class="mr-1">:</span>
-                                    <span class="border-b border-dotted border-gray-400 flex-1 font-semibold">IMS / Sekolah</span>
+                                    <span class="border-b border-dotted border-gray-400 flex-1 font-semibold">TAD / Sekolah</span>
                                 </div>
                             </div>
                         </div>
@@ -163,8 +163,8 @@
                                     <tr>
                                         <td class="text-center font-semibold">{{ $record->tatap_muka }}</td>
                                         <td class="text-center">{{ $record->tanggal?->format('d/m/y') }}</td>
-                                        <td class="whitespace-nowrap overflow-hidden text-ellipsis">{{ $record->surah?->name_latin ?? '-' }}</td>
-                                        <td class="text-center">{{ $record->hafalan_ayah ?? '-' }}</td>
+                                        <td class="whitespace-nowrap overflow-hidden text-ellipsis">{{ $record->surahs->map(fn ($s) => $s->surah?->name_latin ?? '-')->implode(', ') ?: '-' }}</td>
+                                        <td class="text-center">{{ $record->surahs->pluck('hafalan_ayah')->filter()->implode(', ') ?: '-' }}</td>
                                         <td class="whitespace-nowrap overflow-hidden text-ellipsis">{{ $record->ummi_jilid ?? '-' }}</td>
                                         <td class="text-center">{{ $record->ummi_halaman ?? '-' }}</td>
                                         <td class="whitespace-nowrap overflow-hidden text-ellipsis">{{ $record->materi ?? '-' }}</td>

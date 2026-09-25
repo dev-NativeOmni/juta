@@ -5,11 +5,12 @@ namespace App\Http\Controllers;
 use App\Models\Attendance;
 use App\Models\ClassRoom;
 use App\Models\HafalanRecord;
-use App\Models\Setting;
+use App\Models\HafalanRecordSurah;
 use App\Models\Student;
 use App\Models\Surah;
 use App\Models\TeacherProfile;
 use App\Models\UmmiRecord;
+use App\Services\SchoolCalendar;
 use App\Services\UserAccessService;
 use Carbon\Carbon;
 use Illuminate\Contracts\View\View;
@@ -59,21 +60,16 @@ class SpreadsheetInputController extends Controller
 
         $allDates = [];
         $daysInMonth = (int) date('t', strtotime($selectedMonth.'-01'));
-        $tahfizhDays = $selectedClass?->tahfizh_days ?? [1, 2, 3, 4, 5];
-        $holidays = Setting::getNationalHolidays($year);
-
-        $classHolidaysRaw = Setting::get("class_holidays_{$year}");
-        $classHolidays = $classHolidaysRaw ? json_decode($classHolidaysRaw, true) : [];
+        $calendar = app(SchoolCalendar::class);
 
         for ($day = 1; $day <= $daysInMonth; $day++) {
-            $time = mktime(0, 0, 0, $month, $day, $year);
-            $dayOfWeek = (int) date('N', $time);
-            $dateString = date('Y-m-d', $time);
+            $date = Carbon::create($year, $month, $day);
+            $isEffective = $selectedClass
+                ? $calendar->isTahfizhEffectiveDay($selectedClass, $date)
+                : $date->isWeekday() && ! $calendar->isTahfizhHoliday(null, $date);
 
-            $isClassHoliday = isset($classHolidays[$dateString]) && in_array($selectedClass?->id, $classHolidays[$dateString]);
-
-            if (in_array($dayOfWeek, $tahfizhDays, true) && ! in_array($dateString, $holidays, true) && ! $isClassHoliday) {
-                $allDates[] = $dateString;
+            if ($isEffective) {
+                $allDates[] = $date->toDateString();
             }
         }
 
@@ -196,6 +192,7 @@ class SpreadsheetInputController extends Controller
 
             // Load HafalanRecords
             $hafalanRecords = HafalanRecord::query()
+                ->with('surahs')
                 ->whereIn('student_id', $studentIds)
                 ->whereBetween('submitted_at', [$startDate, $endDate])
                 ->get();
@@ -208,16 +205,19 @@ class SpreadsheetInputController extends Controller
                         $dateStr = $weekNumToRepDate[$weekNum];
                     }
                 }
-                $scoreFormatted = $record->score !== null ? (string) (int) round((float) $record->score) : '';
-                $hafalanRecordsMap[$record->student_id][$dateStr][] = [
-                    'id' => $record->id,
-                    'surah_id' => $record->surah_id ? (string) $record->surah_id : '',
-                    'ayah_start' => $record->ayah_start,
-                    'ayah_end' => $record->ayah_end,
-                    'score' => $scoreFormatted,
-                    'status' => $record->status,
-                    'submission_type' => $record->submission_type,
-                ];
+
+                foreach ($record->surahs as $surahEntry) {
+                    $scoreFormatted = $surahEntry->score !== null ? (string) (int) round((float) $surahEntry->score) : '';
+                    $hafalanRecordsMap[$record->student_id][$dateStr][] = [
+                        'id' => $surahEntry->id,
+                        'surah_id' => $surahEntry->surah_id ? (string) $surahEntry->surah_id : '',
+                        'ayah_start' => $surahEntry->ayah_start,
+                        'ayah_end' => $surahEntry->ayah_end,
+                        'score' => $scoreFormatted,
+                        'status' => $surahEntry->status,
+                        'submission_type' => $surahEntry->submission_type,
+                    ];
+                }
 
                 if (empty($attendancesMap[$record->student_id][$dateStr])) {
                     $attendancesMap[$record->student_id][$dateStr] = 'hadir';
@@ -226,6 +226,7 @@ class SpreadsheetInputController extends Controller
 
             // Load UmmiRecords
             $ummiRecords = UmmiRecord::query()
+                ->with('surahs')
                 ->whereIn('student_id', $studentIds)
                 ->whereBetween('tanggal', [$startDate, $endDate])
                 ->get();
@@ -248,28 +249,30 @@ class SpreadsheetInputController extends Controller
                     $attendancesMap[$record->student_id][$dateStr] = 'hadir';
                 }
 
-                if ($record->hafalan_surah_id) {
+                foreach ($record->surahs as $surahEntry) {
                     $ummiRecordsMap[$record->student_id][$dateStr]['hafalans'][] = [
-                        'id' => $record->id,
-                        'surah_id' => (string) $record->hafalan_surah_id,
-                        'ayah' => $record->hafalan_ayah,
+                        'id' => $surahEntry->id,
+                        'surah_id' => (string) $surahEntry->surah_id,
+                        'ayah' => $surahEntry->hafalan_ayah,
                     ];
                 }
             }
             // Calculate last hafalan & auto +1 next verse continuation for each student in 1 batch query (O(1) instead of O(N))
             $lastHafalanMap = [];
             if (! empty($studentIds)) {
-                $latestRecordIds = HafalanRecord::query()
-                    ->whereIn('student_id', $studentIds)
-                    ->selectRaw('MAX(id) as id')
-                    ->groupBy('student_id')
+                $latestSurahIds = DB::table('hafalan_record_surahs')
+                    ->join('hafalan_records', 'hafalan_records.id', '=', 'hafalan_record_surahs.hafalan_record_id')
+                    ->whereNull('hafalan_records.deleted_at')
+                    ->whereIn('hafalan_records.student_id', $studentIds)
+                    ->selectRaw('MAX(hafalan_record_surahs.id) as id')
+                    ->groupBy('hafalan_records.student_id')
                     ->pluck('id');
 
-                $latestRecords = HafalanRecord::query()
-                    ->with('surah')
-                    ->whereIn('id', $latestRecordIds)
+                $latestRecords = HafalanRecordSurah::query()
+                    ->with(['surah', 'hafalanRecord'])
+                    ->whereIn('id', $latestSurahIds)
                     ->get()
-                    ->keyBy('student_id');
+                    ->keyBy(fn (HafalanRecordSurah $s) => $s->hafalanRecord->student_id);
 
                 foreach ($students as $student) {
                     $latestRec = $latestRecords->get($student->id);
@@ -499,76 +502,88 @@ class SpreadsheetInputController extends Controller
 
     private function saveHafalanRecords(int $studentId, int $teacherId, string $date, array $cellData, array $targetDates): void
     {
-        $existingRecords = HafalanRecord::where('student_id', $studentId)
+        $existingHeaders = HafalanRecord::where('student_id', $studentId)
             ->whereIn('submitted_at', $targetDates)
+            ->orderBy('id')
             ->get();
 
-        $existingRecordIds = $existingRecords->pluck('id')->toArray();
-        $processedRecordIds = [];
-        $surahs = Surah::getAllCached()->keyBy('id');
+        $rawHafalans = $cellData['hafalans'] ?? [];
+        $hafalansList = array_values(array_filter($rawHafalans, fn ($h) => ! empty($h['surah_id'])));
 
-        foreach ($cellData['hafalans'] ?? [] as $hafalanData) {
-            if (empty($hafalanData['surah_id'])) {
+        if (empty($hafalansList)) {
+            HafalanRecord::where('student_id', $studentId)
+                ->whereIn('submitted_at', $targetDates)
+                ->delete();
+
+            return;
+        }
+
+        // Keep a single header row per date; any older duplicate headers get merged away.
+        $header = $existingHeaders->first();
+        $headerData = [
+            'student_id' => $studentId,
+            'teacher_id' => $teacherId,
+            'submitted_at' => $date,
+        ];
+
+        if ($header) {
+            $header->update($headerData);
+        } else {
+            $header = HafalanRecord::create($headerData);
+        }
+
+        $duplicateHeaderIds = $existingHeaders->pluck('id')->reject(fn ($id) => $id === $header->id);
+        if ($duplicateHeaderIds->isNotEmpty()) {
+            HafalanRecord::whereIn('id', $duplicateHeaderIds)->delete();
+        }
+
+        $existingSurahIds = $header->surahs()->pluck('id')->all();
+        $processedSurahIds = [];
+
+        foreach ($hafalansList as $sortOrder => $hafalanData) {
+            $surah = Surah::find($hafalanData['surah_id']);
+            if (! $surah) {
                 continue;
             }
 
             $ayahStart = filled($hafalanData['ayah_start'] ?? null) ? (int) $hafalanData['ayah_start'] : 1;
             $ayahEnd = filled($hafalanData['ayah_end'] ?? null) ? (int) $hafalanData['ayah_end'] : $ayahStart;
 
-            // Calculate lines count
-            $surah = $surahs->get($hafalanData['surah_id']);
-            $baris = 0.0;
-            if ($surah) {
-                $baris = ReportController::calculateLines(
-                    $surah->number,
-                    $ayahStart,
-                    $ayahEnd,
-                    $surah->total_ayah
-                );
-            }
+            $baris = ReportController::calculateLines(
+                $surah->number,
+                $ayahStart,
+                $ayahEnd,
+                $surah->total_ayah
+            );
 
             $rawScore = $hafalanData['score'] ?? null;
             $score = (filled($rawScore) && is_numeric($rawScore)) ? (float) $rawScore : null;
 
-            $dataToSave = [
-                'student_id' => $studentId,
-                'teacher_id' => $teacherId,
-                'surah_id' => $hafalanData['surah_id'],
+            $lineData = [
+                'surah_id' => $surah->id,
                 'ayah_start' => $ayahStart,
                 'ayah_end' => $ayahEnd,
                 'score' => $score,
                 'status' => filled($hafalanData['status'] ?? null) ? $hafalanData['status'] : 'passed',
                 'submission_type' => filled($hafalanData['submission_type'] ?? null) ? $hafalanData['submission_type'] : 'new',
-                'submitted_at' => $date,
                 'baris' => $baris,
+                'sort_order' => $sortOrder,
             ];
 
-            $recordId = ! empty($hafalanData['id']) ? (int) $hafalanData['id'] : null;
+            $lineId = ! empty($hafalanData['id']) ? (int) $hafalanData['id'] : null;
 
-            if ($recordId && (in_array($recordId, $existingRecordIds) || HafalanRecord::where('id', $recordId)->exists())) {
-                HafalanRecord::where('id', $recordId)->update($dataToSave);
-                $processedRecordIds[] = $recordId;
+            if ($lineId && in_array($lineId, $existingSurahIds, true)) {
+                $header->surahs()->where('id', $lineId)->update($lineData);
+                $processedSurahIds[] = $lineId;
             } else {
-                $matchingRecord = $existingRecords->first(function ($rec) use ($hafalanData, $processedRecordIds) {
-                    return ! in_array($rec->id, $processedRecordIds)
-                        && (int) $rec->surah_id === (int) $hafalanData['surah_id']
-                        && (int) $rec->ayah_start === (int) $hafalanData['ayah_start']
-                        && (int) $rec->ayah_end === (int) $hafalanData['ayah_end'];
-                });
-
-                if ($matchingRecord) {
-                    $matchingRecord->update($dataToSave);
-                    $processedRecordIds[] = $matchingRecord->id;
-                } else {
-                    $newRec = HafalanRecord::create($dataToSave);
-                    $processedRecordIds[] = $newRec->id;
-                }
+                $newLine = $header->surahs()->create($lineData);
+                $processedSurahIds[] = $newLine->id;
             }
         }
 
-        $toDeleteIds = array_diff($existingRecordIds, $processedRecordIds);
-        if (! empty($toDeleteIds)) {
-            HafalanRecord::whereIn('id', $toDeleteIds)->delete();
+        $toDeleteSurahIds = array_diff($existingSurahIds, $processedSurahIds);
+        if (! empty($toDeleteSurahIds)) {
+            $header->surahs()->whereIn('id', $toDeleteSurahIds)->delete();
         }
     }
 
@@ -576,11 +591,8 @@ class SpreadsheetInputController extends Controller
     {
         $existingRecords = UmmiRecord::where('student_id', $studentId)
             ->whereIn('tanggal', $targetDates)
+            ->orderBy('id')
             ->get();
-
-        $existingRecordIds = $existingRecords->pluck('id')->toArray();
-        $processedRecordIds = [];
-        $surahs = Surah::getAllCached()->keyBy('id');
 
         $ummiJilid = filled($cellData['ummi_jilid'] ?? null) ? $cellData['ummi_jilid'] : null;
         $ummiHalaman = filled($cellData['ummi_halaman'] ?? null) ? $cellData['ummi_halaman'] : null;
@@ -591,7 +603,7 @@ class SpreadsheetInputController extends Controller
         $hasUmmiFields = filled($ummiJilid) || filled($ummiHalaman) || filled($materi) || filled($nilai);
         $rawHafalans = $cellData['hafalans'] ?? [];
         $hafalansList = array_values(array_filter($rawHafalans, function ($h) {
-            return ! empty($h['surah_id']) || ! empty($h['ayah']);
+            return ! empty($h['surah_id']);
         }));
 
         if (! $hasUmmiFields && empty($hafalansList)) {
@@ -602,97 +614,83 @@ class SpreadsheetInputController extends Controller
             return;
         }
 
-        if (empty($hafalansList)) {
-            $dataToSave = [
-                'student_id' => $studentId,
-                'teacher_id' => $teacherId,
-                'tatap_muka' => $tatapMuka,
-                'tanggal' => $date,
-                'hafalan_surah_id' => null,
-                'hafalan_ayah' => null,
-                'baris' => null,
-                'ummi_jilid' => $ummiJilid,
-                'ummi_halaman' => $ummiHalaman,
-                'materi' => $materi,
-                'nilai' => $nilai,
-                'disimak_guru' => 'Ya',
-                'disimak_ortu' => 'Ya',
+        // Keep a single header row per date; any older duplicate headers get merged away.
+        $header = $existingRecords->first();
+        $headerData = [
+            'student_id' => $studentId,
+            'teacher_id' => $teacherId,
+            'tatap_muka' => $tatapMuka,
+            'tanggal' => $date,
+            'ummi_jilid' => $ummiJilid,
+            'ummi_halaman' => $ummiHalaman,
+            'materi' => $materi,
+            'nilai' => $nilai,
+            'disimak_guru' => 'Ya',
+            'disimak_ortu' => 'Ya',
+        ];
+
+        if ($header) {
+            $header->update($headerData);
+        } else {
+            $header = UmmiRecord::create($headerData);
+        }
+
+        $duplicateHeaderIds = $existingRecords->pluck('id')->reject(fn ($id) => $id === $header->id);
+        if ($duplicateHeaderIds->isNotEmpty()) {
+            UmmiRecord::whereIn('id', $duplicateHeaderIds)->delete();
+        }
+
+        $existingSurahIds = $header->surahs()->pluck('id')->all();
+        $processedSurahIds = [];
+
+        foreach ($hafalansList as $sortOrder => $hafalanData) {
+            $surah = Surah::find($hafalanData['surah_id']);
+            if (! $surah) {
+                continue;
+            }
+
+            $baris = 0.0;
+            if (! empty($hafalanData['ayah'])) {
+                $clean = str_replace(' ', '', $hafalanData['ayah']);
+                if (str_contains($clean, '-')) {
+                    $parts = explode('-', $clean);
+                    $start = (int) $parts[0];
+                    $end = (int) $parts[1];
+                } else {
+                    $start = (int) $clean;
+                    $end = (int) $clean;
+                }
+                if ($start > 0 && $end >= $start) {
+                    $baris = ReportController::calculateLines(
+                        $surah->number,
+                        $start,
+                        $end,
+                        $surah->total_ayah
+                    );
+                }
+            }
+
+            $lineData = [
+                'surah_id' => $surah->id,
+                'hafalan_ayah' => $hafalanData['ayah'] ?? null,
+                'baris' => $baris,
+                'sort_order' => $sortOrder,
             ];
 
-            if (! empty($existingRecordIds)) {
-                $firstId = $existingRecordIds[0];
-                UmmiRecord::where('id', $firstId)->update($dataToSave);
-                $processedRecordIds[] = $firstId;
+            $lineId = ! empty($hafalanData['id']) ? (int) $hafalanData['id'] : null;
+
+            if ($lineId && in_array($lineId, $existingSurahIds, true)) {
+                $header->surahs()->where('id', $lineId)->update($lineData);
+                $processedSurahIds[] = $lineId;
             } else {
-                $newRec = UmmiRecord::create($dataToSave);
-                $processedRecordIds[] = $newRec->id;
-            }
-        } else {
-            foreach ($hafalansList as $hafalanData) {
-                if (empty($hafalanData['surah_id']) && empty($hafalanData['ayah'])) {
-                    continue;
-                }
-
-                $surah = ! empty($hafalanData['surah_id']) ? $surahs->get($hafalanData['surah_id']) : null;
-                $baris = 0.0;
-                if ($surah && ! empty($hafalanData['ayah'])) {
-                    $clean = str_replace(' ', '', $hafalanData['ayah']);
-                    if (str_contains($clean, '-')) {
-                        $parts = explode('-', $clean);
-                        $start = (int) $parts[0];
-                        $end = (int) $parts[1];
-                    } else {
-                        $start = (int) $clean;
-                        $end = (int) $clean;
-                    }
-                    if ($start > 0 && $end >= $start) {
-                        $baris = ReportController::calculateLines(
-                            $surah->number,
-                            $start,
-                            $end,
-                            $surah->total_ayah
-                        );
-                    }
-                }
-
-                $dataToSave = [
-                    'student_id' => $studentId,
-                    'teacher_id' => $teacherId,
-                    'tatap_muka' => $tatapMuka,
-                    'tanggal' => $date,
-                    'hafalan_surah_id' => $hafalanData['surah_id'] ?? null,
-                    'hafalan_ayah' => $hafalanData['ayah'] ?? null,
-                    'baris' => $baris,
-                    'ummi_jilid' => $ummiJilid,
-                    'ummi_halaman' => $ummiHalaman,
-                    'materi' => $materi,
-                    'nilai' => $nilai,
-                    'disimak_guru' => 'Ya',
-                    'disimak_ortu' => 'Ya',
-                ];
-
-                $recordId = ! empty($hafalanData['id']) ? (int) $hafalanData['id'] : null;
-
-                if ($recordId && (in_array($recordId, $existingRecordIds) || UmmiRecord::where('id', $recordId)->exists())) {
-                    UmmiRecord::where('id', $recordId)->update($dataToSave);
-                    $processedRecordIds[] = $recordId;
-                } else {
-                    $unprocessedIds = array_diff($existingRecordIds, $processedRecordIds);
-                    if (! empty($unprocessedIds)) {
-                        $reuseId = array_shift($unprocessedIds);
-                        UmmiRecord::where('id', $reuseId)->update($dataToSave);
-                        $processedRecordIds[] = $reuseId;
-                    } else {
-                        $newRec = UmmiRecord::create($dataToSave);
-                        $processedRecordIds[] = $newRec->id;
-                    }
-                }
+                $newLine = $header->surahs()->create($lineData);
+                $processedSurahIds[] = $newLine->id;
             }
         }
 
-        $toDeleteIds = array_diff($existingRecordIds, $processedRecordIds);
-        if (! empty($toDeleteIds)) {
-            UmmiRecord::whereIn('id', $toDeleteIds)->delete();
+        $toDeleteSurahIds = array_diff($existingSurahIds, $processedSurahIds);
+        if (! empty($toDeleteSurahIds)) {
+            $header->surahs()->whereIn('id', $toDeleteSurahIds)->delete();
         }
     }
 

@@ -11,12 +11,12 @@
             </div>
             {{-- Filter Periode Bulan & Tahun --}}
             <form method="GET" action="{{ route('adab.chart') }}" class="flex flex-wrap items-center gap-2">
-                <select name="month" class="rounded-xl border-gray-300 dark:border-zinc-700 dark:bg-zinc-800 text-sm font-semibold dark:text-white">
+                <select name="month" onchange="this.form.submit()" class="rounded-xl border-gray-300 dark:border-zinc-700 dark:bg-zinc-800 text-sm font-semibold dark:text-white">
                     @foreach ($monthsList as $mNum => $mName)
                         <option value="{{ $mNum }}" {{ $month === $mNum ? 'selected' : '' }}>{{ $mName }}</option>
                     @endforeach
                 </select>
-                <select name="year" class="rounded-xl border-gray-300 dark:border-zinc-700 dark:bg-zinc-800 text-sm font-semibold dark:text-white">
+                <select name="year" onchange="this.form.submit()" class="rounded-xl border-gray-300 dark:border-zinc-700 dark:bg-zinc-800 text-sm font-semibold dark:text-white">
                     @for ($y = (int) now()->format('Y'); $y >= 2024; $y--)
                         <option value="{{ $y }}" {{ $year === $y ? 'selected' : '' }}>{{ $y }}</option>
                     @endfor

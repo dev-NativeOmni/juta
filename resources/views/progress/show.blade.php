@@ -23,8 +23,9 @@
                 @if (!auth()->user()->hasAnyRole(['student', 'parent']) && ($student->tahfizh_level === 'ummi' || $student->ummiRecords()->exists()))
                     <a href="{{ route('hafalan-records.student.ummi-card', $student->id) }}"
                        target="_blank"
-                       class="inline-flex items-center justify-center rounded-lg bg-emerald-600 hover:bg-emerald-700 px-4 py-2 text-sm font-semibold text-white shadow-sm transition">
-                        📄 Cetak Kartu UMMI
+                       class="inline-flex items-center gap-1.5 justify-center rounded-lg bg-emerald-600 hover:bg-emerald-700 px-4 py-2 text-sm font-semibold text-white shadow-sm transition">
+                        <x-heroicon-o-printer class="w-4 h-4" />
+                        <span>Cetak Kartu UMMI</span>
                     </a>
                 @endif
 
@@ -43,156 +44,134 @@
         $progressBarWidth = min(100, max(0, $progressPercent));
     @endphp
 
-    <div class="py-8">
-        <div class="mx-auto max-w-7xl space-y-6 px-4 sm:px-6 lg:px-8">
+    <div class="py-3 sm:py-6">
+        <div class="mx-auto max-w-7xl space-y-3.5 sm:space-y-5 px-2.5 sm:px-6 lg:px-8">
 
             @if (session('success'))
-                <div class="rounded-lg border border-green-200 bg-green-50 px-4 py-3 text-sm font-medium text-green-700">
+                <div class="rounded-xl border border-green-200 bg-green-50 px-3.5 py-2.5 text-xs sm:text-sm font-medium text-green-700">
                     {{ session('success') }}
                 </div>
             @endif
 
             @if (session('error'))
-                <div class="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-700">
+                <div class="rounded-xl border border-red-200 bg-red-50 px-3.5 py-2.5 text-xs sm:text-sm font-medium text-red-700">
                     {{ session('error') }}
                 </div>
             @endif
 
-            <div class="grid grid-cols-1 gap-4 lg:grid-cols-3">
-                <div class="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
-                    <h3 class="text-base font-semibold text-gray-900">
+            <div class="grid grid-cols-1 gap-3.5 sm:gap-4 lg:grid-cols-3">
+                <div class="rounded-xl sm:rounded-2xl border border-gray-200 bg-white p-3.5 sm:p-5 shadow-xs">
+                    <h3 class="text-sm sm:text-base font-bold text-gray-900">
                         Profil Murid
                     </h3>
 
-                    <dl class="mt-4 space-y-3 text-sm">
-                        <div>
+                    <dl class="mt-2.5 space-y-2 text-xs sm:text-sm">
+                        <div class="flex justify-between py-1 border-b border-gray-100">
                             <dt class="text-gray-500">Nama</dt>
-                            <dd class="font-semibold text-gray-900">
+                            <dd class="font-bold text-gray-900">
                                 {{ $student->name }}
                             </dd>
                         </div>
 
-                        <div>
+                        <div class="flex justify-between py-1 border-b border-gray-100">
                             <dt class="text-gray-500">Nomor Murid</dt>
                             <dd class="font-semibold text-gray-900">
                                 {{ $student->student_number ?? '-' }}
                             </dd>
                         </div>
 
-                        <div>
+                        <div class="flex justify-between py-1 border-b border-gray-100">
                             <dt class="text-gray-500">Program</dt>
                             <dd class="font-semibold text-gray-900">
                                 {{ $student->classRoom?->program?->name ?? '-' }}
                             </dd>
                         </div>
 
-                        <div>
+                        <div class="flex justify-between py-1 border-b border-gray-100">
                             <dt class="text-gray-500">Kelas</dt>
                             <dd class="font-semibold text-gray-900">
                                 {{ $student->classRoom?->name ?? '-' }}
                             </dd>
                         </div>
 
-                        <div>
+                        <div class="flex justify-between py-1">
                             <dt class="text-gray-500">Guru Pembimbing</dt>
-                            <dd class="font-semibold text-gray-900">
+                            <dd class="font-semibold text-gray-900 truncate max-w-[170px]">
                                 {{ $student->teacher?->user?->name ?? '-' }}
-                            </dd>
-                        </div>
-
-                        <div>
-                            <dt class="text-gray-500">Status</dt>
-                            <dd class="font-semibold text-gray-900">
-                                {{ ucfirst((string) ($student->status ?? '-')) }}
                             </dd>
                         </div>
                     </dl>
                 </div>
 
-                <div class="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm lg:col-span-2">
-                    <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                <div class="rounded-xl sm:rounded-2xl border border-gray-200 bg-white p-3.5 sm:p-5 shadow-xs lg:col-span-2">
+                    <div class="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
                         <div>
-                            <div class="flex flex-wrap items-center gap-2">
-                                <h3 class="text-base font-semibold text-gray-900">
+                            <div class="flex flex-wrap items-center gap-1.5">
+                                <h3 class="text-sm sm:text-base font-bold text-gray-900">
                                     Ringkasan Progress Hafalan
                                 </h3>
                                 @if (!empty($progress['target_juz_label']))
-                                    <span class="inline-flex items-center rounded-full bg-emerald-50 px-2.5 py-0.5 text-xs font-semibold text-emerald-700 ring-1 ring-inset ring-emerald-600/20">
+                                    <span class="inline-flex items-center rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] sm:text-xs font-semibold text-emerald-700 ring-1 ring-inset ring-emerald-600/20">
                                         Target: {{ $progress['target_juz_label'] }}
                                     </span>
                                 @endif
                             </div>
 
-                            <p class="mt-1 text-sm text-gray-600">
-                                Progress dihitung dari setoran hafalan berstatus lulus yang sesuai dengan target kurikulum program murid.
+                            <p class="mt-0.5 text-xs text-gray-500">
+                                Sesuai target kurikulum program murid.
                             </p>
                         </div>
 
                         <div class="text-left sm:text-right">
-                            <p class="text-4xl font-bold text-gray-900">
-                                {{ number_format($progressPercent, 2) }}%
+                            <p class="text-2xl sm:text-3xl font-black text-gray-900">
+                                {{ number_format($progressPercent, 1) }}%
                             </p>
 
-                            <p class="mt-1 text-sm text-gray-500">
-                                {{ number_format($progress['memorized_ayahs'] ?? 0) }}
-                                /
-                                {{ number_format($progress['target_total_ayahs'] ?? $progress['total_quran_ayahs'] ?? 0) }}
-                                ayat
+                            <p class="text-[10px] sm:text-xs text-gray-500">
+                                {{ number_format($progress['memorized_ayahs'] ?? 0) }} / {{ number_format($progress['target_total_ayahs'] ?? $progress['total_quran_ayahs'] ?? 0) }} ayat
                             </p>
                         </div>
                     </div>
 
-                    <div class="mt-5 h-3 w-full overflow-hidden rounded-full bg-gray-100">
-                        <div class="h-3 rounded-full bg-emerald-600"
+                    <div class="mt-3 h-2 w-full overflow-hidden rounded-full bg-gray-100">
+                        <div class="h-2 rounded-full bg-emerald-600"
                              style="width: {{ $progressBarWidth }}%">
                         </div>
                     </div>
 
-                    <div class="mt-5 grid grid-cols-1 gap-4 md:grid-cols-4">
-                        <div class="rounded-xl border border-gray-100 bg-gray-50 p-4">
-                            <p class="text-sm text-gray-500">
+                    <div class="mt-3 grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3">
+                        <div class="rounded-lg sm:rounded-xl border border-gray-100 bg-gray-50/80 p-2.5 sm:p-3">
+                            <p class="text-[10px] sm:text-xs font-medium text-gray-500">
                                 Ayat Hafal
                             </p>
-
-                            <p class="mt-1 text-2xl font-bold text-gray-900">
+                            <p class="mt-0.5 text-base sm:text-xl font-black text-gray-900">
                                 {{ number_format($progress['memorized_ayahs'] ?? 0) }}
                             </p>
-                            @if (!empty($progress['all_memorized_ayahs']) && $progress['all_memorized_ayahs'] !== $progress['memorized_ayahs'])
-                                <p class="text-[10px] text-gray-450 mt-1">
-                                    Total semua juz: {{ number_format($progress['all_memorized_ayahs']) }} ayat
-                                </p>
-                            @endif
                         </div>
 
-                        <div class="rounded-xl border border-gray-100 bg-gray-50 p-4">
-                            <p class="text-sm text-gray-500">
-                                Juz Hafal (Selesai)
+                        <div class="rounded-lg sm:rounded-xl border border-gray-100 bg-gray-50/80 p-2.5 sm:p-3">
+                            <p class="text-[10px] sm:text-xs font-medium text-gray-500">
+                                Juz Selesai
                             </p>
-
-                            <p class="mt-1 text-2xl font-bold text-emerald-600">
+                            <p class="mt-0.5 text-base sm:text-xl font-black text-emerald-600">
                                 {{ $progress['completed_juz_count'] ?? 0 }} Juz
                             </p>
-                            <p class="text-[10px] text-gray-450 truncate mt-1" title="{{ $progress['completed_juz_list'] }}">
-                                {{ $progress['completed_juz_list'] }}
-                            </p>
                         </div>
 
-                        <div class="rounded-xl border border-gray-100 bg-gray-50 p-4">
-                            <p class="text-sm text-gray-500">
-                                Sisa Target Ayat
+                        <div class="rounded-lg sm:rounded-xl border border-gray-100 bg-gray-50/80 p-2.5 sm:p-3">
+                            <p class="text-[10px] sm:text-xs font-medium text-gray-500">
+                                Sisa Target
                             </p>
-
-                            <p class="mt-1 text-2xl font-bold text-gray-900">
+                            <p class="mt-0.5 text-base sm:text-xl font-black text-gray-900">
                                 {{ number_format($progress['remaining_ayahs'] ?? 0) }}
                             </p>
                         </div>
 
-                        <div class="rounded-xl border border-gray-100 bg-gray-50 p-4">
-                            <p class="text-sm text-gray-500">
-                                Target Terlambat
+                        <div class="rounded-lg sm:rounded-xl border border-gray-100 bg-gray-50/80 p-2.5 sm:p-3">
+                            <p class="text-[10px] sm:text-xs font-medium text-gray-500">
+                                Terlambat
                             </p>
-
-                            <p class="mt-1 text-2xl font-bold text-red-600">
+                            <p class="mt-0.5 text-base sm:text-xl font-black text-red-600">
                                 {{ number_format($progress['overdue_targets'] ?? 0) }}
                             </p>
                         </div>
@@ -200,61 +179,53 @@
                 </div>
             </div>
 
-            <div class="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
-                <div class="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
-                    <p class="text-sm font-medium text-gray-500">
-                        Total Setoran Hafalan
+            <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-4">
+                <div class="rounded-xl sm:rounded-2xl border border-gray-200 bg-white p-2.5 sm:p-4 shadow-xs">
+                    <p class="text-[10px] sm:text-xs font-medium text-gray-500 truncate">
+                        Total Setoran
                     </p>
-
-                    <p class="mt-2 text-3xl font-bold text-gray-900">
+                    <p class="mt-0.5 sm:mt-1 text-base sm:text-2xl font-black text-gray-900">
                         {{ number_format($progress['total_hafalan_records'] ?? 0) }}
                     </p>
-
-                    <p class="mt-1 text-xs text-gray-500">
-                        Lulus {{ number_format($progress['passed_hafalan_records'] ?? 0) }},
-                        perlu ulang {{ number_format($progress['repeat_hafalan_records'] ?? 0) }}
+                    <p class="text-[10px] text-gray-400 mt-0.5 truncate">
+                        Lulus: {{ number_format($progress['passed_hafalan_records'] ?? 0) }}
                     </p>
                 </div>
 
-                <div class="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
-                    <p class="text-sm font-medium text-gray-500">
+                <div class="rounded-xl sm:rounded-2xl border border-gray-200 bg-white p-2.5 sm:p-4 shadow-xs">
+                    <p class="text-[10px] sm:text-xs font-medium text-gray-500 truncate">
                         Total Murajaah
                     </p>
-
-                    <p class="mt-2 text-3xl font-bold text-gray-900">
+                    <p class="mt-0.5 sm:mt-1 text-base sm:text-2xl font-black text-gray-900">
                         {{ number_format($progress['total_murajaah_records'] ?? 0) }}
                     </p>
-
-                    <p class="mt-1 text-xs text-gray-500">
-                        Rata-rata nilai {{ number_format((float) ($progress['average_murajaah_score'] ?? 0), 2) }}
+                    <p class="text-[10px] text-gray-400 mt-0.5 truncate">
+                        Nilai: {{ number_format((float) ($progress['average_murajaah_score'] ?? 0), 1) }}
                     </p>
                 </div>
 
-                <div class="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
-                    <p class="text-sm font-medium text-gray-500">
+                <div class="rounded-xl sm:rounded-2xl border border-gray-200 bg-white p-2.5 sm:p-4 shadow-xs">
+                    <p class="text-[10px] sm:text-xs font-medium text-gray-500 truncate">
                         Target Aktif
                     </p>
-
-                    <p class="mt-2 text-3xl font-bold text-gray-900">
+                    <p class="mt-0.5 sm:mt-1 text-base sm:text-2xl font-black text-gray-900">
                         {{ number_format($progress['active_targets'] ?? 0) }}
                     </p>
-
-                    <p class="mt-1 text-xs text-gray-500">
-                        Selesai {{ number_format($progress['completed_targets'] ?? 0) }}
+                    <p class="text-[10px] text-gray-400 mt-0.5 truncate">
+                        Tuntas: {{ number_format($progress['completed_targets'] ?? 0) }}
                     </p>
                 </div>
 
-                <div class="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
-                    <p class="text-sm font-medium text-gray-500">
-                        Rata-rata Nilai Hafalan
+                <div class="rounded-xl sm:rounded-2xl border border-gray-200 bg-white p-2.5 sm:p-4 shadow-xs">
+                    <p class="text-[10px] sm:text-xs font-medium text-gray-500 truncate">
+                        Rata-rata Nilai
                     </p>
-
-                    <p class="mt-2 text-3xl font-bold text-gray-900">
-                        {{ number_format((float) ($progress['average_hafalan_score'] ?? 0), 2) }}
+                    <p class="mt-0.5 sm:mt-1 text-base sm:text-2xl font-black text-gray-900">
+                        {{ number_format((float) ($progress['average_hafalan_score'] ?? 0), 1) }}
                     </p>
-
-                    <p class="mt-1 text-xs text-gray-500">
-                        Dari setoran yang memiliki nilai.
+                    <p class="text-[10px] text-gray-400 mt-0.5 truncate">
+                        Hafalan lulus
+                    </p>
                 </div>
             </div>
 
@@ -270,15 +241,17 @@
                 <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
                     <div>
                         <h3 class="text-base font-bold text-gray-900 dark:text-white flex items-center gap-2">
-                            📈 Tren Perkembangan Hafalan
+                            <x-heroicon-o-chart-bar class="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
+                            <span>Tren Perkembangan Hafalan</span>
                         </h3>
                         <p class="text-xs text-gray-550 dark:text-zinc-400 mt-1">
                             Grafik performa hafalan bulanan dan pertumbuhan akumulasi baris hafalan murid dalam 12 bulan terakhir.
                         </p>
                     </div>
                     @if ($mostActiveMonthLabel)
-                        <div class="bg-indigo-50 dark:bg-indigo-955/20 border border-indigo-100 dark:border-indigo-900/30 rounded-xl px-4 py-2 text-xs text-indigo-700 dark:text-indigo-400 font-semibold self-start md:self-auto">
-                            🔥 Bulan Teraktif: <span class="font-black">{{ $mostActiveMonthLabel }}</span> ({{ number_format($maxLines, 1) }} baris)
+                        <div class="bg-indigo-50 dark:bg-indigo-955/20 border border-indigo-100 dark:border-indigo-900/30 rounded-xl px-4 py-2 text-xs text-indigo-700 dark:text-indigo-400 font-semibold self-start md:self-auto flex items-center gap-1.5">
+                            <x-heroicon-m-fire class="w-4 h-4 text-amber-500 shrink-0" />
+                            <span>Bulan Teraktif: <span class="font-black">{{ $mostActiveMonthLabel }}</span> ({{ number_format($maxLines, 1) }} baris)</span>
                         </div>
                     @endif
                 </div>
@@ -289,11 +262,24 @@
                 </div>
             </div>
 
-            <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+            @push('scripts')
             <script>
-                document.addEventListener('DOMContentLoaded', function () {
-                    const ctx = document.getElementById('studentTrendChart').getContext('2d');
-                    
+                if (typeof Chart === 'undefined') {
+                    const s = document.createElement('script');
+                    s.src = 'https://cdn.jsdelivr.net/npm/chart.js';
+                    document.head.appendChild(s);
+                }
+
+                function initStudentTrendChart() {
+                    if (typeof Chart === 'undefined') {
+                        setTimeout(initStudentTrendChart, 100);
+                        return;
+                    }
+
+                    const canvasEl = document.getElementById('studentTrendChart');
+                    if (!canvasEl) return;
+
+                    const ctx = canvasEl.getContext('2d');
                     const activeTheme = document.documentElement.classList.contains('dark') ? 'dark' : 'light';
                     
                     const monthlyBgGradient = ctx.createLinearGradient(0, 0, 0, 300);
@@ -307,11 +293,11 @@
                     new Chart(ctx, {
                         type: 'bar',
                         data: {
-                            labels: @json($chartLabels),
+                            labels: {!! json_encode($chartLabels) !!},
                             datasets: [
                                 {
                                     label: 'Setoran Bulanan (Baris)',
-                                    data: @json($monthlyValues),
+                                    data: {!! json_encode($monthlyValues) !!},
                                     backgroundColor: monthlyBgGradient,
                                     borderColor: 'rgb(16, 185, 129)',
                                     borderWidth: 2.5,
@@ -322,17 +308,17 @@
                                 },
                                 {
                                     label: 'Total Akumulasi (Baris)',
-                                    data: @json($cumulativeValues),
-                                    backgroundColor: cumulativeBgGradient,
+                                    data: {!! json_encode($cumulativeValues) !!},
                                     borderColor: 'rgb(79, 70, 229)',
-                                    borderWidth: 3.5,
+                                    backgroundColor: cumulativeBgGradient,
+                                    borderWidth: 3,
                                     fill: true,
                                     tension: 0.35,
+                                    pointRadius: 4,
+                                    pointHoverRadius: 6,
                                     pointBackgroundColor: 'rgb(79, 70, 229)',
                                     pointBorderColor: '#ffffff',
                                     pointBorderWidth: 2,
-                                    pointRadius: 4,
-                                    pointHoverRadius: 6,
                                     yAxisID: 'yCumulative',
                                     type: 'line',
                                     order: 1
@@ -342,32 +328,36 @@
                         options: {
                             responsive: true,
                             maintainAspectRatio: false,
+                            interaction: {
+                                mode: 'index',
+                                intersect: false
+                            },
                             plugins: {
                                 legend: {
                                     position: 'top',
                                     labels: {
                                         boxWidth: 12,
-                                        boxHeight: 12,
                                         usePointStyle: true,
+                                        color: activeTheme === 'dark' ? '#d4d4d8' : '#3f3f46',
                                         font: {
                                             family: 'Inter, sans-serif',
                                             size: 11,
-                                            weight: '600'
-                                        },
-                                        color: activeTheme === 'dark' ? '#d4d4d8' : '#3f3f46'
+                                            weight: '500'
+                                        }
                                     }
                                 },
                                 tooltip: {
-                                    backgroundColor: activeTheme === 'dark' ? '#18181b' : '#ffffff',
-                                    titleColor: activeTheme === 'dark' ? '#ffffff' : '#18181b',
-                                    bodyColor: activeTheme === 'dark' ? '#d4d4d8' : '#3f3f46',
-                                    borderColor: activeTheme === 'dark' ? '#27272a' : '#e4e4e7',
+                                    backgroundColor: activeTheme === 'dark' ? 'rgba(24, 24, 27, 0.95)' : 'rgba(255, 255, 255, 0.95)',
+                                    titleColor: activeTheme === 'dark' ? '#ffffff' : '#0f172a',
+                                    bodyColor: activeTheme === 'dark' ? '#cbd5e1' : '#334155',
+                                    borderColor: activeTheme === 'dark' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)',
                                     borderWidth: 1,
-                                    padding: 12,
-                                    cornerRadius: 12,
+                                    padding: 10,
+                                    boxPadding: 4,
+                                    usePointStyle: true,
                                     titleFont: {
-                                        weight: 'bold',
-                                        family: 'Inter, sans-serif'
+                                        family: 'Inter, sans-serif',
+                                        weight: 'bold'
                                     },
                                     bodyFont: {
                                         family: 'Inter, sans-serif'
@@ -388,16 +378,10 @@
                             },
                             scales: {
                                 x: {
-                                    grid: {
-                                        display: false
-                                    },
+                                    grid: { display: false },
                                     ticks: {
                                         color: activeTheme === 'dark' ? '#a1a1aa' : '#71717a',
-                                        font: {
-                                            family: 'Inter, sans-serif',
-                                            size: 10,
-                                            weight: '500'
-                                        }
+                                        font: { family: 'Inter, sans-serif', size: 10, weight: '500' }
                                     }
                                 },
                                 yMonthly: {
@@ -407,22 +391,10 @@
                                         display: true,
                                         text: 'Setoran Bulanan (Baris)',
                                         color: 'rgb(16, 185, 129)',
-                                        font: {
-                                            family: 'Inter, sans-serif',
-                                            size: 11,
-                                            weight: 'bold'
-                                        }
+                                        font: { family: 'Inter, sans-serif', size: 11, weight: 'bold' }
                                     },
-                                    grid: {
-                                        color: activeTheme === 'dark' ? 'rgba(39, 39, 42, 0.5)' : 'rgba(228, 228, 231, 0.5)'
-                                    },
-                                    ticks: {
-                                        color: activeTheme === 'dark' ? '#a1a1aa' : '#71717a',
-                                        font: {
-                                            family: 'Inter, sans-serif',
-                                            size: 10
-                                        }
-                                    },
+                                    grid: { color: activeTheme === 'dark' ? 'rgba(39, 39, 42, 0.5)' : 'rgba(228, 228, 231, 0.5)' },
+                                    ticks: { color: activeTheme === 'dark' ? '#a1a1aa' : '#71717a', font: { family: 'Inter, sans-serif', size: 10 } },
                                     min: 0
                                 },
                                 yCumulative: {
@@ -432,29 +404,24 @@
                                         display: true,
                                         text: 'Total Akumulasi (Baris)',
                                         color: 'rgb(79, 70, 229)',
-                                        font: {
-                                            family: 'Inter, sans-serif',
-                                            size: 11,
-                                            weight: 'bold'
-                                        }
+                                        font: { family: 'Inter, sans-serif', size: 11, weight: 'bold' }
                                     },
-                                    grid: {
-                                        drawOnChartArea: false
-                                    },
-                                    ticks: {
-                                        color: activeTheme === 'dark' ? '#a1a1aa' : '#71717a',
-                                        font: {
-                                            family: 'Inter, sans-serif',
-                                            size: 10
-                                        }
-                                    },
+                                    grid: { drawOnChartArea: false },
+                                    ticks: { color: activeTheme === 'dark' ? '#a1a1aa' : '#71717a', font: { family: 'Inter, sans-serif', size: 10 } },
                                     min: 0
                                 }
                             }
                         }
                     });
-                });
+                }
+
+                if (document.readyState === 'loading') {
+                    document.addEventListener('DOMContentLoaded', initStudentTrendChart);
+                } else {
+                    initStudentTrendChart();
+                }
             </script>
+            @endpush
 
             <div class="grid grid-cols-1 gap-6 xl:grid-cols-3">
                 <div class="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm xl:col-span-2">
@@ -867,7 +834,7 @@
                                     </td>
 
                                     <td class="whitespace-nowrap px-5 py-3 text-gray-700">
-                                        {{ $target->ayah_start }} - {{ $target->ayah_end }}
+                                        {{ $target->ayah_range }}
                                     </td>
 
                                     <td class="whitespace-nowrap px-5 py-3">

@@ -55,7 +55,7 @@
                                         type="text"
                                         :name="'categories[' + catIdx + '][title]'"
                                         x-model="cat.title"
-                                        placeholder="Misal: 🕋 Adab Kepada Allah"
+                                        placeholder="Misal: Adab Kepada Allah"
                                         class="block w-full rounded-xl border-gray-300 dark:border-zinc-700 dark:bg-[#09090b]/40 dark:text-white shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm font-bold"
                                         required
                                     />
@@ -121,13 +121,16 @@
                 {{-- Keterangan Nilai & Formula Penilaian --}}
                 <div class="bg-indigo-50 dark:bg-indigo-950/20 border border-indigo-100 dark:border-indigo-900/30 rounded-xl px-6 py-4 space-y-3">
                     <div class="flex items-center justify-between">
-                        <h4 class="text-xs font-bold uppercase tracking-wider text-indigo-700 dark:text-indigo-400">📊 Formula Logika Penilaian Adab Terpadu</h4>
+                        <h4 class="text-xs font-bold uppercase tracking-wider text-indigo-700 dark:text-indigo-400 flex items-center gap-1.5">
+                            <x-heroicon-o-chart-bar class="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
+                            <span>Formula Logika Penilaian Adab Terpadu</span>
+                        </h4>
                         <span class="text-xs font-bold bg-indigo-200 dark:bg-indigo-900 text-indigo-800 dark:text-indigo-200 px-2.5 py-1 rounded-full">Kerajinan 40% + Pendamping 60%</span>
                     </div>
                     <p class="text-xs text-zinc-600 dark:text-zinc-400">
                         Penilaian adab murid dihitung dari <strong>Kerajinan Pengisian Kuisioner (40%)</strong> pada Hari Kerja Efektif (Senin-Jumat, menyesuaikan tanggal merah) dan <strong>Nilai Pendamping Adab (60%)</strong>.
                     </p>
-                    <div class="grid grid-cols-5 gap-3 text-center text-xs pt-2">
+                    <div class="grid grid-cols-2 xs:grid-cols-3 sm:grid-cols-5 gap-3 text-center text-xs pt-2">
                         @foreach (['A'=>['90–100%','bg-emerald-100 text-emerald-700'], 'B'=>['80–89%','bg-teal-100 text-teal-700'], 'C'=>['70–79%','bg-amber-100 text-amber-700'], 'D'=>['60–69%','bg-orange-100 text-orange-700'], 'E'=>['0–59%','bg-rose-100 text-rose-700']] as $g => [$range, $cls])
                             <div class="rounded-lg p-3 {{ $cls }} dark:opacity-80">
                                 <div class="text-2xl font-black">{{ $g }}</div>
@@ -156,7 +159,7 @@
             return {
                 categories: Array.isArray(initialCategories) && initialCategories.length > 0 ? initialCategories : [
                     {
-                        title: '🕋 Adab Utama',
+                        title: 'Adab Utama',
                         desc: 'Pengembangan karakter dan kebiasaan adab harian',
                         questions: [
                             'Apakah Anda melaksanakan ibadah dan pembiasaan adab tepat waktu?',
@@ -166,7 +169,7 @@
                 ],
                 addCategory() {
                     this.categories.push({
-                        title: '✨ Kategori Adab Baru',
+                        title: 'Kategori Adab Baru',
                         desc: 'Deskripsi kategori adab baru',
                         questions: [
                             'Apakah Anda melaksanakan pembiasaan adab ini dengan konsisten?',

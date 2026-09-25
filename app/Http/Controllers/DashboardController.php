@@ -6,6 +6,7 @@ use App\Models\AdabMaterial;
 use App\Models\AdabRecord;
 use App\Models\ClassRoom;
 use App\Models\HafalanRecord;
+use App\Models\HafalanRecordSurah;
 use App\Models\HafalanTarget;
 use App\Models\MurajaahRecord;
 use App\Models\Setting;
@@ -54,6 +55,7 @@ class DashboardController extends Controller
             'tanse' => redirect()->route('tanse.dashboard'),
             'coordinator_tahfizh' => redirect()->route('coordinator-tahfizh.dashboard'),
             'pendamping_adab' => redirect()->route('pendamping-adab.dashboard'),
+            'wali_kelas' => redirect()->route('wali-kelas.index'),
             default => redirect()->route('admin.dashboard'),
         };
     }
@@ -76,7 +78,7 @@ class DashboardController extends Controller
 
         return view('dashboards.admin', [
             'title' => 'Super Admin Dashboard',
-            'subtitle' => 'Monitoring penuh seluruh data IMS.',
+            'subtitle' => 'Monitoring penuh seluruh data TAD.',
             'stats' => $stats,
         ]);
     }
@@ -99,7 +101,7 @@ class DashboardController extends Controller
         }
 
         return view('dashboards.admin', [
-            'title' => 'Dashboard Utama IMS',
+            'title' => 'Dashboard Utama TAD',
             'subtitle' => 'Monitoring operasional murid, guru, hafalan, adab, dan kedisiplinan.',
             'stats' => $stats,
         ]);
@@ -155,20 +157,24 @@ class DashboardController extends Controller
             $endOfMonth = now()->endOfMonth();
 
             $stats = [
-                'hafalan_this_month' => HafalanRecord::whereBetween('submitted_at', [$startOfMonth, $endOfMonth])->count(),
-                'hafalan_today' => HafalanRecord::whereDate('submitted_at', $today)->count(),
+                'hafalan_this_month' => HafalanRecordSurah::whereHas('hafalanRecord', fn ($q) => $q->whereBetween('submitted_at', [$startOfMonth, $endOfMonth]))->count(),
+                'hafalan_today' => HafalanRecordSurah::whereHas('hafalanRecord', fn ($q) => $q->whereDate('submitted_at', $today))->count(),
                 'murajaah_this_month' => MurajaahRecord::whereBetween('reviewed_at', [$startOfMonth, $endOfMonth])->count(),
                 'murajaah_today' => MurajaahRecord::whereDate('reviewed_at', $today)->count(),
                 'active_targets' => HafalanTarget::where('status', 'in_progress')->count(),
                 'completed_targets' => HafalanTarget::where('status', 'completed')->count(),
                 'exams_this_month' => TahfizhExam::whereBetween('exam_date', [$startOfMonth, $endOfMonth])->count(),
-                'passed_exams' => TahfizhExam::whereBetween('exam_date', [$startOfMonth, $endOfMonth])->where('total_score', '>=', 70)->count(),
+                'passed_exams' => TahfizhExam::whereBetween('exam_date', [$startOfMonth, $endOfMonth])
+                    ->where('total_score', '>=', round(Setting::getTahfizhScoringConfig()['exam_weight'] * 0.7, 1))
+                    ->count(),
             ];
 
-            $recentHafalan = HafalanRecord::with(['student', 'surah'])
-                ->latest('submitted_at')
-                ->take(5)
-                ->get();
+            $recentHafalan = HafalanRecord::flattenSurahs(
+                HafalanRecord::with(['student', 'surahs.surah'])
+                    ->latest('submitted_at')
+                    ->take(5)
+                    ->get()
+            );
         } catch (\Throwable $e) {
             $stats = [
                 'hafalan_this_month' => 0,
@@ -216,8 +222,7 @@ class DashboardController extends Controller
         $fillPercentage = $totalStudents > 0 ? round(($filledToday / $totalStudents) * 100, 1) : 0;
 
         $students = $studentQuery->get();
-        $scoresByStudent = Setting::calculateAdabScoresForStudents($students->pluck('id')->all(), $year, $month);
-        $monthlyScores = $students->map(fn ($s) => $scoresByStudent[$s->id]['final_score'] ?? 0);
+        $monthlyScores = $students->map(fn ($s) => Setting::calculateAdabScore($s->id, $year, $month)['final_score']);
         $avgScoreMonth = $monthlyScores->isNotEmpty() ? round($monthlyScores->avg(), 1) : 0;
         $adabGradeMonth = Setting::getAdabGrade($avgScoreMonth);
 
@@ -228,18 +233,14 @@ class DashboardController extends Controller
                 $classRoomQuery->whereIn('id', $assignedClassIds);
             }
 
-            $classRooms = $classRoomQuery->get();
-
-            $allStudentIds = $classRooms->flatMap(fn ($classRoom) => $classRoom->students->pluck('id'))->all();
-            $scoresByStudent = Setting::calculateAdabScoresForStudents($allStudentIds, $year, $month);
-
-            return $classRooms
-                ->map(function ($classRoom) use ($scoresByStudent) {
+            return $classRoomQuery
+                ->get()
+                ->map(function ($classRoom) use ($year, $month) {
                     $st = $classRoom->students;
                     if ($st->isEmpty()) {
                         return ['name' => $classRoom->name, 'avg_score' => 0];
                     }
-                    $sc = $st->map(fn ($s) => $scoresByStudent[$s->id]['final_score'] ?? 0);
+                    $sc = $st->map(fn ($s) => Setting::calculateAdabScore($s->id, $year, $month)['final_score']);
 
                     return ['name' => $classRoom->name, 'avg_score' => round($sc->avg(), 1)];
                 })
@@ -300,8 +301,8 @@ class DashboardController extends Controller
 
         // ─── Tahfizh Summary ───────────────────────────────────────────
         try {
-            $hafalanThisMonth = HafalanRecord::whereBetween('submitted_at', [$startOfMonth, $endOfMonth])->count();
-            $hafalanToday = HafalanRecord::whereDate('submitted_at', $today)->count();
+            $hafalanThisMonth = HafalanRecordSurah::whereHas('hafalanRecord', fn ($q) => $q->whereBetween('submitted_at', [$startOfMonth, $endOfMonth]))->count();
+            $hafalanToday = HafalanRecordSurah::whereHas('hafalanRecord', fn ($q) => $q->whereDate('submitted_at', $today))->count();
             $activeTargets = HafalanTarget::where('status', 'in_progress')->count();
             $completedTargets = HafalanTarget::where('status', 'completed')->count();
             $totalTargets = $activeTargets + $completedTargets;
@@ -309,12 +310,12 @@ class DashboardController extends Controller
 
             // Monthly hafalan per class-level (X, XI, XII)
             $tahfizhByLevel = [
-                'X' => HafalanRecord::whereBetween('submitted_at', [$startOfMonth, $endOfMonth])
-                    ->whereHas('student.classRoom', fn ($q) => $q->where('name', 'like', 'X %')->where('name', 'not like', 'XI%'))->count(),
-                'XI' => HafalanRecord::whereBetween('submitted_at', [$startOfMonth, $endOfMonth])
-                    ->whereHas('student.classRoom', fn ($q) => $q->where('name', 'like', 'XI %')->where('name', 'not like', 'XII%'))->count(),
-                'XII' => HafalanRecord::whereBetween('submitted_at', [$startOfMonth, $endOfMonth])
-                    ->whereHas('student.classRoom', fn ($q) => $q->where('name', 'like', 'XII %'))->count(),
+                'X' => HafalanRecordSurah::whereHas('hafalanRecord', fn ($q) => $q->whereBetween('submitted_at', [$startOfMonth, $endOfMonth])
+                    ->whereHas('student.classRoom', fn ($cq) => $cq->where('name', 'like', 'X %')->where('name', 'not like', 'XI%')))->count(),
+                'XI' => HafalanRecordSurah::whereHas('hafalanRecord', fn ($q) => $q->whereBetween('submitted_at', [$startOfMonth, $endOfMonth])
+                    ->whereHas('student.classRoom', fn ($cq) => $cq->where('name', 'like', 'XI %')->where('name', 'not like', 'XII%')))->count(),
+                'XII' => HafalanRecordSurah::whereHas('hafalanRecord', fn ($q) => $q->whereBetween('submitted_at', [$startOfMonth, $endOfMonth])
+                    ->whereHas('student.classRoom', fn ($cq) => $cq->where('name', 'like', 'XII %')))->count(),
             ];
         } catch (\Throwable) {
             $hafalanThisMonth = 0;
@@ -339,9 +340,6 @@ class DashboardController extends Controller
             ];
             $allScores = [];
 
-            $allStudentIds = $classRooms->flatMap(fn ($cr) => $cr->students->pluck('id'))->all();
-            $scoresByStudent = Setting::calculateAdabScoresForStudents($allStudentIds, $year, $month);
-
             foreach ($classRooms as $cr) {
                 $key = null;
                 if (preg_match('/^XII\b/i', $cr->name)) {
@@ -353,7 +351,7 @@ class DashboardController extends Controller
                 }
 
                 foreach ($cr->students as $st) {
-                    $sc = $scoresByStudent[$st->id]['final_score'] ?? 0;
+                    $sc = Setting::calculateAdabScore($st->id, $year, $month)['final_score'] ?? 0;
                     $allScores[] = $sc;
                     if ($key) {
                         $adabByLevel[$key] += $sc;

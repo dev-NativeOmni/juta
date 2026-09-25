@@ -121,4 +121,29 @@ class StudentParentWebAccessTest extends TestCase
         $response->assertSee('Karakter &amp; Adab', false);
         $response->assertSee('Kedisiplinan &amp; Prestasi', false);
     }
+
+    public function test_student_and_parent_cannot_export_or_download_or_print(): void
+    {
+        $parentUser = User::where('username', 'orangtua')->first();
+        $studentUser = User::where('username', 'santri')->first();
+        $student = Student::where('student_number', 'SNT-001')->first();
+
+        // 1. Export CSV laporan
+        $this->actingAs($parentUser)->get('/reports/export/csv')->assertStatus(403);
+        $this->actingAs($studentUser)->get('/reports/export/csv')->assertStatus(403);
+        $this->actingAs($parentUser)->get('/reports/student/'.$student->id.'/export/csv')->assertStatus(403);
+        $this->actingAs($studentUser)->get('/reports/student/'.$student->id.'/export/csv')->assertStatus(403);
+
+        // 2. Cetak / Simpan PDF rapor digital
+        $this->actingAs($parentUser)->get('/digital-reports/student/'.$student->id.'/print')->assertStatus(403);
+        $this->actingAs($studentUser)->get('/digital-reports/student/'.$student->id.'/print')->assertStatus(403);
+
+        // 3. Cetak Kartu UMMI
+        $this->actingAs($parentUser)->get('/hafalan-records/student/'.$student->id.'/ummi-card')->assertStatus(403);
+        $this->actingAs($studentUser)->get('/hafalan-records/student/'.$student->id.'/ummi-card')->assertStatus(403);
+
+        // 4. Pastikan tombol export / cetak tidak muncul di view digital-reports.show
+        $viewReport = $this->actingAs($studentUser)->get('/digital-reports/student/'.$student->id);
+        $viewReport->assertDontSee('Cetak / Simpan PDF');
+    }
 }

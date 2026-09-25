@@ -1,7 +1,7 @@
 {
-  "name": "HafizPlus IMS - SMAIA 7",
-  "short_name": "IMS SMAIA 7",
-  "description": "Sistem Informasi Manajemen Hafalan Al-Qur'an & Kedisiplinan SMAIA 7",
+  "name": "TAD Management System - SMAIA 7",
+  "short_name": "TAD SMAIA 7",
+  "description": "Sistem Informasi Manajemen Hafalan Al-Qur'an, Adab & Kedisiplinan SMAIA 7",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
@@ -10,16 +10,29 @@
   "theme_color": "#059669",
   "icons": [
     {
-      "src": "/images/logo_alazhar7.png",
+      "src": "/icons/icon-192.png",
       "sizes": "192x192",
       "type": "image/png",
-      "purpose": "any maskable"
+      "purpose": "any"
     },
     {
-      "src": "/images/logo_alazhar7.png",
+      "src": "/icons/icon-512.png",
       "sizes": "512x512",
       "type": "image/png",
-      "purpose": "any maskable"
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/maskable-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "/icons/maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
     }
-  ]
+  ],
+  "id": "/"
 }

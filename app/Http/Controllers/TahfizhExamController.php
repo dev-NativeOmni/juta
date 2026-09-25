@@ -3,20 +3,69 @@
 namespace App\Http\Controllers;
 
 use App\Models\ClassRoom;
+use App\Models\Setting;
 use App\Models\Student;
 use App\Models\Surah;
 use App\Models\TahfizhExam;
 use App\Models\TeacherProfile;
 use App\Models\User;
+use App\Services\AcademicCalendarService;
+use Carbon\Carbon;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 
 class TahfizhExamController extends Controller
 {
-    public function index(Request $request): View
+    private const MONTH_NAMES = [
+        1 => 'Januari', 2 => 'Februari', 3 => 'Maret', 4 => 'April', 5 => 'Mei', 6 => 'Juni',
+        7 => 'Juli', 8 => 'Agustus', 9 => 'September', 10 => 'Oktober', 11 => 'November', 12 => 'Desember',
+    ];
+
+    public function index(Request $request, AcademicCalendarService $calendar): View
     {
         $user = $request->user();
+
+        $months = $calendar->termMonths(Carbon::today());
+        $termStart = reset($months)['start'];
+        $termEnd = end($months)['end'];
+        $termLabel = self::MONTH_NAMES[$termStart->month].' - '.self::MONTH_NAMES[$termEnd->month].' '.$termEnd->year;
+
+        $examStatus = $request->input('exam_status');
+        $examStatus = in_array($examStatus, ['belum', 'sudah'], true) ? $examStatus : null;
+
+        $maxScore = Setting::getTahfizhScoringConfig()['exam_weight'];
+        $passThreshold = round($maxScore * 0.7, 1);
+        $passStatus = $request->input('pass_status');
+        $passStatus = in_array($passStatus, ['lulus', 'tidak_lulus'], true) ? $passStatus : null;
+
+        if ($examStatus === 'belum') {
+            $pendingStudents = Student::query()
+                ->with(['classRoom.program', 'teacher.user'])
+                ->where('status', 'active')
+                ->when($user->hasRole('teacher'), fn ($q) => $q->where('teacher_id', $user->teacherProfile?->id))
+                ->when($request->filled('class_room_id'), fn ($q) => $q->where('class_room_id', $request->integer('class_room_id')))
+                ->when($request->filled('student_id'), fn ($q) => $q->where('id', $request->integer('student_id')))
+                ->whereDoesntHave('tahfizhExams', function ($q) use ($termStart, $termEnd) {
+                    $q->whereDate('exam_date', '>=', $termStart->toDateString())
+                        ->whereDate('exam_date', '<=', $termEnd->toDateString());
+                })
+                ->orderBy('class_room_id')
+                ->orderBy('name')
+                ->paginate(50)
+                ->withQueryString();
+
+            return view('tahfizh-exams.index', array_merge(
+                [
+                    'exams' => null,
+                    'pendingStudents' => $pendingStudents,
+                    'examStatus' => $examStatus,
+                    'passStatus' => null,
+                    'termLabel' => $termLabel,
+                ],
+                $this->formData($user)
+            ));
+        }
 
         $exams = TahfizhExam::query()
             ->with([
@@ -41,6 +90,12 @@ class TahfizhExamController extends Controller
             ->when($request->filled('surah_id'), function ($query) use ($request) {
                 $query->where('surah_id', $request->integer('surah_id'));
             })
+            ->when($examStatus === 'sudah', function ($query) use ($termStart, $termEnd) {
+                $query->whereDate('exam_date', '>=', $termStart->toDateString())
+                    ->whereDate('exam_date', '<=', $termEnd->toDateString());
+            })
+            ->when($passStatus === 'lulus', fn ($query) => $query->where('total_score', '>=', $passThreshold))
+            ->when($passStatus === 'tidak_lulus', fn ($query) => $query->where('total_score', '<', $passThreshold))
             ->latest('exam_date')
             ->latest()
             ->paginate(20)
@@ -49,6 +104,10 @@ class TahfizhExamController extends Controller
         return view('tahfizh-exams.index', array_merge(
             [
                 'exams' => $exams,
+                'pendingStudents' => null,
+                'examStatus' => $examStatus,
+                'passStatus' => $passStatus,
+                'termLabel' => $termLabel,
             ],
             $this->formData($user)
         ));
@@ -65,6 +124,8 @@ class TahfizhExamController extends Controller
     {
         $this->authorize('create', TahfizhExam::class);
 
+        $maxScore = Setting::getTahfizhScoringConfig()['exam_weight'];
+
         $validated = $request->validate([
             'student_id' => 'required|exists:students,id',
             'teacher_id' => 'required|exists:teacher_profiles,id',
@@ -73,33 +134,16 @@ class TahfizhExamController extends Controller
             'surah_id' => 'required_if:type,surah|nullable|exists:surahs,id',
             'ayah_start' => 'required_if:type,surah|nullable|integer|min:1',
             'ayah_end' => 'required_if:type,surah|nullable|integer|gte:ayah_start',
-            'q1' => 'required|integer|between:0,100',
-            'q2' => 'required|integer|between:0,100',
-            'q3' => 'required|integer|between:0,100',
-            'q4' => 'required|integer|between:0,100',
-            'q5' => 'required|integer|between:0,100',
+            'score' => "required|numeric|between:0,{$maxScore}",
             'notes' => 'nullable|string',
             'exam_date' => 'required|date',
         ]);
 
-        // Calculate total_score as average
-        $q1 = (int) $validated['q1'];
-        $q2 = (int) $validated['q2'];
-        $q3 = (int) $validated['q3'];
-        $q4 = (int) $validated['q4'];
-        $q5 = (int) $validated['q5'];
-        $total = ($q1 + $q2 + $q3 + $q4 + $q5) / 5;
-
         $data = [
             'student_id' => $validated['student_id'],
             'teacher_id' => $validated['teacher_id'],
-            'q1' => $q1,
-            'q2' => $q2,
-            'q3' => $q3,
-            'q4' => $q4,
-            'q5' => $q5,
-            'total_score' => $total,
-            'notes' => $validated['notes'],
+            'total_score' => $validated['score'],
+            'notes' => $validated['notes'] ?? null,
             'exam_date' => $validated['exam_date'],
         ];
 
@@ -138,6 +182,8 @@ class TahfizhExamController extends Controller
     {
         $this->authorize('update', $tahfizhExam);
 
+        $maxScore = Setting::getTahfizhScoringConfig()['exam_weight'];
+
         $validated = $request->validate([
             'student_id' => 'required|exists:students,id',
             'teacher_id' => 'required|exists:teacher_profiles,id',
@@ -146,32 +192,16 @@ class TahfizhExamController extends Controller
             'surah_id' => 'required_if:type,surah|nullable|exists:surahs,id',
             'ayah_start' => 'required_if:type,surah|nullable|integer|min:1',
             'ayah_end' => 'required_if:type,surah|nullable|integer|gte:ayah_start',
-            'q1' => 'required|integer|between:0,100',
-            'q2' => 'required|integer|between:0,100',
-            'q3' => 'required|integer|between:0,100',
-            'q4' => 'required|integer|between:0,100',
-            'q5' => 'required|integer|between:0,100',
+            'score' => "required|numeric|between:0,{$maxScore}",
             'notes' => 'nullable|string',
             'exam_date' => 'required|date',
         ]);
 
-        $q1 = (int) $validated['q1'];
-        $q2 = (int) $validated['q2'];
-        $q3 = (int) $validated['q3'];
-        $q4 = (int) $validated['q4'];
-        $q5 = (int) $validated['q5'];
-        $total = ($q1 + $q2 + $q3 + $q4 + $q5) / 5;
-
         $data = [
             'student_id' => $validated['student_id'],
             'teacher_id' => $validated['teacher_id'],
-            'q1' => $q1,
-            'q2' => $q2,
-            'q3' => $q3,
-            'q4' => $q4,
-            'q5' => $q5,
-            'total_score' => $total,
-            'notes' => $validated['notes'],
+            'total_score' => $validated['score'],
+            'notes' => $validated['notes'] ?? null,
             'exam_date' => $validated['exam_date'],
         ];
 
@@ -238,11 +268,15 @@ class TahfizhExamController extends Controller
             ->orderBy('name')
             ->get();
 
+        $maxScore = Setting::getTahfizhScoringConfig()['exam_weight'];
+
         return [
             'students' => $students,
             'teachers' => $teachers,
             'surahs' => $surahs,
             'classRooms' => $classRooms,
+            'maxScore' => $maxScore,
+            'passThreshold' => round($maxScore * 0.7, 1),
         ];
     }
 }

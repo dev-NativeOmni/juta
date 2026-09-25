@@ -103,6 +103,8 @@ class AuditLog extends Model
             AdabMentorAssessment::class => 'Penilaian Pendamping Adab',
             Badge::class => 'Lencana',
             Setting::class => 'Pengaturan',
+            CalendarMonthLock::class => 'Kunci Kalender',
+            ClassWeekSchedule::class => 'Jadwal Pekanan',
             default => class_basename((string) $this->auditable_type),
         };
     }

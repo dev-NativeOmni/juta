@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests;
 
+use App\Support\HafalanOrder;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -67,6 +68,10 @@ class UpdateStudentRequest extends FormRequest
             'tahfizh_level' => [
                 'nullable',
                 Rule::in(['tahsin', 'reguler', 'akselerasi', 'ummi']),
+            ],
+            'hafalan_direction' => [
+                'nullable',
+                Rule::in(array_keys(HafalanOrder::directionOptions())),
             ],
             'parent_ids' => [
                 'nullable',

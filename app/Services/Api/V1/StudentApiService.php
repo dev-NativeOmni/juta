@@ -3,6 +3,7 @@
 namespace App\Services\Api\V1;
 
 use App\Models\HafalanRecord;
+use App\Models\HafalanRecordSurah;
 use App\Models\HafalanTarget;
 use App\Models\MurajaahRecord;
 use App\Models\ParentProfile;
@@ -100,14 +101,17 @@ class StudentApiService
             'in_progress',
         ];
 
-        $latestHafalan = (clone $hafalanQuery)
+        $latestHafalanHeader = (clone $hafalanQuery)
             ->with([
-                'surah',
+                'surahs.surah',
                 'teacher.user',
             ])
             ->latest('submitted_at')
             ->latest()
             ->first();
+        $latestHafalan = $latestHafalanHeader
+            ? HafalanRecord::flattenSurahs(collect([$latestHafalanHeader]))->last()
+            : null;
 
         $latestMurajaah = (clone $murajaahQuery)
             ->with([
@@ -147,12 +151,14 @@ class StudentApiService
             ],
 
             'hafalan' => [
-                'total_records' => (clone $hafalanQuery)->count(),
-                'passed_records' => (clone $hafalanQuery)->where('status', 'passed')->count(),
-                'repeat_records' => (clone $hafalanQuery)
+                'total_records' => HafalanRecordSurah::whereHas('hafalanRecord', fn ($q) => $q->where('student_id', $student->id))->count(),
+                'passed_records' => HafalanRecordSurah::whereHas('hafalanRecord', fn ($q) => $q->where('student_id', $student->id))
+                    ->where('status', 'passed')
+                    ->count(),
+                'repeat_records' => HafalanRecordSurah::whereHas('hafalanRecord', fn ($q) => $q->where('student_id', $student->id))
                     ->whereIn('status', ['repeat', 'needs_improvement'])
                     ->count(),
-                'average_score' => round((float) (clone $hafalanQuery)
+                'average_score' => round((float) HafalanRecordSurah::whereHas('hafalanRecord', fn ($q) => $q->where('student_id', $student->id))
                     ->whereNotNull('score')
                     ->avg('score'), 2),
                 'latest' => $latestHafalan,
@@ -188,8 +194,8 @@ class StudentApiService
 
     private function memorizedAyahCount(Student $student): int
     {
-        $records = HafalanRecord::query()
-            ->where('student_id', $student->id)
+        $records = HafalanRecordSurah::query()
+            ->whereHas('hafalanRecord', fn ($q) => $q->where('student_id', $student->id))
             ->where('status', 'passed')
             ->get([
                 'surah_id',

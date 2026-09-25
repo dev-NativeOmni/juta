@@ -5,16 +5,16 @@
         </h2>
     </x-slot>
 
-    <div class="py-4 sm:py-6" x-data="{ tab: '{{ request('tab', 'list') }}' }">
-        <div class="max-w-7xl mx-auto space-y-5 sm:space-y-6">
+    <div class="py-2.5 sm:py-6" x-data="{ tab: '{{ request('tab', 'list') }}' }">
+        <div class="max-w-7xl mx-auto space-y-3 sm:space-y-5 px-2 sm:px-6 lg:px-8">
             @if (session('success'))
-                <div class="p-4 bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800 rounded-2xl text-emerald-800 dark:text-emerald-300 text-sm font-semibold">
+                <div class="p-3 sm:p-4 bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800 rounded-xl sm:rounded-2xl text-emerald-800 dark:text-emerald-300 text-xs sm:text-sm font-semibold">
                     {{ session('success') }}
                 </div>
             @endif
 
-            <!-- Banner / Deskripsi -->
-            <div class="bg-gradient-to-r from-teal-500 via-indigo-600 to-indigo-700 text-white rounded-2xl shadow-lg p-5 sm:p-6 relative overflow-hidden">
+            <!-- Banner / Deskripsi (Hidden on mobile to save vertical screen space) -->
+            <div class="hidden sm:block bg-gradient-to-r from-teal-500 via-indigo-600 to-indigo-700 text-white rounded-2xl shadow-lg p-5 sm:p-6 relative overflow-hidden">
                 <div class="absolute right-0 bottom-0 opacity-10 transform translate-x-12 translate-y-12">
                     <svg class="h-64 w-64" fill="currentColor" viewBox="0 0 24 24">
                         <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 17h-2v-2h2v2zm2.07-7.75l-.9.92C13.45 12.9 13 13.5 13 15h-2v-.5c0-1.1.45-2.1 1.17-2.83l1.24-1.26c.37-.36.59-.86.59-1.41 0-1.1-.9-2-2-2s-2 .9-2 2H7c0-2.76 2.24-5 5-5s5 2.24 5 5c0 1.04-.42 1.99-1.07 2.75z"/>
@@ -43,7 +43,8 @@
                         :class="tab === 'monthly_mentor' ? 'border-teal-600 text-teal-600 dark:text-teal-400 font-bold' : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-zinc-400 font-medium' "
                         class="py-3 px-1 border-b-2 text-xs sm:text-sm transition-all focus:outline-none flex items-center gap-1.5 shrink-0 cursor-pointer"
                     >
-                        <span>⚡</span> Penilaian Bulanan Pendamping
+                        <x-heroicon-o-bolt class="w-4 h-4 text-teal-600 dark:text-teal-400 shrink-0" />
+                        <span>Penilaian Bulanan Pendamping</span>
                     </button>
                 @endif
                 <button 
@@ -69,13 +70,14 @@
                                     id="search"
                                     value="{{ request('search') }}"
                                     placeholder="Cari nama..."
+                                    x-on:input.debounce.600ms="$el.form.submit()"
                                     class="w-full rounded-xl border-zinc-300 dark:border-zinc-700 bg-transparent text-xs sm:text-sm focus:ring-indigo-500 focus:border-indigo-500 dark:text-white placeholder-zinc-400 dark:placeholder-zinc-600 py-2.5 px-3"
                                 >
                             </div>
 
                             <div>
                                 <label for="class_room_id" class="block text-xs font-semibold uppercase text-zinc-400 dark:text-zinc-500 mb-2">Kelas</label>
-                                <select name="class_room_id" id="class_room_id" class="w-full rounded-xl border-zinc-300 dark:border-zinc-700 bg-transparent text-xs sm:text-sm focus:ring-indigo-500 focus:border-indigo-500 dark:text-white py-2.5 px-3 font-medium cursor-pointer">
+                                <select name="class_room_id" id="class_room_id" onchange="this.form.submit()" class="w-full rounded-xl border-zinc-300 dark:border-zinc-700 bg-transparent text-xs sm:text-sm focus:ring-indigo-500 focus:border-indigo-500 dark:text-white py-2.5 px-3 font-medium cursor-pointer">
                                     <option value="" class="dark:bg-zinc-900">Semua Kelas</option>
                                     @foreach ($classRooms as $classRoom)
                                         <option value="{{ $classRoom->id }}" @selected((string) request('class_room_id') === (string) $classRoom->id) class="dark:bg-zinc-900">
@@ -95,6 +97,16 @@
                                 </a>
                             </div>
                         </form>
+
+                        <div class="mt-3 pt-3 border-t border-zinc-100 dark:border-zinc-800">
+                            <p class="text-xs font-semibold uppercase text-zinc-400 dark:text-zinc-500 mb-2">Pengisian Hari Ini</p>
+                            <x-filter-toggle
+                                name="fill_status"
+                                :options="['' => 'Semua', 'belum' => 'Belum Isi Hari Ini', 'sudah' => 'Sudah Isi Hari Ini']"
+                                :current="$fillStatus"
+                                :colors="['belum' => 'bg-amber-600 text-white shadow-sm', 'sudah' => 'bg-emerald-600 text-white shadow-sm']"
+                            />
+                        </div>
                     </div>
                 @endif
 
@@ -210,10 +222,17 @@
                         <div :class="alertType === 'success' ? 'bg-emerald-50 text-emerald-800 border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-300 dark:border-emerald-800' : 'bg-rose-50 text-rose-800 border-rose-200 dark:bg-rose-950/40 dark:text-rose-300 dark:border-rose-800'"
                              class="p-4 border rounded-2xl text-sm font-semibold flex items-center justify-between shadow-sm transition-all">
                             <div class="flex items-center gap-2">
-                                <span x-text="alertType === 'success' ? '✓' : '⚠️'"></span>
+                                <template x-if="alertType === 'success'">
+                                    <x-heroicon-o-check-circle class="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                                </template>
+                                <template x-if="alertType !== 'success'">
+                                    <x-heroicon-o-exclamation-triangle class="w-4 h-4 text-rose-600 dark:text-rose-400 shrink-0" />
+                                </template>
                                 <span x-text="alertMessage"></span>
                             </div>
-                            <button type="button" @click="alertMessage = ''" class="text-xs opacity-70 hover:opacity-100 font-bold px-2 py-1">✕</button>
+                            <button type="button" @click="alertMessage = ''" class="text-xs opacity-70 hover:opacity-100 p-1 cursor-pointer">
+                                <x-heroicon-o-x-mark class="w-4 h-4" />
+                            </button>
                         </div>
                     </template>
 
@@ -289,7 +308,7 @@
                                     :class="filledCount > 0 && !isLoading ? 'bg-teal-600 hover:bg-teal-700 text-white shadow-md cursor-pointer' : 'bg-zinc-200 dark:bg-zinc-800 text-zinc-400 dark:text-zinc-600 cursor-not-allowed'"
                                     class="inline-flex items-center justify-center px-5 py-2.5 rounded-xl font-bold text-xs sm:text-sm transition-all"
                                 >
-                                    <span x-show="!isSubmitting && !isLoading">💾 Simpan Semua (<span x-text="filledCount">0</span>)</span>
+                                    <span x-show="!isSubmitting && !isLoading" class="inline-flex items-center gap-1.5"><x-heroicon-o-check class="w-4 h-4" /> Simpan Semua (<span x-text="filledCount">0</span>)</span>
                                     <span x-show="isSubmitting" x-cloak class="flex items-center gap-1.5">
                                         <svg class="animate-spin h-4 w-4 text-white" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path></svg>
                                         Menyimpan...
@@ -317,8 +336,9 @@
                                 </button>
                             </div>
 
-                            <div class="text-[11px] text-zinc-500 dark:text-zinc-400">
-                                💡 <em>Klik tombol angka untuk memilih nilai secara cepat dengan kelipatan 5 atau ketik langsung di kolom nilai.</em>
+                            <div class="text-[11px] text-zinc-500 dark:text-zinc-400 flex items-center gap-1">
+                                <x-heroicon-o-light-bulb class="w-3.5 h-3.5 text-amber-500 shrink-0" />
+                                <em>Klik tombol angka untuk memilih nilai secara cepat dengan kelipatan 5 atau ketik langsung di kolom nilai.</em>
                             </div>
                         </div>
                     </div>
@@ -432,13 +452,15 @@
                                             <!-- Status -->
                                             <td class="px-4 py-3 text-center">
                                                 <template x-if="row.is_touched">
-                                                    <span class="inline-flex items-center px-2 py-1 rounded-full text-[10px] font-bold bg-amber-50 text-amber-700 dark:bg-amber-950/40 dark:text-amber-300 border border-amber-200 dark:border-amber-800">
-                                                        ✎ Belum Disimpan
+                                                    <span class="inline-flex items-center gap-1 px-2 py-1 rounded-full text-[10px] font-bold bg-amber-50 text-amber-700 dark:bg-amber-950/40 dark:text-amber-300 border border-amber-200 dark:border-amber-800">
+                                                        <x-heroicon-o-pencil class="w-3 h-3" />
+                                                        <span>Belum Disimpan</span>
                                                     </span>
                                                 </template>
                                                 <template x-if="!row.is_touched && row.is_already_saved">
-                                                    <span class="inline-flex items-center px-2 py-1 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
-                                                        ✓ Tersimpan
+                                                    <span class="inline-flex items-center gap-1 px-2 py-1 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
+                                                        <x-heroicon-o-check class="w-3 h-3 stroke-[2.5]" />
+                                                        <span>Tersimpan</span>
                                                     </span>
                                                 </template>
                                                 <template x-if="!row.is_touched && !row.is_already_saved">

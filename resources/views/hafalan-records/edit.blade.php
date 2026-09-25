@@ -16,6 +16,17 @@
                             { id: {{ $student->id }}, name: '{{ addslashes($student->name) }}', nis: '{{ $student->student_number ?? '' }}', classId: '{{ $student->class_room_id }}', className: '{{ $student->classRoom?->name ?? '' }}' },
                         @endforeach
                     ],
+                    hafalans: [
+                        @forelse (old('surah_ids', []) as $index => $surahId)
+                            { surah_id: '{{ $surahId }}', ayah_start: '{{ old('ayah_starts')[$index] ?? '' }}', ayah_end: '{{ old('ayah_ends')[$index] ?? '' }}', submission_type: '{{ old('submission_types')[$index] ?? 'new' }}', score: '{{ old('scores')[$index] ?? '' }}', status: '{{ old('statuses')[$index] ?? 'passed' }}' },
+                        @empty
+                            @forelse ($hafalanRecord->surahs as $surahEntry)
+                                { surah_id: '{{ $surahEntry->surah_id }}', ayah_start: '{{ $surahEntry->ayah_start }}', ayah_end: '{{ $surahEntry->ayah_end }}', submission_type: '{{ $surahEntry->submission_type }}', score: '{{ $surahEntry->score ?? '' }}', status: '{{ $surahEntry->status }}' },
+                            @empty
+                                { surah_id: '', ayah_start: '', ayah_end: '', submission_type: 'new', score: '', status: 'passed' },
+                            @endforelse
+                        @endforelse
+                    ],
                     get filteredStudents() {
                         if (!this.selectedClass) return this.allStudents;
                         return this.allStudents.filter(s => s.classId == this.selectedClass);
@@ -70,155 +81,6 @@
                         </div>
 
                         <div>
-                            <label for="surah_id" class="block text-sm font-medium text-gray-700">
-                                Surah
-                            </label>
-
-                            <select
-                                id="surah_id"
-                                name="surah_id"
-                                class="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
-                                required
-                            >
-                                <option value="">Pilih Surah</option>
-                                @foreach ($surahs as $surah)
-                                    <option value="{{ $surah->id }}" @selected((string) old('surah_id', $hafalanRecord->surah_id) === (string) $surah->id)>
-                                        {{ $surah->number }}. {{ $surah->name_latin }} — {{ $surah->total_ayah }} ayat
-                                    </option>
-                                @endforeach
-                            </select>
-
-                            @error('surah_id')
-                                <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
-                            @enderror
-                        </div>
-
-                        <div>
-                            <label for="ayah_start" class="block text-sm font-medium text-gray-700">
-                                Ayat Mulai
-                            </label>
-
-                            <input
-                                id="ayah_start"
-                                name="ayah_start"
-                                type="number"
-                                min="1"
-                                value="{{ old('ayah_start', $hafalanRecord->ayah_start) }}"
-                                class="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
-                                required
-                            >
-
-                            @error('ayah_start')
-                                <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
-                            @enderror
-                        </div>
-
-                        <div>
-                            <label for="ayah_end" class="block text-sm font-medium text-gray-700">
-                                Ayat Akhir
-                            </label>
-
-                            <input
-                                id="ayah_end"
-                                name="ayah_end"
-                                type="number"
-                                min="1"
-                                value="{{ old('ayah_end', $hafalanRecord->ayah_end) }}"
-                                class="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
-                                required
-                            >
-
-                            @error('ayah_end')
-                                <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
-                            @enderror
-                        </div>
-
-                        <div>
-                            <label for="baris" class="block text-sm font-medium text-gray-700">
-                                Baris (Manual)
-                            </label>
-
-                            <input
-                                id="baris"
-                                name="baris"
-                                type="number"
-                                step="0.1"
-                                min="0"
-                                value="{{ old('baris', $hafalanRecord->baris) }}"
-                                class="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
-                            >
-
-                            @error('baris')
-                                <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
-                            @enderror
-                        </div>
-
-                        <div>
-                            <label for="submission_type" class="block text-sm font-medium text-gray-700">
-                                Jenis Setoran
-                            </label>
-
-                            <select
-                                id="submission_type"
-                                name="submission_type"
-                                class="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
-                                required
-                            >
-                                <option value="new" @selected(old('submission_type', $hafalanRecord->submission_type) === 'new')>Baru</option>
-                                <option value="continuation" @selected(old('submission_type', $hafalanRecord->submission_type) === 'continuation')>Lanjutan</option>
-                                <option value="revision" @selected(old('submission_type', $hafalanRecord->submission_type) === 'revision')>Perbaikan</option>
-                            </select>
-
-                            @error('submission_type')
-                                <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
-                            @enderror
-                        </div>
-
-                        <div>
-                            <label for="score" class="block text-sm font-medium text-gray-700">
-                                Nilai (Skala A - E)
-                            </label>
-
-                            <select
-                                id="score"
-                                name="score"
-                                class="mt-1 block w-full rounded-md border-gray-300 shadow-sm text-sm"
-                            >
-                                <option value="">Pilih Nilai</option>
-                                <option value="95" @selected(old('score', $hafalanRecord->score) == 95 || ($hafalanRecord->score >= 90))>A (Sangat Baik)</option>
-                                <option value="85" @selected(old('score', $hafalanRecord->score) == 85 || ($hafalanRecord->score >= 80 && $hafalanRecord->score < 90))>B (Baik)</option>
-                                <option value="75" @selected(old('score', $hafalanRecord->score) == 75 || ($hafalanRecord->score >= 70 && $hafalanRecord->score < 80))>C (Cukup)</option>
-                                <option value="65" @selected(old('score', $hafalanRecord->score) == 65 || ($hafalanRecord->score >= 60 && $hafalanRecord->score < 70))>D (Kurang)</option>
-                                <option value="55" @selected(old('score', $hafalanRecord->score) == 55 || ($hafalanRecord->score < 60 && $hafalanRecord->score !== null))>E (Sangat Kurang)</option>
-                            </select>
-
-                            @error('score')
-                                <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
-                            @enderror
-                        </div>
-
-                        <div>
-                            <label for="status" class="block text-sm font-medium text-gray-700">
-                                Status Setoran
-                            </label>
-
-                            <select
-                                id="status"
-                                name="status"
-                                class="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
-                                required
-                            >
-                                <option value="passed" @selected(old('status', $hafalanRecord->status) === 'passed')>Lulus</option>
-                                <option value="repeat" @selected(old('status', $hafalanRecord->status) === 'repeat')>Ulang</option>
-                                <option value="needs_improvement" @selected(old('status', $hafalanRecord->status) === 'needs_improvement')>Perlu Perbaikan</option>
-                            </select>
-
-                            @error('status')
-                                <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
-                            @enderror
-                        </div>
-
-                        <div>
                             <label for="submitted_at" class="block text-sm font-medium text-gray-700">
                                 Tanggal Setoran
                             </label>
@@ -236,23 +98,110 @@
                                 <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
                             @enderror
                         </div>
+                    </div>
 
-                        <div class="md:col-span-2">
-                            <label for="notes" class="block text-sm font-medium text-gray-700">
-                                Catatan Guru
-                            </label>
-
-                            <textarea
-                                id="notes"
-                                name="notes"
-                                rows="4"
-                                class="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
-                            >{{ old('notes', $hafalanRecord->notes) }}</textarea>
-
-                            @error('notes')
-                                <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
-                            @enderror
+                    <!-- Dynamic Setoran List -->
+                    <div class="mt-2 border border-gray-200 rounded-lg p-5 bg-gray-50/50 space-y-4">
+                        <div class="flex items-center justify-between">
+                            <h3 class="text-xs font-bold uppercase text-gray-600 tracking-wider">
+                                Daftar Setoran Hafalan
+                            </h3>
+                            <button type="button"
+                                    @click="hafalans.push({ surah_id: '', ayah_start: '', ayah_end: '', submission_type: 'new', score: '', status: 'passed' })"
+                                    class="inline-flex items-center px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded text-xs font-semibold shadow-sm transition-colors cursor-pointer">
+                                + Tambah Baris Setoran
+                            </button>
                         </div>
+
+                        <div class="space-y-4">
+                            <template x-for="(item, index) in hafalans" :key="index">
+                                <div class="bg-white p-4 rounded-lg border border-gray-200 shadow-sm relative space-y-4">
+                                    <div class="flex items-center justify-between border-b pb-2">
+                                        <span class="text-xs font-bold text-gray-500" x-text="'Setoran #' + (index + 1)"></span>
+                                        <button type="button"
+                                                @click="if (hafalans.length > 1) { hafalans.splice(index, 1); } else { item.surah_id = ''; item.ayah_start = ''; item.ayah_end = ''; item.submission_type = 'new'; item.score = ''; item.status = 'passed'; }"
+                                                class="text-xs text-red-600 hover:text-red-800 font-medium cursor-pointer">
+                                            Hapus
+                                        </button>
+                                    </div>
+
+                                    <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-6 gap-4">
+                                        <div class="col-span-1 md:col-span-2">
+                                            <label class="block text-xs font-medium text-gray-700 mb-1">Surah</label>
+                                            <select :name="'surah_ids['+index+']'" x-model="item.surah_id"
+                                                    class="block w-full rounded-md border-gray-300 text-xs" required>
+                                                <option value="">Pilih Surah</option>
+                                                @foreach ($surahs as $surah)
+                                                    <option value="{{ $surah->id }}">{{ $surah->number }}. {{ $surah->name_latin }} — {{ $surah->total_ayah }} ayat</option>
+                                                @endforeach
+                                            </select>
+                                        </div>
+
+                                        <div>
+                                            <label class="block text-xs font-medium text-gray-700 mb-1">Ayat Mulai</label>
+                                            <input type="number" min="1" :name="'ayah_starts['+index+']'" x-model="item.ayah_start"
+                                                   class="block w-full rounded-md border-gray-300 text-xs" required>
+                                        </div>
+
+                                        <div>
+                                            <label class="block text-xs font-medium text-gray-700 mb-1">Ayat Akhir</label>
+                                            <input type="number" min="1" :name="'ayah_ends['+index+']'" x-model="item.ayah_end"
+                                                   class="block w-full rounded-md border-gray-300 text-xs" required>
+                                        </div>
+
+                                        <div>
+                                            <label class="block text-xs font-medium text-gray-700 mb-1">Jenis Setoran</label>
+                                            <select :name="'submission_types['+index+']'" x-model="item.submission_type"
+                                                    class="block w-full rounded-md border-gray-300 text-xs" required>
+                                                <option value="new">Baru</option>
+                                                <option value="continuation">Lanjutan</option>
+                                                <option value="revision">Perbaikan</option>
+                                            </select>
+                                        </div>
+
+                                        <div>
+                                            <label class="block text-xs font-medium text-gray-700 mb-1">Nilai (Skala A - E)</label>
+                                            <select :name="'scores['+index+']'" x-model="item.score"
+                                                    class="block w-full rounded-md border-gray-300 text-xs">
+                                                <option value="">Pilih Nilai</option>
+                                                <option value="95">A (Sangat Baik)</option>
+                                                <option value="85">B (Baik)</option>
+                                                <option value="75">C (Cukup)</option>
+                                                <option value="65">D (Kurang)</option>
+                                                <option value="55">E (Sangat Kurang)</option>
+                                            </select>
+                                        </div>
+
+                                        <div class="col-span-1 md:col-span-2">
+                                            <label class="block text-xs font-medium text-gray-700 mb-1">Status Setoran</label>
+                                            <select :name="'statuses['+index+']'" x-model="item.status"
+                                                    class="block w-full rounded-md border-gray-300 text-xs" required>
+                                                <option value="passed">Lulus</option>
+                                                <option value="repeat">Ulang</option>
+                                                <option value="needs_improvement">Perlu Perbaikan</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                </div>
+                            </template>
+                        </div>
+                    </div>
+
+                    <div class="mt-2">
+                        <label for="notes" class="block text-sm font-medium text-gray-700">
+                            Catatan Guru (Berlaku untuk semua setoran di atas)
+                        </label>
+
+                        <textarea
+                            id="notes"
+                            name="notes"
+                            rows="4"
+                            class="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
+                        >{{ old('notes', $hafalanRecord->notes) }}</textarea>
+
+                        @error('notes')
+                            <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                        @enderror
                     </div>
 
                     <div class="flex items-center justify-end gap-3">

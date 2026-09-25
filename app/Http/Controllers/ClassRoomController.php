@@ -9,6 +9,7 @@ use App\Models\HafalanRecord;
 use App\Models\Program;
 use App\Models\UmmiRecord;
 use App\Models\User;
+use App\Services\SchoolCalendar;
 use App\Services\SimpleXlsxReader;
 use App\Services\SimpleXlsxWriter;
 use App\Services\StudentProgressService;
@@ -28,7 +29,7 @@ class ClassRoomController extends Controller
             ->get();
 
         $classRooms = ClassRoom::query()
-            ->with(['program', 'pendampingAdab', 'pendampingAdabList'])
+            ->with(['program', 'pendampingAdab', 'pendampingAdabList', 'waliKelas'])
             ->withCount('students')
             ->when($request->filled('program_id'), function ($query) use ($request) {
                 $query->where('program_id', $request->integer('program_id'));
@@ -56,7 +57,31 @@ class ClassRoomController extends Controller
             ->orderBy('name')
             ->get();
 
-        return view('class-rooms.create', compact('programs', 'pendampingList'));
+        $waliKelasList = $this->waliKelasCandidates();
+
+        return view('class-rooms.create', compact('programs', 'pendampingList', 'waliKelasList'));
+    }
+
+    /**
+     * User dengan role wali_kelas yang belum ditugaskan ke kelas lain (satu wali kelas
+     * cuma satu kelas), plus yang sedang ditugaskan ke kelas ini sendiri kalau ada.
+     */
+    private function waliKelasCandidates(?int $currentlyAssignedId = null)
+    {
+        return User::query()
+            ->where(function ($q) use ($currentlyAssignedId) {
+                $q->where(function ($sub) {
+                    $sub->whereHas('role', fn ($r) => $r->where('name', 'wali_kelas'))
+                        ->orWhereHas('roles', fn ($r) => $r->where('name', 'wali_kelas'));
+                })->whereDoesntHave('waliKelasClassRoom');
+
+                if ($currentlyAssignedId) {
+                    $q->orWhere('id', $currentlyAssignedId);
+                }
+            })
+            ->where('status', 'active')
+            ->orderBy('name')
+            ->get();
     }
 
     public function store(StoreClassRoomRequest $request): RedirectResponse
@@ -132,11 +157,13 @@ class ClassRoomController extends Controller
         $allStudents = $classRoom->students()->with(['teacher.user'])->orderBy('name')->get();
 
         foreach ($allStudents as $index => $std) {
-            $records = HafalanRecord::with('surah')
-                ->where('student_id', $std->id)
-                ->whereBetween('submitted_at', [$startDate, $endDate])
-                ->where('status', 'passed')
-                ->get();
+            $records = HafalanRecord::flattenSurahs(
+                HafalanRecord::with(['surahs' => fn ($q) => $q->where('status', 'passed')->with('surah')])
+                    ->where('student_id', $std->id)
+                    ->whereBetween('submitted_at', [$startDate, $endDate])
+                    ->whereHas('surahs', fn ($q) => $q->where('status', 'passed'))
+                    ->get()
+            );
 
             $surahNames = [];
             $ayatRanges = [];
@@ -222,11 +249,13 @@ class ClassRoomController extends Controller
         $allStudents = $classRoom->students()->with(['teacher.user'])->orderBy('name')->get();
 
         foreach ($allStudents as $index => $std) {
-            $records = HafalanRecord::with('surah')
-                ->where('student_id', $std->id)
-                ->whereBetween('submitted_at', [$startDate, $endDate])
-                ->where('status', 'passed')
-                ->get();
+            $records = HafalanRecord::flattenSurahs(
+                HafalanRecord::with(['surahs' => fn ($q) => $q->where('status', 'passed')->with('surah')])
+                    ->where('student_id', $std->id)
+                    ->whereBetween('submitted_at', [$startDate, $endDate])
+                    ->whereHas('surahs', fn ($q) => $q->where('status', 'passed'))
+                    ->get()
+            );
 
             $surahNames = [];
             $ayatRanges = [];
@@ -297,7 +326,9 @@ class ClassRoomController extends Controller
             ->orderBy('name')
             ->get();
 
-        return view('class-rooms.edit', compact('classRoom', 'programs', 'pendampingList'));
+        $waliKelasList = $this->waliKelasCandidates($classRoom->wali_kelas_user_id);
+
+        return view('class-rooms.edit', compact('classRoom', 'programs', 'pendampingList', 'waliKelasList'));
     }
 
     public function update(UpdateClassRoomRequest $request, ClassRoom $classRoom): RedirectResponse
@@ -512,7 +543,7 @@ class ClassRoomController extends Controller
 
         $studentsData = [];
         foreach ($students as $student) {
-            $records = UmmiRecord::with('surah')
+            $records = UmmiRecord::with('surahs.surah')
                 ->where('student_id', $student->id)
                 ->orderBy('tanggal')
                 ->orderBy('tatap_muka')
@@ -557,7 +588,72 @@ class ClassRoomController extends Controller
             ];
         }
 
-        return view('class-rooms.schedules', compact('scheduleBoard', 'classRooms', 'daysOfWeek'));
+        // Jadwal per pekan (tab "Jadwal Per Pekan"): jadwal khusus & kunci pekan.
+        $calendar = app(SchoolCalendar::class);
+        $weekStart = $calendar->weekStart(Carbon::parse($request->input('week', today()->toDateString())));
+        $weekStates = $classRooms->mapWithKeys(fn (ClassRoom $class) => [$class->id => $calendar->weekState($class, $weekStart)]);
+        $activeTab = $request->input('tab') === 'weekly' ? 'weekly' : 'default';
+
+        return view('class-rooms.schedules', compact('scheduleBoard', 'classRooms', 'daysOfWeek', 'weekStart', 'weekStates', 'activeTab'));
+    }
+
+    /**
+     * Simpan jadwal khusus satu pekan untuk semua kelas; kelas yang pekannya terkunci dilewati.
+     */
+    public function scheduleWeekUpdate(Request $request): RedirectResponse
+    {
+        $validated = $request->validate([
+            'week' => ['required', 'date'],
+            'schedules' => ['array'],
+            'schedules.*' => ['array'],
+            'schedules.*.*' => ['integer', 'between:1,7'],
+        ]);
+        $calendar = app(SchoolCalendar::class);
+        $weekStart = $calendar->weekStart(Carbon::parse($validated['week']));
+        $lockedCount = 0;
+
+        // Kelas tanpa centang = tidak ada pertemuan pekan itu (mis. pekan ASTS).
+        foreach (ClassRoom::query()->get() as $class) {
+            if (! $calendar->saveWeek($class, $weekStart, $validated['schedules'][$class->id] ?? [], $request->user()?->id)) {
+                $lockedCount++;
+            }
+        }
+
+        $message = 'Jadwal pekan '.$weekStart->format('d-m-Y').' berhasil disimpan.';
+        if ($lockedCount > 0) {
+            $message .= " {$lockedCount} kelas terkunci tidak diubah.";
+        }
+
+        return redirect()
+            ->route('class-schedules.index', ['tab' => 'weekly', 'week' => $weekStart->toDateString()])
+            ->with('success', $message);
+    }
+
+    /**
+     * Kunci / buka kunci jadwal satu pekan (semua kelas atau kelas tertentu).
+     */
+    public function scheduleWeekLock(Request $request): RedirectResponse
+    {
+        $validated = $request->validate([
+            'week' => ['required', 'date'],
+            'action' => ['required', 'in:lock,unlock'],
+            'class_room_id' => ['nullable', 'integer', 'exists:class_rooms,id'],
+        ]);
+        $calendar = app(SchoolCalendar::class);
+        $weekStart = $calendar->weekStart(Carbon::parse($validated['week']));
+        $classes = ClassRoom::query()
+            ->when($validated['class_room_id'] ?? null, fn ($q, $id) => $q->whereKey($id))
+            ->get();
+
+        foreach ($classes as $class) {
+            $validated['action'] === 'lock'
+                ? $calendar->lockWeek($class, $weekStart, $request->user()?->id)
+                : $calendar->unlockWeek($class, $weekStart);
+        }
+
+        return redirect()
+            ->route('class-schedules.index', ['tab' => 'weekly', 'week' => $weekStart->toDateString()])
+            ->with('success', $validated['action'] === 'lock' ? 'Jadwal pekan ini dikunci.' : 'Kunci jadwal pekan ini dibuka.');
     }
 
     public function scheduleUpdate(Request $request): RedirectResponse

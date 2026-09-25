@@ -4,8 +4,9 @@
             <h2 class="font-semibold text-xl text-gray-800 dark:text-zinc-200 leading-tight">
                 Input Spreadsheet Perkembangan Kelas
             </h2>
-            <a href="{{ route('hafalan-records.index') }}" class="inline-flex items-center px-3 py-1.5 bg-gray-100 dark:bg-zinc-800 text-gray-700 dark:text-zinc-300 rounded-lg text-xs font-semibold hover:bg-gray-200 transition">
-                ← Kembali ke List
+            <a href="{{ route('hafalan-records.index') }}" class="inline-flex items-center gap-1 px-3 py-1.5 bg-gray-100 dark:bg-zinc-800 text-gray-700 dark:text-zinc-300 rounded-lg text-xs font-semibold hover:bg-gray-200 transition">
+                <x-heroicon-m-arrow-left class="w-3.5 h-3.5 shrink-0" />
+                <span>Kembali ke List</span>
             </a>
         </div>
     </x-slot>
@@ -17,7 +18,11 @@
                 tab: 'hafalan',
                 selectedClass: '{{ $selectedClassId }}',
                 selectedMonth: '{{ $selectedMonth }}',
-                selectedMobileDate: '{{ $dates[0] ?? '' }}',
+                selectedMonthNum: '{{ explode('-', $selectedMonth)[1] ?? date('m') }}',
+                selectedYearNum: '{{ explode('-', $selectedMonth)[0] ?? date('Y') }}',
+                todayDate: '{{ now()->setTimezone(config('app.timezone', 'Asia/Jakarta'))->toDateString() }}',
+                currentMonth: '{{ now()->setTimezone(config('app.timezone', 'Asia/Jakarta'))->format('Y-m') }}',
+                selectedMobileDate: '{{ in_array(now()->setTimezone(config('app.timezone', 'Asia/Jakarta'))->toDateString(), $dates) ? now()->setTimezone(config('app.timezone', 'Asia/Jakarta'))->toDateString() : ($dates[0] ?? '') }}',
                 students: @json($students),
                 surahs: @json($surahs),
                 dates: @json($dates),
@@ -38,9 +43,20 @@
                     });
 
                     window.addEventListener('beforeunload', (e) => {
-                        if (this.isDirty) {
+                        if (this.isDirty && !this.isSaving) {
                             e.preventDefault();
                             e.returnValue = '';
+                        }
+                    });
+
+                    // Warn on internal link click navigation if unsaved changes exist
+                    document.addEventListener('click', (e) => {
+                        const link = e.target.closest('a');
+                        if (link && link.href && !link.target && !link.hasAttribute('download') && this.isDirty && !this.isSaving) {
+                            if (!confirm('Peringatan: Ada perubahan nilai/presensi di spreadsheet yang belum Anda simpan. Jika Anda meninggalkan halaman ini, perubahan tersebut akan hilang. Apakah Anda yakin ingin keluar?')) {
+                                e.preventDefault();
+                                e.stopPropagation();
+                            }
                         }
                     });
 
@@ -94,12 +110,79 @@
 
                     this.$nextTick(() => {
                         let isReady = true;
+                        this.checkDraft();
                         this.$watch('gridData', () => {
                             if (isReady) {
                                 this.isDirty = true;
+                                window._hasUnsavedDraft = true;
+                                this.saveDraftDebounced();
                             }
                         }, { deep: true });
+
+                        // Auto-scroll to today's column on initial view if present
+                        if (this.dates.includes(this.todayDate)) {
+                            setTimeout(() => {
+                                const col = document.getElementById('col-header-' + this.todayDate);
+                                if (col) {
+                                    col.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+                                }
+                            }, 200);
+                        }
                     });
+                },
+                draftKey: 'tad_draft_spreadsheet_{{ $selectedClassId }}_{{ $selectedMonth }}',
+                hasDraftAvailable: false,
+                draftTimestamp: '',
+                saveDraftTimer: null,
+
+                saveDraftDebounced() {
+                    clearTimeout(this.saveDraftTimer);
+                    this.saveDraftTimer = setTimeout(() => {
+                        try {
+                            const payload = {
+                                timestamp: new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }),
+                                rawTime: Date.now(),
+                                gridData: this.gridData,
+                                tab: this.tab
+                            };
+                            localStorage.setItem(this.draftKey, JSON.stringify(payload));
+                        } catch (e) {}
+                    }, 1000);
+                },
+
+                checkDraft() {
+                    try {
+                        const raw = localStorage.getItem(this.draftKey);
+                        if (!raw) return;
+                        const parsed = JSON.parse(raw);
+                        if (parsed && parsed.gridData && (Date.now() - (parsed.rawTime || 0) < 7 * 24 * 60 * 60 * 1000)) {
+                            this.hasDraftAvailable = true;
+                            this.draftTimestamp = parsed.timestamp || 'sebelumnya';
+                        }
+                    } catch (e) {}
+                },
+
+                restoreDraft() {
+                    try {
+                        const raw = localStorage.getItem(this.draftKey);
+                        if (!raw) return;
+                        const parsed = JSON.parse(raw);
+                        if (parsed && parsed.gridData) {
+                            this.gridData = parsed.gridData;
+                            if (parsed.tab) this.tab = parsed.tab;
+                            this.isDirty = true;
+                            window._hasUnsavedDraft = true;
+                            this.hasDraftAvailable = false;
+                            alert('Data draf berhasil dipulihkan ke formulir spreadsheet!');
+                        }
+                    } catch (e) {
+                        alert('Gagal memulihkan draf.');
+                    }
+                },
+
+                dismissDraft() {
+                    localStorage.removeItem(this.draftKey);
+                    this.hasDraftAvailable = false;
                 },
                 getNextHafalan(studentId, cellHafalans = []) {
                     let validPrevious = (cellHafalans || []).filter(h => h.surah_id && h.ayah_end);
@@ -185,10 +268,38 @@
                         });
                     }
                 },
+                jumpToToday() {
+                    if (this.dates.includes(this.todayDate)) {
+                        this.scrollToColumn(this.todayDate);
+                    } else {
+                        if (confirm('Tanggal hari ini (' + this.formatDateIndo(this.todayDate) + ') tidak ada dalam filter aktif saat ini. Buka lembar kerja bulan ini?')) {
+                            window.location.href = "{{ route('spreadsheet-input.index') }}?class_room_id=" + this.selectedClass + "&month=" + this.currentMonth + "&week=all";
+                        }
+                    }
+                },
+                scrollToColumn(dateStr) {
+                    this.selectedMobileDate = dateStr;
+                    this.$nextTick(() => {
+                        const col = document.getElementById('col-header-' + dateStr);
+                        if (col) {
+                            col.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+                            col.classList.add('ring-2', 'ring-teal-500');
+                            setTimeout(() => col.classList.remove('ring-2', 'ring-teal-500'), 1500);
+                        }
+                    });
+                },
+                formatDateIndo(dateStr) {
+                    if (!dateStr) return '';
+                    const parts = dateStr.split('-');
+                    if (parts.length !== 3) return dateStr;
+                    return `${parts[2]}/${parts[1]}/${parts[0]}`;
+                },
                 submitForm() {
                     if (this.isSaving) return;
                     this.isSaving = true;
                     this.isDirty = false;
+                    window._hasUnsavedDraft = false;
+                    localStorage.removeItem(this.draftKey);
 
                     this.$nextTick(() => {
                         const form = document.getElementById('spreadsheet-form');
@@ -223,10 +334,35 @@
                         </select>
                     </div>
                     <div>
-                        <label for="month" class="block text-xs font-bold uppercase tracking-wider text-gray-700 dark:text-zinc-300 mb-1.5">
+                        <label class="block text-xs font-bold uppercase tracking-wider text-gray-700 dark:text-zinc-300 mb-1.5">
                             Pilih Bulan & Tahun
                         </label>
-                        <input type="month" id="month" name="month" x-model="selectedMonth" onchange="this.form.submit()" class="block w-full rounded-xl border-gray-300 dark:border-zinc-700 bg-transparent text-xs sm:text-sm py-2.5 px-3 focus:border-teal-500 focus:ring-teal-500 dark:text-white font-medium cursor-pointer shadow-xs">
+                        {{-- Dropdown Bulan/Tahun biasa dipakai, bukan <input type="month"> -- rendering
+                             input type="month" tidak konsisten (kadang jadi kotak teks kosong tanpa
+                             picker) di sebagian browser HP, walau tampil normal di iPad/laptop. --}}
+                        <div class="grid grid-cols-2 gap-2">
+                            <select
+                                name="month_num"
+                                x-model="selectedMonthNum"
+                                @change="selectedMonth = selectedYearNum + '-' + selectedMonthNum; $nextTick(() => $el.form.submit())"
+                                class="block w-full rounded-xl border-gray-300 dark:border-zinc-700 bg-transparent text-xs sm:text-sm py-2.5 px-3 focus:border-teal-500 focus:ring-teal-500 dark:text-white font-medium cursor-pointer shadow-xs"
+                            >
+                                @foreach (['01' => 'Januari', '02' => 'Februari', '03' => 'Maret', '04' => 'April', '05' => 'Mei', '06' => 'Juni', '07' => 'Juli', '08' => 'Agustus', '09' => 'September', '10' => 'Oktober', '11' => 'November', '12' => 'Desember'] as $num => $label)
+                                    <option value="{{ $num }}" class="dark:bg-zinc-900">{{ $label }}</option>
+                                @endforeach
+                            </select>
+                            <select
+                                name="year_num"
+                                x-model="selectedYearNum"
+                                @change="selectedMonth = selectedYearNum + '-' + selectedMonthNum; $nextTick(() => $el.form.submit())"
+                                class="block w-full rounded-xl border-gray-300 dark:border-zinc-700 bg-transparent text-xs sm:text-sm py-2.5 px-3 focus:border-teal-500 focus:ring-teal-500 dark:text-white font-medium cursor-pointer shadow-xs"
+                            >
+                                @foreach (range((int) date('Y') - 1, (int) date('Y') + 1) as $y)
+                                    <option value="{{ $y }}" class="dark:bg-zinc-900">{{ $y }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                        <input type="hidden" name="month" x-model="selectedMonth">
                     </div>
                     @if (!$isWeekly)
                     <div>
@@ -254,14 +390,29 @@
                 </form>
 
                 <!-- Active Dates Number Toggles -->
-                @if (!$isWeekly && count($dates) > 0)
+                @if (count($dates) > 0)
+                @php
+                    $todayDate = now()->setTimezone(config('app.timezone', 'Asia/Jakarta'))->toDateString();
+                @endphp
                 <div class="mt-4 pt-4 border-t border-gray-100 dark:border-zinc-800">
-                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-1 mb-2">
-                        <label class="block text-xs font-bold uppercase tracking-wider text-gray-700 dark:text-zinc-300">
-                            📅 Tanggal Aktif ({{ $selectedWeek === 'all' ? 'Semua Pekan' : 'Pekan ' . $selectedWeek }}):
-                        </label>
-                        <span class="text-[11px] text-gray-500 dark:text-zinc-400">
-                            Klik nomor tanggal untuk melompat/fokus ke tanggal tersebut
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-2.5">
+                        <div class="flex items-center gap-2 flex-wrap">
+                            <label class="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-gray-700 dark:text-zinc-300">
+                                <x-heroicon-o-calendar class="w-3.5 h-3.5 text-teal-600 dark:text-teal-400" />
+                                <span>Tanggal Aktif ({{ $selectedWeek === 'all' ? 'Semua Pekan' : 'Pekan ' . $selectedWeek }}):</span>
+                            </label>
+                            <button
+                                type="button"
+                                @click="jumpToToday()"
+                                title="Lompat ke tanggal hari ini"
+                                class="inline-flex items-center gap-1.5 px-2.5 py-1 bg-teal-50 hover:bg-teal-100 dark:bg-teal-950/50 dark:hover:bg-teal-900/60 text-teal-700 dark:text-teal-300 border border-teal-200 dark:border-teal-700/60 rounded-xl text-[11px] font-bold shadow-xs transition cursor-pointer active:scale-95"
+                            >
+                                <span class="w-2 h-2 rounded-full bg-teal-500 animate-pulse"></span>
+                                <span>Lompat ke Hari Ini</span>
+                            </button>
+                        </div>
+                        <span class="text-[11px] text-gray-500 dark:text-zinc-400 hidden sm:inline">
+                            Klik tanggal untuk fokus ke kolom/hari tersebut
                         </span>
                     </div>
 
@@ -270,20 +421,55 @@
                             @php
                                 $dDayNum = date('j', strtotime($d));
                                 $dDayName = \Carbon\Carbon::parse($d)->translatedFormat('D');
+                                $isToday = ($d === $todayDate);
                             @endphp
                             <button
                                 type="button"
-                                @click="selectedMobileDate = '{{ $d }}'"
-                                :class="selectedMobileDate === '{{ $d }}' ? 'bg-indigo-600 text-white font-black ring-2 ring-indigo-500 scale-105 shadow-sm' : 'bg-gray-100 dark:bg-zinc-800 text-gray-700 dark:text-zinc-300 hover:bg-gray-200 dark:hover:bg-zinc-700 border border-gray-200 dark:border-zinc-700/60'"
-                                class="px-2.5 py-1 rounded-xl text-xs transition cursor-pointer flex items-center gap-1 min-w-[40px] justify-center"
+                                @click="scrollToColumn('{{ $d }}')"
+                                :class="selectedMobileDate === '{{ $d }}' ? 'bg-indigo-600 text-white font-black ring-2 ring-indigo-500 scale-105 shadow-sm' : '{{ $isToday ? 'bg-teal-50 dark:bg-teal-950/40 text-teal-800 dark:text-teal-200 font-bold border-2 border-teal-400 dark:border-teal-600' : 'bg-gray-100 dark:bg-zinc-800 text-gray-700 dark:text-zinc-300 hover:bg-gray-200 dark:hover:bg-zinc-700 border border-gray-200 dark:border-zinc-700/60' }}'"
+                                class="px-2.5 py-1 rounded-xl text-xs transition cursor-pointer flex items-center gap-1 min-w-[40px] justify-center relative"
+                                title="{{ $isToday ? 'Hari Ini (' . $dDayNum . ' ' . $dDayName . ')' : '' }}"
                             >
                                 <span class="font-bold text-xs">{{ $dDayNum }}</span>
                                 <span class="text-[9px] opacity-75 uppercase">{{ $dDayName }}</span>
+                                @if ($isToday)
+                                    <span class="absolute -top-1 -right-1 w-2.5 h-2.5 bg-teal-500 rounded-full border-2 border-white dark:border-zinc-900" title="Hari Ini"></span>
+                                @endif
                             </button>
                         @endforeach
                     </div>
                 </div>
                 @endif
+            </div>
+
+            <!-- DRAFT RECOVERY BANNER -->
+            <div x-show="hasDraftAvailable"
+                 x-transition:enter="transition ease-out duration-300 transform"
+                 x-transition:enter-start="opacity-0 -translate-y-2"
+                 x-transition:enter-end="opacity-100 translate-y-0"
+                 x-transition:leave="transition ease-in duration-200"
+                 class="bg-amber-50 dark:bg-amber-950/40 border border-amber-300 dark:border-amber-700/60 rounded-2xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-sm"
+                 style="display: none;">
+                <div class="flex items-center gap-3">
+                    <div class="w-9 h-9 rounded-xl bg-amber-500/20 text-amber-600 dark:text-amber-400 flex items-center justify-center shrink-0">
+                        <svg class="w-5 h-5 animate-pulse" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                        </svg>
+                    </div>
+                    <div>
+                        <h4 class="text-xs font-bold text-amber-900 dark:text-amber-200">Ditemukan Draf Belum Tersimpan</h4>
+                        <p class="text-[11px] text-amber-700 dark:text-amber-300/80">Ada perubahan nilai / presensi dari sesi sebelumnya (<span x-text="draftTimestamp" class="font-bold"></span>) yang belum tersimpan ke server. Pulihkan data ini?</p>
+                    </div>
+                </div>
+                <div class="flex items-center gap-2 shrink-0">
+                    <button type="button" @click="restoreDraft()" class="px-3.5 py-1.5 bg-amber-600 hover:bg-amber-700 active:scale-95 text-white rounded-xl text-xs font-bold transition shadow-xs cursor-pointer flex items-center gap-1.5">
+                        <x-heroicon-m-arrow-path class="w-3.5 h-3.5" />
+                        <span>Pulihkan Data Draf</span>
+                    </button>
+                    <button type="button" @click="dismissDraft()" class="px-3.5 py-1.5 bg-white dark:bg-zinc-800 text-zinc-600 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-700 border border-zinc-200 dark:border-zinc-700 rounded-xl text-xs font-semibold transition cursor-pointer">
+                        Abaikan
+                    </button>
+                </div>
             </div>
 
             <!-- TABS & SAVE ACTION -->
@@ -298,8 +484,18 @@
                     </button>
                 </div>
 
-                <!-- Submit Button -->
-                <div class="w-full sm:w-auto">
+                <!-- Actions -->
+                <div class="flex items-center gap-2 w-full sm:w-auto">
+                    <button
+                        type="button"
+                        @click="jumpToToday()"
+                        class="inline-flex items-center justify-center gap-1.5 px-3.5 py-2.5 bg-gray-100 hover:bg-teal-50 dark:bg-zinc-800 dark:hover:bg-teal-950/40 text-gray-700 hover:text-teal-700 dark:text-zinc-300 dark:hover:text-teal-300 border border-gray-200 dark:border-zinc-700 rounded-xl text-xs font-bold transition cursor-pointer min-h-[42px] active:scale-95"
+                        title="Fokus / Lompat ke kolom hari ini"
+                    >
+                        <span class="w-2 h-2 rounded-full bg-teal-500 animate-pulse"></span>
+                        <x-heroicon-o-calendar class="w-4 h-4 text-teal-600 dark:text-teal-400" />
+                        <span>Hari Ini</span>
+                    </button>
                     <button type="button" @click="submitForm()" :disabled="isSaving" class="w-full sm:w-auto inline-flex items-center justify-center px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 active:scale-95 disabled:bg-gray-400 text-white rounded-xl text-xs sm:text-sm font-bold shadow-md shadow-emerald-500/20 transition cursor-pointer gap-2 min-h-[42px]">
                         <template x-if="!isSaving">
                             <span class="inline-flex items-center gap-2">
@@ -334,33 +530,47 @@
                     <!-- ========================================== -->
                     <!-- DESKTOP / TABLET SPREADSHEET VIEW          -->
                     <!-- ========================================== -->
-                    <div class="hidden md:block bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 rounded-2xl overflow-x-auto overflow-y-auto touch-scroll max-h-[75vh] shadow-sm">
+                    <div class="hidden md:block bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 rounded-2xl overflow-x-auto overflow-y-auto touch-scroll max-h-[calc(100dvh-14rem)] overscroll-contain shadow-sm">
                         <table class="min-w-full divide-y divide-gray-200 dark:divide-zinc-800 table-fixed border-collapse">
                             <thead class="sticky top-0 z-30 bg-gray-100 dark:bg-zinc-800 shadow-sm">
                                 <tr>
-                                    <th class="sticky top-0 left-0 z-40 bg-gray-100 dark:bg-zinc-800 px-4 py-3 text-left text-xs font-bold text-gray-700 dark:text-zinc-300 uppercase tracking-wider w-48 border-r border-b border-gray-200 dark:border-zinc-700">
+                                    <th class="sticky top-0 left-0 z-40 bg-gray-100 dark:bg-zinc-800 px-4 py-3 text-left text-xs font-bold text-gray-700 dark:text-zinc-300 uppercase tracking-wider w-48 border-r-2 border-b border-gray-300 dark:border-zinc-700 shadow-[4px_0_8px_-2px_rgba(0,0,0,0.08)] dark:shadow-[4px_0_8px_-2px_rgba(0,0,0,0.4)]">
                                         Nama Murid
                                     </th>
                                     <template x-for="col in columns" :key="col.date">
-                                        <th class="sticky top-0 z-30 bg-gray-100 dark:bg-zinc-800 px-4 py-3 text-center text-xs font-bold text-gray-700 dark:text-zinc-300 uppercase tracking-wider w-64 border-r border-b border-gray-200 dark:border-zinc-700">
-                                            <span x-text="col.label" class="block"></span>
-                                            <span x-text="col.sub_label" class="block text-[10px] text-gray-400 font-medium normal-case mt-0.5"></span>
+                                        <th
+                                            :id="'col-header-' + col.date"
+                                            class="sticky top-0 z-30 px-4 py-3 text-center text-xs font-bold uppercase tracking-wider w-64 border-r border-b transition-colors"
+                                            :class="col.date === todayDate ? 'bg-teal-100/90 dark:bg-teal-950/80 text-teal-900 dark:text-teal-200 border-teal-300 dark:border-teal-700' : 'bg-gray-100 dark:bg-zinc-800 text-gray-700 dark:text-zinc-300 border-gray-200 dark:border-zinc-700'"
+                                        >
+                                            <div class="flex items-center justify-center gap-1.5">
+                                                <span x-text="col.label" class="block"></span>
+                                                <template x-if="col.date === todayDate">
+                                                    <span class="inline-flex items-center px-1.5 py-0.5 rounded-full text-[9px] font-extrabold bg-teal-600 text-white shadow-xs tracking-normal">
+                                                        HARI INI
+                                                    </span>
+                                                </template>
+                                            </div>
+                                            <span x-text="col.sub_label" class="block text-[10px] font-medium normal-case mt-0.5" :class="col.date === todayDate ? 'text-teal-700 dark:text-teal-300 font-bold' : 'text-gray-400'"></span>
                                         </th>
                                     </template>
                                 </tr>
                             </thead>
                             <tbody class="divide-y divide-gray-200 dark:divide-zinc-800 bg-white dark:bg-zinc-900">
                                 <template x-for="student in students" :key="student.id">
-                                    <tr class="hover:bg-gray-50/30 dark:hover:bg-zinc-850/10">
-                                        <!-- Sticky Name Column -->
-                                        <td class="sticky left-0 z-10 bg-white dark:bg-zinc-900 px-4 py-3 border-r dark:border-zinc-800 font-bold text-xs text-gray-900 dark:text-zinc-200 shadow-[2px_0_5px_rgba(0,0,0,0.05)]">
+                                    <tr class="group hover:bg-gray-50/60 dark:hover:bg-zinc-850/40 transition-colors">
+                                        <!-- Sticky Name Column with Distinct Freeze Line & Shadow -->
+                                        <td class="sticky left-0 z-20 bg-white dark:bg-zinc-900 group-hover:bg-gray-50 dark:group-hover:bg-zinc-850 px-4 py-3 border-r-2 border-b border-gray-300 dark:border-zinc-700 font-bold text-xs text-gray-900 dark:text-zinc-200 shadow-[4px_0_8px_-2px_rgba(0,0,0,0.08)] dark:shadow-[4px_0_8px_-2px_rgba(0,0,0,0.4)] transition-colors">
                                             <span x-text="student.name"></span>
                                             <span class="block text-[10px] text-gray-400 font-medium mt-0.5" x-text="student.tahfizh_level === 'ummi' ? 'Level: UMMI' : 'Level: ' + student.tahfizh_level"></span>
                                         </td>
 
                                         <!-- Date Columns -->
                                         <template x-for="date in dates" :key="date">
-                                            <td class="p-3 border-r dark:border-zinc-800 align-top">
+                                            <td
+                                                class="p-3 border-r border-b dark:border-zinc-800 align-top transition-colors"
+                                                :class="date === todayDate ? 'bg-teal-50/25 dark:bg-teal-950/15' : ''"
+                                            >
                                                 <div class="space-y-2" x-data="{ cell: gridData[student.id].dates[date] }">
                                                     <!-- PRESENSI PILLS (ATAS) -->
                                                     <div class="flex items-center justify-between border-b dark:border-zinc-800 pb-2">
@@ -762,37 +972,6 @@
                     </div>
                 </form>
             @endif
-
-            <!-- Floating Unsaved Changes Save Bar -->
-            <div x-show="isDirty"
-                 x-transition:enter="transition ease-out duration-300 transform"
-                 x-transition:enter-start="translate-y-12 opacity-0 scale-95"
-                 x-transition:enter-end="translate-y-0 opacity-100 scale-100"
-                 x-transition:leave="transition ease-in duration-200 transform"
-                 x-transition:leave-start="translate-y-0 opacity-100 scale-100"
-                 x-transition:leave-end="translate-y-12 opacity-0 scale-95"
-                 class="fixed bottom-20 md:bottom-6 left-1/2 -translate-x-1/2 z-[60] bg-zinc-900/95 text-white dark:bg-white/95 dark:text-zinc-900 px-5 py-3 rounded-2xl shadow-2xl backdrop-blur-md border border-zinc-700/80 dark:border-zinc-300 flex items-center gap-4 text-xs font-bold"
-                 style="display: none;">
-                <div class="flex items-center gap-2">
-                    <span class="w-2.5 h-2.5 rounded-full bg-amber-400 animate-ping"></span>
-                    <span>Ada perubahan setoran / presensi yang belum disimpan!</span>
-                </div>
-                <button type="button" @click="submitForm()" :disabled="isSaving" class="bg-emerald-600 hover:bg-emerald-700 disabled:bg-gray-400 text-white px-4 py-2 rounded-xl font-bold transition shadow-lg cursor-pointer flex items-center gap-1.5">
-                    <template x-if="!isSaving">
-                        <span class="inline-flex items-center gap-1.5">
-                            💾 Simpan Sekarang
-                        </span>
-                    </template>
-                    <template x-if="isSaving">
-                        <span class="inline-flex items-center gap-1.5">
-                            <svg class="animate-spin h-3.5 w-3.5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                            </svg> Menyimpan...
-                        </span>
-                    </template>
-                </button>
-            </div>
 
         </div>
     </div>

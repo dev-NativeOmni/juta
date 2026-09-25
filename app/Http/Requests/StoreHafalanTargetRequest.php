@@ -27,16 +27,10 @@ class StoreHafalanTargetRequest extends FormRequest
                 'integer',
                 Rule::exists('surahs', 'id'),
             ],
-            'ayah_start' => [
+            'ayah' => [
                 'required',
                 'integer',
                 'min:1',
-            ],
-            'ayah_end' => [
-                'required',
-                'integer',
-                'min:1',
-                'gte:ayah_start',
             ],
             'target_date' => [
                 'required',
@@ -60,10 +54,10 @@ class StoreHafalanTargetRequest extends FormRequest
         $validator->after(function ($validator) {
             $surah = Surah::find($this->input('surah_id'));
 
-            if ($surah && (int) $this->input('ayah_end') > $surah->total_ayah) {
+            if ($surah && (int) $this->input('ayah') > $surah->total_ayah) {
                 $validator->errors()->add(
-                    'ayah_end',
-                    'Ayat akhir tidak boleh melebihi jumlah ayat surah '.$surah->name_latin.' ('.$surah->total_ayah.' ayat).'
+                    'ayah',
+                    'Ayat tidak boleh melebihi jumlah ayat surah '.$surah->name_latin.' ('.$surah->total_ayah.' ayat).'
                 );
             }
 
@@ -107,8 +101,7 @@ class StoreHafalanTargetRequest extends FormRequest
         return [
             'student_id' => 'murid',
             'surah_id' => 'surah',
-            'ayah_start' => 'ayat mulai',
-            'ayah_end' => 'ayat akhir',
+            'ayah' => 'ayat (sampai)',
             'target_date' => 'tanggal target',
             'status' => 'status',
             'notes' => 'catatan',

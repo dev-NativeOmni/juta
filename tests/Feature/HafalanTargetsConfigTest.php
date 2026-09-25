@@ -53,6 +53,24 @@ class HafalanTargetsConfigTest extends TestCase
         ]);
     }
 
+    private function createHafalanRecord(array $overrides): HafalanRecord
+    {
+        $record = HafalanRecord::create([
+            'student_id' => $overrides['student_id'],
+            'teacher_id' => $overrides['teacher_id'] ?? $this->teacherProfile->id,
+            'submitted_at' => $overrides['submitted_at'] ?? now(),
+        ]);
+
+        $record->surahs()->create([
+            'surah_id' => $overrides['surah_id'],
+            'ayah_start' => $overrides['ayah_start'],
+            'ayah_end' => $overrides['ayah_end'],
+            'status' => $overrides['status'] ?? 'passed',
+        ]);
+
+        return $record;
+    }
+
     #[Test]
     public function super_admin_can_access_hafalan_targets_settings_page(): void
     {
@@ -161,9 +179,8 @@ class HafalanTargetsConfigTest extends TestCase
         ]);
 
         // Santri menyetor 40 ayat di Juz 30
-        HafalanRecord::create([
+        $this->createHafalanRecord([
             'student_id' => $student->id,
-            'teacher_id' => $this->teacherProfile->id,
             'surah_id' => $surahNaba->id,
             'ayah_start' => 1,
             'ayah_end' => 40,
@@ -219,9 +236,8 @@ class HafalanTargetsConfigTest extends TestCase
             'juz_end' => 30,
         ]);
 
-        HafalanRecord::create([
+        $this->createHafalanRecord([
             'student_id' => $student->id,
-            'teacher_id' => $this->teacherProfile->id,
             'surah_id' => $surahNaba->id,
             'ayah_start' => 1,
             'ayah_end' => 40,

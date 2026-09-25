@@ -100,13 +100,15 @@
                                     </div>
 
                                     <div class="flex items-center gap-2 self-stretch sm:self-center shrink-0">
-                                        <label class="flex-1 sm:flex-none flex items-center justify-center px-4 py-2 sm:py-1.5 border rounded-lg cursor-pointer text-xs font-bold transition select-none border-zinc-200 dark:border-zinc-800 text-zinc-700 dark:text-zinc-300 hover:border-emerald-300 dark:hover:border-emerald-700 min-h-[38px] active:scale-95" data-label-type="ya">
+                                        <label class="flex-1 sm:flex-none flex items-center justify-center gap-1 px-4 py-2 sm:py-1.5 border rounded-lg cursor-pointer text-xs font-bold transition select-none border-zinc-200 dark:border-zinc-800 text-zinc-700 dark:text-zinc-300 hover:border-emerald-300 dark:hover:border-emerald-700 min-h-[38px] active:scale-95" data-label-type="ya">
                                             <input type="radio" name="{{ $inputName }}" value="1" class="sr-only adab-radio" data-input="{{ $inputName }}" required>
-                                            ✓ Ya
+                                            <x-heroicon-o-check class="w-3.5 h-3.5 stroke-[2.5]" />
+                                            <span>Ya</span>
                                         </label>
-                                        <label class="flex-1 sm:flex-none flex items-center justify-center px-4 py-2 sm:py-1.5 border rounded-lg cursor-pointer text-xs font-bold transition select-none border-zinc-200 dark:border-zinc-800 text-zinc-700 dark:text-zinc-300 hover:border-rose-300 dark:hover:border-rose-700 min-h-[38px] active:scale-95" data-label-type="tidak">
+                                        <label class="flex-1 sm:flex-none flex items-center justify-center gap-1 px-4 py-2 sm:py-1.5 border rounded-lg cursor-pointer text-xs font-bold transition select-none border-zinc-200 dark:border-zinc-800 text-zinc-700 dark:text-zinc-300 hover:border-rose-300 dark:hover:border-rose-700 min-h-[38px] active:scale-95" data-label-type="tidak">
                                             <input type="radio" name="{{ $inputName }}" value="0" class="sr-only adab-radio" data-input="{{ $inputName }}" required>
-                                            ✗ Tidak
+                                            <x-heroicon-o-x-mark class="w-3.5 h-3.5 stroke-[2.5]" />
+                                            <span>Tidak</span>
                                         </label>
                                     </div>
                                 </div>
@@ -150,6 +152,7 @@
             const totalQ        = {{ $totalQuestionsCount }};
 
             function updateCalc() {
+                if (!liveScoreEl || !progressBar || !filledCountEl) return;
                 const answered = new Set();
                 let yesCount   = 0;
 

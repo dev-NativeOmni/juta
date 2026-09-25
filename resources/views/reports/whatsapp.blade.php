@@ -10,7 +10,8 @@
                 </p>
             </div>
             <a href="{{ route('reports.index') }}" class="no-print inline-flex items-center gap-1.5 rounded-xl bg-gray-150 dark:bg-zinc-850 hover:bg-gray-250 dark:hover:bg-zinc-750 px-4 py-2.5 text-sm font-semibold text-gray-700 dark:text-zinc-300 transition duration-150">
-                ← Kembali ke Laporan
+                <x-heroicon-m-arrow-left class="w-4 h-4 shrink-0" />
+                <span>Kembali ke Laporan</span>
             </a>
         </div>
     </x-slot>
@@ -24,7 +25,7 @@
                     <!-- Classroom Selector -->
                     <div>
                         <label for="class_room_id" class="block text-xs font-semibold text-gray-700 dark:text-zinc-300 uppercase tracking-wider mb-2">Kelas Halaqoh</label>
-                        <select name="class_room_id" id="class_room_id" class="block w-full rounded-xl border-gray-300 dark:border-zinc-700 dark:bg-[#09090b]/40 dark:text-white shadow-sm focus:border-teal-500 focus:ring-teal-500 text-sm">
+                        <select name="class_room_id" id="class_room_id" onchange="this.form.submit()" class="block w-full rounded-xl border-gray-300 dark:border-zinc-700 dark:bg-[#09090b]/40 dark:text-white shadow-sm focus:border-teal-500 focus:ring-teal-500 text-sm">
                             @foreach ($classRooms as $class)
                                 <option value="{{ $class->id }}" {{ $selectedClassId == $class->id ? 'selected' : '' }}>{{ $class->name }} ({{ $class->program?->name }})</option>
                             @endforeach
@@ -34,7 +35,7 @@
                     <!-- Date Selector -->
                     <div>
                         <label for="date" class="block text-xs font-semibold text-gray-700 dark:text-zinc-300 uppercase tracking-wider mb-2">Tanggal Laporan</label>
-                        <input type="date" name="date" id="date" value="{{ $selectedDate }}" class="block w-full rounded-xl border-gray-300 dark:border-zinc-700 dark:bg-[#09090b]/40 dark:text-white shadow-sm focus:border-teal-500 focus:ring-teal-500 text-sm">
+                        <input type="date" name="date" id="date" value="{{ $selectedDate }}" onchange="this.form.submit()" class="block w-full rounded-xl border-gray-300 dark:border-zinc-700 dark:bg-[#09090b]/40 dark:text-white shadow-sm focus:border-teal-500 focus:ring-teal-500 text-sm">
                     </div>
 
                     <!-- Submit Button -->
@@ -78,14 +79,16 @@
                                 <button type="button"
                                         @click="layout = 'tahfidz'"
                                         :class="layout === 'tahfidz' ? 'bg-white dark:bg-zinc-900 text-gray-905 dark:text-white shadow-sm font-semibold' : 'text-gray-500 hover:text-gray-900'"
-                                        class="flex-1 px-4 py-2.5 text-xs rounded-lg transition-all duration-150">
-                                    📖 Tahfidz Reguler
+                                        class="flex-1 px-4 py-2.5 text-xs rounded-lg transition-all duration-150 inline-flex items-center justify-center gap-1.5 cursor-pointer">
+                                    <x-heroicon-o-book-open class="w-4 h-4" />
+                                    <span>Tahfidz Reguler</span>
                                 </button>
                                 <button type="button"
                                         @click="layout = 'ummi'"
                                         :class="layout === 'ummi' ? 'bg-white dark:bg-zinc-900 text-gray-905 dark:text-white shadow-sm font-semibold' : 'text-gray-500 hover:text-gray-900'"
-                                        class="flex-1 px-4 py-2.5 text-xs rounded-lg transition-all duration-150">
-                                    🌱 Metode UMMI
+                                        class="flex-1 px-4 py-2.5 text-xs rounded-lg transition-all duration-150 inline-flex items-center justify-center gap-1.5 cursor-pointer">
+                                    <x-heroicon-o-sparkles class="w-4 h-4 text-emerald-500" />
+                                    <span>Metode UMMI</span>
                                 </button>
                             </div>
 

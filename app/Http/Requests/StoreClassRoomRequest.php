@@ -34,6 +34,12 @@ class StoreClassRoomRequest extends FormRequest
                 'integer',
                 Rule::exists('users', 'id'),
             ],
+            'wali_kelas_user_id' => [
+                'nullable',
+                'integer',
+                Rule::exists('users', 'id'),
+                Rule::unique('class_rooms', 'wali_kelas_user_id'),
+            ],
             'name' => [
                 'required',
                 'string',
@@ -52,6 +58,7 @@ class StoreClassRoomRequest extends FormRequest
         return [
             'program_id' => 'program',
             'pendamping_adab_id' => 'pendamping adab',
+            'wali_kelas_user_id' => 'wali kelas',
             'name' => 'nama kelas',
             'level' => 'level',
         ];
