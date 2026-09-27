@@ -12,7 +12,7 @@ FROM dunglas/frankenphp:1-php8.2-alpine
 
 # Install Postgres client and required PHP extensions for Laravel + Supabase
 RUN apk add --no-cache libpq-dev postgresql-client \
-    && install-php-extensions pdo_pgsql zip bcmath intl opcache pcntl
+    && install-php-extensions pdo_pgsql zip bcmath intl opcache pcntl gd
 
 # Install Composer binary
 COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
