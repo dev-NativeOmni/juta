@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Services\SchoolCalendar;
+use App\Traits\BelongsToInstitution;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -12,9 +13,10 @@ use Illuminate\Support\Facades\Cache;
 
 class ClassRoom extends Model
 {
-    use HasFactory;
+    use BelongsToInstitution, HasFactory;
 
     protected $fillable = [
+        'institution_id',
         'program_id',
         'pendamping_adab_id',
         'name',

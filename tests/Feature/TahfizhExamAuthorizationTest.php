@@ -44,12 +44,7 @@ class TahfizhExamAuthorizationTest extends TestCase
             'surah_id' => $this->surah->id,
             'ayah_start' => 1,
             'ayah_end' => 7,
-            'q1' => 80,
-            'q2' => 80,
-            'q3' => 80,
-            'q4' => 80,
-            'q5' => 80,
-            'total_score' => 80,
+            'total_score' => 40,
             'exam_date' => now()->toDateString(),
         ]);
     }
@@ -68,13 +63,13 @@ class TahfizhExamAuthorizationTest extends TestCase
             'surah_id' => $this->surah->id,
             'ayah_start' => 1,
             'ayah_end' => 7,
-            'q1' => 90, 'q2' => 90, 'q3' => 90, 'q4' => 90, 'q5' => 90,
+            'score' => 45,
             'notes' => null,
             'exam_date' => now()->toDateString(),
         ]);
 
         $response->assertRedirect(route('tahfizh-exams.index'));
-        $this->assertEquals(90, $this->exam->fresh()->total_score);
+        $this->assertEquals(45, $this->exam->fresh()->total_score);
     }
 
     #[Test]
@@ -91,13 +86,13 @@ class TahfizhExamAuthorizationTest extends TestCase
             'surah_id' => $this->surah->id,
             'ayah_start' => 1,
             'ayah_end' => 7,
-            'q1' => 10, 'q2' => 10, 'q3' => 10, 'q4' => 10, 'q5' => 10,
+            'score' => 10,
             'notes' => null,
             'exam_date' => now()->toDateString(),
         ]);
 
         $response->assertStatus(403);
-        $this->assertEquals(80, $this->exam->fresh()->total_score);
+        $this->assertEquals(40, $this->exam->fresh()->total_score);
     }
 
     #[Test]

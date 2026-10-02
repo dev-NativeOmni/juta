@@ -44,6 +44,7 @@ class AppServiceProvider extends ServiceProvider
     public function register(): void
     {
         $this->app->scoped(SchoolCalendar::class);
+        $this->app->singleton(\App\Services\InstitutionContext::class, fn () => new \App\Services\InstitutionContext);
     }
 
     public function boot(): void
@@ -51,6 +52,11 @@ class AppServiceProvider extends ServiceProvider
         if ($this->app->environment('production')) {
             URL::forceScheme('https');
         }
+
+        \Illuminate\Support\Facades\View::composer('*', function ($view) {
+            $view->with('currentInstitution', app(\App\Services\InstitutionContext::class)->get());
+        });
+
         /*
         |--------------------------------------------------------------------------
         | API Rate Limiting
@@ -88,6 +94,7 @@ class AppServiceProvider extends ServiceProvider
         Setting::observe(ModelAuditObserver::class);
         CalendarMonthLock::observe(ModelAuditObserver::class);
         ClassWeekSchedule::observe(ModelAuditObserver::class);
+        \App\Models\Institution::observe(ModelAuditObserver::class);
 
         // Target hafalan otomatis mengikuti setoran (lihat AutoHafalanTargetService).
         HafalanRecord::observe(HafalanAutoTargetObserver::class);

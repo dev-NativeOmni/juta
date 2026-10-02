@@ -100,8 +100,10 @@ class AuditLogService
     public function logAction(string $action, string $description, ?array $context = null): void
     {
         $actor = auth()->user();
+        $institutionId = app(\App\Services\InstitutionContext::class)->id() ?? $actor?->institution_id;
 
         AuditLog::create([
+            'institution_id' => $institutionId,
             'user_id' => $actor?->id,
             'user_name' => $actor?->name,
             'role_name' => $actor?->role?->name,
@@ -132,8 +134,12 @@ class AuditLogService
         ?array $newValues
     ): void {
         $actor = auth()->user();
+        $institutionId = $model->getAttribute('institution_id')
+            ?? app(\App\Services\InstitutionContext::class)->id()
+            ?? $actor?->institution_id;
 
         AuditLog::create([
+            'institution_id' => $institutionId,
             'user_id' => $actor?->id,
             'user_name' => $actor?->name,
             'role_name' => $actor?->role?->name,
@@ -210,6 +216,9 @@ class AuditLogService
             AdabMentorAssessment::class => 'Penilaian Pendamping Adab',
             Badge::class => 'Lencana',
             Setting::class => 'Pengaturan',
+            \App\Models\CalendarMonthLock::class => 'Kunci Kalender',
+            \App\Models\ClassWeekSchedule::class => 'Jadwal Pekanan',
+            \App\Models\Institution::class => 'Lembaga',
             default => class_basename($model),
         };
     }

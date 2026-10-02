@@ -13,11 +13,36 @@ use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Collection;
 use Laravel\Sanctum\HasApiTokens;
 
+use App\Services\InstitutionContext;
+
 class User extends Authenticatable
 {
     use HasApiTokens, HasFactory, Notifiable, SoftDeletes;
 
+    protected static function booted(): void
+    {
+        static::creating(function ($model) {
+            if (empty($model->institution_id)) {
+                $activeId = app(InstitutionContext::class)->id();
+                if ($activeId !== null) {
+                    $model->institution_id = $activeId;
+                }
+            }
+        });
+    }
+
+    public function institution(): BelongsTo
+    {
+        return $this->belongsTo(Institution::class);
+    }
+
+    public function scopeForInstitution($query, int $institutionId)
+    {
+        return $query->where('institution_id', $institutionId);
+    }
+
     protected $fillable = [
+        'institution_id',
         'role_id',
         'name',
         'username',

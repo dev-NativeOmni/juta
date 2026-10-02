@@ -2,12 +2,16 @@
 
 namespace App\Models;
 
+use App\Traits\BelongsToInstitution;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class AdabMentorAssessment extends Model
 {
+    use BelongsToInstitution;
+
     protected $fillable = [
+        'institution_id',
         'student_id',
         'mentor_id',
         'year',

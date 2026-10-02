@@ -27,6 +27,8 @@ use App\Http\Controllers\SpreadsheetInputController;
 use App\Http\Controllers\StudentController;
 use App\Http\Controllers\StudentPointController;
 use App\Http\Controllers\StudentReportController;
+use App\Http\Controllers\InstitutionGateController;
+use App\Http\Controllers\InstitutionController;
 use App\Http\Controllers\SuperAdmin\UserManagementController;
 use App\Http\Controllers\SystemNotificationController;
 use App\Http\Controllers\TahfizhExamController;
@@ -34,6 +36,13 @@ use App\Http\Controllers\TeacherController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\WaliKelasController;
 use Illuminate\Support\Facades\Route;
+
+// Gerbang Masuk Lembaga (Multi-Tenancy Gatekeeper)
+Route::get('/portal', [InstitutionGateController::class, 'index'])->name('portal.gate');
+Route::post('/portal', [InstitutionGateController::class, 'verify'])->name('portal.verify');
+Route::match(['get', 'post'], '/portal/exit', [InstitutionGateController::class, 'exit'])->name('portal.exit');
+Route::get('/s/{code}', [InstitutionGateController::class, 'directAccess'])->name('portal.direct');
+Route::get('/portal/{code}', [InstitutionGateController::class, 'directAccess']);
 
 Route::get('/', function () {
     return view('welcome');
@@ -194,6 +203,12 @@ Route::middleware(['auth', 'two_factor.enrolled'])->group(function () {
         Route::post('class-rooms/import', [ClassRoomController::class, 'import'])->name('class-rooms.import');
         Route::get('class-rooms/{class_room}/export-capaian', [ClassRoomController::class, 'exportCapaian'])->name('class-rooms.export-capaian');
         Route::resource('class-rooms', ClassRoomController::class);
+    });
+
+    // Institutions Management & Switcher (Super Admin only)
+    Route::middleware(['role:super_admin'])->group(function () {
+        Route::post('institutions/switch', [InstitutionController::class, 'switch'])->name('institutions.switch');
+        Route::resource('institutions', InstitutionController::class);
     });
 
     // Badges Management (Super Admin only)

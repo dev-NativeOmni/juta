@@ -13,6 +13,8 @@ class BadgeControllerTest extends TestCase
 {
     use RefreshDatabase;
 
+    protected User $superAdmin;
+
     protected User $admin;
 
     protected User $teacher;
@@ -21,9 +23,11 @@ class BadgeControllerTest extends TestCase
     {
         parent::setUp();
 
+        $superAdminRole = Role::firstOrCreate(['name' => 'super_admin'], ['display_name' => 'Super Admin']);
         $adminRole = Role::firstOrCreate(['name' => 'admin'], ['display_name' => 'Admin']);
         $teacherRole = Role::firstOrCreate(['name' => 'teacher'], ['display_name' => 'Guru']);
 
+        $this->superAdmin = User::factory()->create(['role_id' => $superAdminRole->id, 'status' => 'active']);
         $this->admin = User::factory()->create(['role_id' => $adminRole->id, 'status' => 'active']);
         $this->teacher = User::factory()->create(['role_id' => $teacherRole->id, 'status' => 'active']);
     }
@@ -57,23 +61,27 @@ class BadgeControllerTest extends TestCase
         $this->actingAs($this->teacher)
             ->post(route('badges.store'), $this->validBadgePayload())
             ->assertStatus(403);
+
+        $this->actingAs($this->admin)
+            ->get(route('badges.index'))
+            ->assertStatus(403);
     }
 
     #[Test]
-    public function admin_can_view_badges_index(): void
+    public function super_admin_can_view_badges_index(): void
     {
         Badge::create($this->validBadgePayload() + ['is_active' => true]);
 
-        $this->actingAs($this->admin)
+        $this->actingAs($this->superAdmin)
             ->get(route('badges.index'))
             ->assertStatus(200)
             ->assertSee('Setoran Pertama');
     }
 
     #[Test]
-    public function admin_can_create_a_badge(): void
+    public function super_admin_can_create_a_badge(): void
     {
-        $response = $this->actingAs($this->admin)
+        $response = $this->actingAs($this->superAdmin)
             ->post(route('badges.store'), $this->validBadgePayload());
 
         $response->assertRedirect(route('badges.index'));
@@ -86,21 +94,21 @@ class BadgeControllerTest extends TestCase
     }
 
     #[Test]
-    public function admin_cannot_create_badge_with_duplicate_key(): void
+    public function super_admin_cannot_create_badge_with_duplicate_key(): void
     {
         Badge::create($this->validBadgePayload() + ['is_active' => true]);
 
-        $this->actingAs($this->admin)
+        $this->actingAs($this->superAdmin)
             ->post(route('badges.store'), $this->validBadgePayload(['title' => 'Duplikat']))
             ->assertSessionHasErrors('key');
     }
 
     #[Test]
-    public function admin_can_update_a_badge(): void
+    public function super_admin_can_update_a_badge(): void
     {
         $badge = Badge::create($this->validBadgePayload() + ['is_active' => true]);
 
-        $response = $this->actingAs($this->admin)->put(route('badges.update', $badge), $this->validBadgePayload([
+        $response = $this->actingAs($this->superAdmin)->put(route('badges.update', $badge), $this->validBadgePayload([
             'title' => 'Setoran Pertama (Diperbarui)',
             'target_value' => 3,
         ]));
@@ -115,11 +123,11 @@ class BadgeControllerTest extends TestCase
     }
 
     #[Test]
-    public function admin_can_toggle_badge_active_status(): void
+    public function super_admin_can_toggle_badge_active_status(): void
     {
         $badge = Badge::create($this->validBadgePayload() + ['is_active' => true]);
 
-        $this->actingAs($this->admin)
+        $this->actingAs($this->superAdmin)
             ->post(route('badges.toggle', $badge))
             ->assertRedirect(route('badges.index'));
 
@@ -127,11 +135,11 @@ class BadgeControllerTest extends TestCase
     }
 
     #[Test]
-    public function admin_can_delete_a_badge(): void
+    public function super_admin_can_delete_a_badge(): void
     {
         $badge = Badge::create($this->validBadgePayload() + ['is_active' => true]);
 
-        $this->actingAs($this->admin)
+        $this->actingAs($this->superAdmin)
             ->delete(route('badges.destroy', $badge))
             ->assertRedirect(route('badges.index'));
 

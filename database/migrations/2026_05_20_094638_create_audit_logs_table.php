@@ -10,6 +10,7 @@ return new class extends Migration
     {
         Schema::create('audit_logs', function (Blueprint $table) {
             $table->id();
+            $table->unsignedBigInteger('institution_id')->nullable()->index();
 
             $table->foreignId('user_id')
                 ->nullable()

@@ -1,15 +1,23 @@
 @php
     try {
-        $logo = class_exists(\App\Models\Setting::class) && \Illuminate\Support\Facades\Schema::hasTable('settings') 
-            ? \App\Models\Setting::get('logo') 
-            : null;
-        $namaInstansi = class_exists(\App\Models\Setting::class) && \Illuminate\Support\Facades\Schema::hasTable('settings') 
-            ? \App\Models\Setting::get('nama_instansi') 
-            : null;
-        $loginBg = class_exists(\App\Models\Setting::class) && \Illuminate\Support\Facades\Schema::hasTable('settings') 
-            ? \App\Models\Setting::get('login_bg') 
-            : null;
+        $activeInst = app(\App\Services\InstitutionContext::class)->get();
+        if ($activeInst) {
+            $logo = $activeInst->logo_path;
+            $namaInstansi = $activeInst->name;
+            $loginBg = $activeInst->login_bg;
+        } else {
+            $logo = class_exists(\App\Models\Setting::class) && \Illuminate\Support\Facades\Schema::hasTable('settings') 
+                ? \App\Models\Setting::get('logo') 
+                : null;
+            $namaInstansi = class_exists(\App\Models\Setting::class) && \Illuminate\Support\Facades\Schema::hasTable('settings') 
+                ? \App\Models\Setting::get('nama_instansi') 
+                : null;
+            $loginBg = class_exists(\App\Models\Setting::class) && \Illuminate\Support\Facades\Schema::hasTable('settings') 
+                ? \App\Models\Setting::get('login_bg') 
+                : null;
+        }
     } catch (\Throwable $e) {
+        $activeInst = null;
         $logo = null;
         $namaInstansi = null;
         $loginBg = null;
@@ -22,7 +30,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
 
-    <title>{{ config('app.name', 'TAD SMAIA 7') }} - {{ __('Masuk') }}</title>
+    <title>{{ $namaInstansi ? $namaInstansi . ' - ' . __('Masuk') : config('app.name', 'TAD') . ' - ' . __('Masuk') }}</title>
 
     <!-- PWA & Apple iOS Metadata -->
     @include('partials.app-icons', ['themeColor' => '#ea580c'])
@@ -88,7 +96,7 @@
     </style>
 </head>
 <body class="min-h-[100dvh] w-full flex flex-col items-center justify-center p-3 sm:p-6 antialiased relative selection:bg-orange-500 selection:text-white bg-cover bg-center bg-no-repeat bg-fixed"
-      style="background-image: url('{{ $loginBg ? asset('storage/' . $loginBg) : asset('images/school_sunset_bg.jpg') }}');">
+      style="background-image: url('{{ $loginBg ? (str_starts_with($loginBg, 'http') ? $loginBg : asset('storage/' . $loginBg)) : asset('images/school_sunset_bg.jpg') }}');">
 
     <!-- Backdrop Overlay: Moderate Blur (Not too thick) & Soft Dimming -->
     <div class="absolute inset-0 pointer-events-none z-0 overflow-hidden">
@@ -109,12 +117,33 @@
 
                 <!-- Header Brand Emblem & Title -->
                 <div class="flex flex-col items-center justify-center text-center mb-5 relative z-10">
+                    
+                    @if ($activeInst)
+                        <div class="mb-3 inline-flex items-center gap-2 px-3 py-1 rounded-full bg-slate-900/80 border border-slate-700/90 text-xs text-slate-200 backdrop-blur-md shadow-sm">
+                            <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                            <span class="font-medium truncate max-w-[170px]">{{ $activeInst->name }}</span>
+                            <span class="text-orange-400 font-mono font-semibold text-[10px]">[{{ $activeInst->code }}]</span>
+                            <a href="{{ route('portal.exit') }}" class="ml-1 text-slate-400 hover:text-orange-400 underline text-[11px]" title="Ganti Kode Lembaga">
+                                Ganti
+                            </a>
+                        </div>
+                    @else
+                        <div class="mb-3">
+                            <a href="{{ route('portal.gate') }}" class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-orange-500/20 border border-orange-500/30 text-xs text-orange-300 hover:bg-orange-500/30 transition-colors">
+                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
+                                </svg>
+                                <span>Pilih Kode Lembaga</span>
+                            </a>
+                        </div>
+                    @endif
+
                     <!-- Logo (Clean without box wrapper) -->
                     <div class="relative mb-3 flex items-center justify-center">
                         @if ($logo)
-                            <img src="{{ asset('storage/' . $logo) }}" alt="Logo" class="w-16 h-16 sm:w-20 sm:h-20 object-contain drop-shadow-[0_8px_20px_rgba(0,0,0,0.55)]" />
+                            <img src="{{ (str_starts_with($logo, 'http://') || str_starts_with($logo, 'https://')) ? $logo : asset('storage/' . $logo) }}" alt="Logo" class="w-16 h-16 sm:w-20 sm:h-20 object-contain drop-shadow-[0_8px_20px_rgba(0,0,0,0.55)]" />
                         @else
-                            <img src="{{ asset('images/logo_alazhar7.png') }}" alt="Logo SMA Islam Al Azhar 7 Solo Baru" class="w-16 h-16 sm:w-20 sm:h-20 object-contain drop-shadow-[0_8px_20px_rgba(0,0,0,0.55)]">
+                            <img src="{{ asset('images/logo_alazhar7.png') }}" alt="Logo" class="w-16 h-16 sm:w-20 sm:h-20 object-contain drop-shadow-[0_8px_20px_rgba(0,0,0,0.55)]">
                         @endif
                     </div>
 
@@ -123,7 +152,7 @@
                     </h1>
                     
                     <p class="text-xs sm:text-sm text-zinc-300 font-medium mt-1 tracking-wide">
-                        {{ ($namaInstansi && !in_array($namaInstansi, ['SMAIA 7', 'SMAIA7', 'SMA Islam Al Azhar 7 Sukoharjo'])) ? $namaInstansi : 'SMA Islam Al Azhar 7 Solo Baru' }}
+                        {{ $namaInstansi ?: 'TAD Management System' }}
                     </p>
                 </div>
 

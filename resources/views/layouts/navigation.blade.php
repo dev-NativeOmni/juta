@@ -1,7 +1,10 @@
 @php
     $user = auth()->user();
-
-    $logo = \App\Models\Setting::get('logo');
+    $activeInstitution = app(\App\Services\InstitutionContext::class)->get();
+    $logo = $activeInstitution?->logo_path ?? \App\Models\Setting::get('logo');
+    $allInstitutions = ($user && $user->hasRole('super_admin'))
+        ? \App\Models\Institution::where('is_active', true)->orderBy('name')->get()
+        : collect();
 
     $hasRoute = fn (string $name): bool => \Illuminate\Support\Facades\Route::has($name);
 @endphp
@@ -175,6 +178,98 @@
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
                 </svg>
             </button>
+
+            <!-- Super Admin Institution Switcher -->
+            @if ($user && $user->hasRole('super_admin'))
+                <div class="relative" x-data="{ instOpen: false }" @click.outside="instOpen = false">
+                    <button
+                        type="button"
+                        @click="instOpen = !instOpen"
+                        class="flex items-center gap-1.5 py-1 px-2.5 rounded-full bg-teal-50/80 dark:bg-teal-950/50 border border-teal-200/80 dark:border-teal-800/60 text-teal-800 dark:text-teal-200 text-xs font-bold hover:bg-teal-100/80 dark:hover:bg-teal-900/60 transition shadow-2xs cursor-pointer"
+                        title="Ganti Lembaga Aktif"
+                    >
+                        <x-heroicon-m-building-office-2 class="w-3.5 h-3.5 text-teal-600 dark:text-teal-400 shrink-0" />
+                        <span class="max-w-[120px] sm:max-w-[170px] truncate">
+                            {{ $activeInstitution ? $activeInstitution->name : 'Semua Lembaga (Global)' }}
+                        </span>
+                        <x-heroicon-m-chevron-down class="w-3 h-3 transition-transform text-teal-500" ::class="instOpen ? 'rotate-180' : ''" />
+                    </button>
+
+                    <div
+                        x-show="instOpen"
+                        x-transition:enter="transition ease-out duration-100"
+                        x-transition:enter-start="transform opacity-0 scale-95"
+                        x-transition:enter-end="transform opacity-100 scale-100"
+                        x-transition:leave="transition ease-in duration-75"
+                        x-transition:leave-start="transform opacity-100 scale-100"
+                        x-transition:leave-end="transform opacity-0 scale-95"
+                        class="absolute left-0 mt-2 w-64 rounded-2xl bg-white dark:bg-zinc-900 shadow-xl border border-zinc-200 dark:border-zinc-800 p-2 z-50 text-xs space-y-1"
+                        style="display: none;"
+                    >
+                        <div class="px-2 py-1 text-[10px] font-extrabold uppercase tracking-wider text-zinc-400">
+                            Pilih Konteks Lembaga:
+                        </div>
+
+                        <!-- Global View -->
+                        <form method="POST" action="{{ route('institutions.switch') }}">
+                            @csrf
+                            <input type="hidden" name="institution_id" value="global">
+                            <button
+                                type="submit"
+                                class="w-full flex items-center justify-between px-2.5 py-1.5 rounded-xl font-semibold transition cursor-pointer {{ ! $activeInstitution ? 'bg-teal-50 dark:bg-teal-950/60 text-teal-700 dark:text-teal-300 font-bold' : 'text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800' }}"
+                            >
+                                <div class="flex items-center gap-2 truncate">
+                                    <x-heroicon-m-globe-alt class="w-4 h-4 text-zinc-400 shrink-0" />
+                                    <span class="truncate">Semua Lembaga (Global)</span>
+                                </div>
+                                @if (! $activeInstitution)
+                                    <x-heroicon-m-check class="w-3.5 h-3.5 text-teal-600 shrink-0" />
+                                @endif
+                            </button>
+                        </form>
+
+                        <div class="border-t border-zinc-100 dark:border-zinc-800 my-1"></div>
+
+                        <div class="max-h-48 overflow-y-auto space-y-0.5">
+                            @foreach ($allInstitutions as $inst)
+                                <form method="POST" action="{{ route('institutions.switch') }}">
+                                    @csrf
+                                    <input type="hidden" name="institution_id" value="{{ $inst->id }}">
+                                    <button
+                                        type="submit"
+                                        class="w-full flex items-center justify-between px-2.5 py-1.5 rounded-xl transition cursor-pointer {{ $activeInstitution?->id === $inst->id ? 'bg-teal-50 dark:bg-teal-950/60 text-teal-700 dark:text-teal-300 font-bold' : 'text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 font-medium' }}"
+                                    >
+                                        <div class="flex items-center gap-2 truncate">
+                                            <span class="px-1.5 py-0.5 rounded bg-zinc-200 dark:bg-zinc-800 text-[9px] font-mono font-bold shrink-0">
+                                                {{ $inst->code }}
+                                            </span>
+                                            <span class="truncate">{{ $inst->name }}</span>
+                                        </div>
+                                        @if ($activeInstitution?->id === $inst->id)
+                                            <x-heroicon-m-check class="w-3.5 h-3.5 text-teal-600 shrink-0" />
+                                        @endif
+                                    </button>
+                                </form>
+                            @endforeach
+                        </div>
+
+                        <div class="border-t border-zinc-100 dark:border-zinc-800 pt-1">
+                            <a
+                                href="{{ route('institutions.index') }}"
+                                class="flex items-center justify-center gap-1.5 px-2 py-1.5 text-[11px] font-bold text-teal-600 dark:text-teal-400 hover:underline"
+                            >
+                                <x-heroicon-m-cog-6-tooth class="w-3.5 h-3.5" />
+                                <span>Kelola Semua Lembaga</span>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            @elseif ($activeInstitution)
+                <div class="hidden sm:flex items-center gap-1.5 py-1 px-2.5 rounded-full bg-zinc-100 dark:bg-zinc-800/80 border border-zinc-200 dark:border-zinc-700 text-zinc-700 dark:text-zinc-300 text-xs font-bold">
+                    <x-heroicon-m-building-office-2 class="w-3.5 h-3.5 text-teal-500 shrink-0" />
+                    <span class="max-w-[140px] truncate">{{ $activeInstitution->name }}</span>
+                </div>
+            @endif
         </div>
 
         <!-- Role badge & avatar pill button -->

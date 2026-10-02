@@ -194,6 +194,7 @@ class SidebarMenu
                     ['label' => 'Pengaturan Adab', 'route' => 'settings.adab', 'icon' => 'cog', 'roles' => ['super_admin', 'admin', 'supervisor'], 'active' => ['settings.adab']],
                     // Pengaturan Rapor: khusus super_admin & admin (lihat catatan di routes/web.php).
                     ['label' => 'Pengaturan Rapor', 'route' => 'digital-reports.settings', 'icon' => 'cog', 'roles' => ['super_admin', 'admin'], 'active' => ['digital-reports.settings']],
+                    ['label' => 'Kelola Lembaga', 'route' => 'institutions.index', 'icon' => 'building', 'roles' => ['super_admin'], 'active' => ['institutions.*']],
                     ['label' => 'Badge', 'route' => 'badges.index', 'icon' => 'bookmark', 'roles' => ['super_admin'], 'active' => ['badges.*']],
                     ['label' => 'Manajemen User', 'route' => 'users.index', 'icon' => 'users', 'roles' => ['super_admin'], 'active' => ['users.*']],
                     ['label' => 'Audit Log', 'route' => 'audit-logs.index', 'icon' => 'document', 'roles' => ['super_admin', 'admin'], 'active' => ['audit-logs.*']],

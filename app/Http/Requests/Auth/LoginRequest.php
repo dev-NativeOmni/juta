@@ -52,6 +52,25 @@ class LoginRequest extends FormRequest
             ]);
         }
 
+        $user = Auth::user();
+        $context = app(\App\Services\InstitutionContext::class);
+        $activeInstitutionId = $context->id();
+
+        // If an institution is active in session, verify user belongs to it (unless platform super admin)
+        if ($activeInstitutionId !== null) {
+            if ($user->institution_id !== null && $user->institution_id !== $activeInstitutionId && ! $user->hasRole('super_admin')) {
+                Auth::logout();
+                RateLimiter::hit($this->throttleKey());
+
+                throw ValidationException::withMessages([
+                    'username' => 'Akun Anda tidak terdaftar pada lembaga yang sedang dipilih. Silakan periksa kembali kode lembaga Anda.',
+                ]);
+            }
+        } elseif ($user->institution_id !== null) {
+            // If user logged in directly without active institution in session, bind session to user's institution
+            $context->set($user->institution);
+        }
+
         RateLimiter::clear($this->throttleKey());
     }
 

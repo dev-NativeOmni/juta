@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Services\AuditLogService;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Artisan;
@@ -22,41 +23,47 @@ class DatabaseBackupController extends Controller
         ]);
     }
 
-    public function store(): RedirectResponse
+    public function store(AuditLogService $audit): RedirectResponse
     {
-        $exitCode = Artisan::call('tad:backup-database', [
+        Artisan::queue('tad:backup-database', [
             '--prune' => true,
         ]);
 
-        $output = trim(Artisan::output());
-
-        if ($exitCode !== 0) {
-            return redirect()
-                ->route('database-backups.index')
-                ->with('error', 'Backup database gagal. Detail: '.$output);
-        }
+        $audit->logAction('backup_requested', 'Menjadwalkan backup database baru.');
 
         return redirect()
             ->route('database-backups.index')
-            ->with('success', 'Backup database berhasil dibuat.');
+            ->with('success', 'Backup database sedang diproses di latar belakang.');
     }
 
-    public function download(string $filename): BinaryFileResponse
+    public function download(string $filename, AuditLogService $audit): BinaryFileResponse
     {
         $path = $this->resolveBackupPath($filename);
 
         abort_unless(File::exists($path), 404);
 
-        return response()->download($path, basename($path));
+        $safeName = basename($path);
+
+        $audit->logAction('backup_downloaded', "Mengunduh file backup database: {$safeName}", [
+            'filename' => $safeName,
+        ]);
+
+        return response()->download($path, $safeName);
     }
 
-    public function destroy(string $filename): RedirectResponse
+    public function destroy(string $filename, AuditLogService $audit): RedirectResponse
     {
         $path = $this->resolveBackupPath($filename);
 
         abort_unless(File::exists($path), 404);
+
+        $safeName = basename($path);
 
         File::delete($path);
+
+        $audit->logAction('backup_deleted', "Menghapus file backup database: {$safeName}", [
+            'filename' => $safeName,
+        ]);
 
         return redirect()
             ->route('database-backups.index')
@@ -98,18 +105,10 @@ class DatabaseBackupController extends Controller
 
     private function formatBytes(int $bytes): string
     {
-        if ($bytes >= 1073741824) {
-            return number_format($bytes / 1073741824, 2).' GB';
-        }
+        $units = ['B', 'KB', 'MB', 'GB', 'TB'];
+        $power = $bytes > 0 ? (int) floor(log($bytes, 1024)) : 0;
+        $power = min($power, count($units) - 1);
 
-        if ($bytes >= 1048576) {
-            return number_format($bytes / 1048576, 2).' MB';
-        }
-
-        if ($bytes >= 1024) {
-            return number_format($bytes / 1024, 2).' KB';
-        }
-
-        return $bytes.' bytes';
+        return number_format($bytes / pow(1024, $power), 2).' '.$units[$power];
     }
 }

@@ -12,6 +12,7 @@ class AuditLog extends Model
     use HasFactory;
 
     protected $fillable = [
+        'institution_id',
         'user_id',
         'user_name',
         'role_name',
@@ -105,6 +106,7 @@ class AuditLog extends Model
             Setting::class => 'Pengaturan',
             CalendarMonthLock::class => 'Kunci Kalender',
             ClassWeekSchedule::class => 'Jadwal Pekanan',
+            Institution::class => 'Lembaga',
             default => class_basename((string) $this->auditable_type),
         };
     }

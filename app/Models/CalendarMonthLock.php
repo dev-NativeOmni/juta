@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Traits\BelongsToInstitution;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
@@ -10,7 +11,9 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  */
 class CalendarMonthLock extends Model
 {
-    protected $fillable = ['year', 'month', 'scope', 'locked_by'];
+    use BelongsToInstitution;
+
+    protected $fillable = ['institution_id', 'year', 'month', 'scope', 'locked_by'];
 
     /**
      * Nama tampilan di Audit Log, mis. "Tahfizh 07/2026".
