@@ -216,11 +216,39 @@ class SidebarMenu
         }
 
         $groups = [];
+        $activeInstitution = app(\App\Services\InstitutionContext::class)->get();
 
         foreach (self::definition() as $group) {
+            // Check group-level feature flag for the active institution
+            if ($activeInstitution && ! $user->hasRole('super_admin')) {
+                $groupFeature = match ($group['key']) {
+                    'tahfizh' => 'feature_tahfizh',
+                    'adab' => 'feature_adab',
+                    'ketahanan' => 'feature_ketahanan',
+                    'laporan' => 'feature_rapor',
+                    default => null,
+                };
+
+                if ($groupFeature && ! $activeInstitution->isFeatureEnabled($groupFeature)) {
+                    continue;
+                }
+            }
+
             $items = [];
 
             foreach ($group['items'] as $item) {
+                if ($activeInstitution && ! $user->hasRole('super_admin')) {
+                    if (isset($item['feature']) && ! $activeInstitution->isFeatureEnabled($item['feature'])) {
+                        continue;
+                    }
+                    if ($item['route'] === 'reports.whatsapp' && ! $activeInstitution->isFeatureEnabled('feature_whatsapp')) {
+                        continue;
+                    }
+                    if ($item['route'] === 'badges.index' && ! $activeInstitution->isFeatureEnabled('feature_badges')) {
+                        continue;
+                    }
+                }
+
                 if (! Route::has($item['route']) || ! self::canSee($user, $item)) {
                     continue;
                 }

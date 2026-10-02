@@ -14,6 +14,50 @@ class Institution extends Model
 {
     use HasFactory, SoftDeletes;
 
+    public const AVAILABLE_FEATURES = [
+        'feature_tahfizh' => [
+            'name' => 'Tahfizh & Al-Qur\'an',
+            'description' => 'Setoran hafalan, muraja\'ah, target bulanan/triwulan, ujian tahfizh, dan mushaf digital.',
+            'default' => true,
+        ],
+        'feature_adab' => [
+            'name' => 'Adab & Pembinaan Karakter',
+            'description' => 'Kuesioner adab harian santri, kalender adab, dan materi pembinaan adab.',
+            'default' => true,
+        ],
+        'feature_ketahanan' => [
+            'name' => 'Ketahanan Sekolah (Poin & Disiplin)',
+            'description' => 'Pencatatan pelanggaran, poin kebaikan/prestasi, dan analisis kedisiplinan santri.',
+            'default' => true,
+        ],
+        'feature_rapor' => [
+            'name' => 'Rapor Digital & Analitik',
+            'description' => 'Rapor triwulan/semester, grafik periodik, capaian kompetensi, dan ekspor PDF/Excel.',
+            'default' => true,
+        ],
+        'feature_badges' => [
+            'name' => 'Gamifikasi & Lencana (Badge)',
+            'description' => 'Sistem badge pencapaian otomatis saat santri mencapai milestone hafalan.',
+            'default' => true,
+        ],
+        'feature_whatsapp' => [
+            'name' => 'Laporan WhatsApp Harian',
+            'description' => 'Format siap kirim laporan progres santri ke nomor WhatsApp orang tua.',
+            'default' => true,
+        ],
+    ];
+
+    public function isFeatureEnabled(string $featureKey, bool $default = true): bool
+    {
+        $features = $this->settings['features'] ?? [];
+
+        if (array_key_exists($featureKey, $features)) {
+            return (bool) $features[$featureKey];
+        }
+
+        return self::AVAILABLE_FEATURES[$featureKey]['default'] ?? $default;
+    }
+
     protected $fillable = [
         'code',
         'name',

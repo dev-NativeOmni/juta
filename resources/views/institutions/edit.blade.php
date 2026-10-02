@@ -260,6 +260,37 @@
                     </div>
                 </div>
 
+                <!-- Card 4: Kontrol Fitur & Modul Aktif -->
+                <div class="p-6 bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-200/80 dark:border-zinc-800 shadow-xs space-y-4">
+                    <div>
+                        <h3 class="font-bold text-base text-zinc-900 dark:text-white flex items-center gap-2">
+                            <x-heroicon-o-squares-plus class="w-5 h-5 text-teal-600 dark:text-teal-400" />
+                            <span>Kontrol Fitur & Modul Lembaga</span>
+                        </h3>
+                        <p class="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">
+                            Pilih fitur-fitur yang diaktifkan khusus untuk lembaga ini. Modul nonaktif akan otomatis disembunyikan dari sidebar & navigasi sekolah.
+                        </p>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-3 pt-2">
+                        @foreach (\App\Models\Institution::AVAILABLE_FEATURES as $fKey => $fMeta)
+                            <label class="flex items-start gap-3 p-3.5 rounded-xl border border-zinc-200/80 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-800/40 hover:bg-zinc-100/60 dark:hover:bg-zinc-800/70 transition cursor-pointer select-none">
+                                <input
+                                    type="checkbox"
+                                    name="features[{{ $fKey }}]"
+                                    value="1"
+                                    {{ old("features.{$fKey}", $institution->isFeatureEnabled($fKey) ? '1' : '0') === '1' ? 'checked' : '' }}
+                                    class="mt-1 w-4 h-4 rounded text-teal-600 focus:ring-teal-500 border-zinc-300 dark:border-zinc-700 dark:bg-zinc-800 shrink-0"
+                                >
+                                <div class="min-w-0 flex-1">
+                                    <span class="block font-bold text-xs text-zinc-900 dark:text-white">{{ $fMeta['name'] }}</span>
+                                    <span class="block text-[11px] text-zinc-500 dark:text-zinc-400 mt-0.5 leading-snug">{{ $fMeta['description'] }}</span>
+                                </div>
+                            </label>
+                        @endforeach
+                    </div>
+                </div>
+
                 <!-- Status & Submit -->
                 <div class="p-6 bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-200/80 dark:border-zinc-800 shadow-xs flex flex-col sm:flex-row items-center justify-between gap-4">
                     <label class="flex items-center gap-3 cursor-pointer select-none">

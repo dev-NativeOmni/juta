@@ -110,6 +110,14 @@ class InstitutionController extends Controller
 
         unset($validated['logo']);
 
+        $settings = $institution->settings ?? [];
+        $featureSettings = [];
+        foreach (Institution::AVAILABLE_FEATURES as $key => $meta) {
+            $featureSettings[$key] = $request->boolean("features.{$key}", false);
+        }
+        $settings['features'] = $featureSettings;
+        $validated['settings'] = $settings;
+
         $institution = Institution::create($validated);
 
         $this->auditLog->logAction(
@@ -197,6 +205,14 @@ class InstitutionController extends Controller
         }
 
         unset($validated['logo']);
+
+        $settings = $institution->settings ?? [];
+        $featureSettings = [];
+        foreach (Institution::AVAILABLE_FEATURES as $key => $meta) {
+            $featureSettings[$key] = $request->boolean("features.{$key}", false);
+        }
+        $settings['features'] = $featureSettings;
+        $validated['settings'] = $settings;
 
         $institution->update($validated);
 

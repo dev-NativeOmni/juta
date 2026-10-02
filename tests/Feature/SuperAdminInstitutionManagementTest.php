@@ -212,4 +212,37 @@ class SuperAdminInstitutionManagementTest extends TestCase
         $inst->refresh();
         $this->assertFalse($inst->is_active);
     }
+
+    #[Test]
+    public function super_admin_can_toggle_institution_feature_flags(): void
+    {
+        $inst = Institution::create([
+            'name' => 'Sekolah Khusus Tahfizh Saja',
+            'code' => 'TAHFIZHONLY',
+            'is_active' => true,
+        ]);
+
+        $response = $this->actingAs($this->superAdmin)
+            ->put(route('institutions.update', $inst), [
+                'name' => 'Sekolah Khusus Tahfizh Saja',
+                'code' => 'TAHFIZHONLY',
+                'is_active' => '1',
+                'features' => [
+                    'feature_tahfizh' => '1',
+                    'feature_adab' => '0',
+                    'feature_ketahanan' => '0',
+                    'feature_rapor' => '1',
+                    'feature_badges' => '0',
+                    'feature_whatsapp' => '0',
+                ],
+            ]);
+
+        $response->assertRedirect(route('institutions.index'));
+
+        $inst->refresh();
+        $this->assertTrue($inst->isFeatureEnabled('feature_tahfizh'));
+        $this->assertFalse($inst->isFeatureEnabled('feature_adab'));
+        $this->assertFalse($inst->isFeatureEnabled('feature_ketahanan'));
+        $this->assertTrue($inst->isFeatureEnabled('feature_rapor'));
+    }
 }
