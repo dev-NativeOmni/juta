@@ -37,7 +37,7 @@
                 <div class="relative z-10 max-w-2xl">
                     <h3 class="text-xl font-bold mb-2">Panel Kontrol Akun Super Admin</h3>
                     <p class="text-violet-100 text-sm leading-relaxed">
-                        Manajemen kredensial seluruh pengguna TAD. Anda dapat melihat username, mencatat/memperbarui password dalam teks biasa, serta mengontrol peran dan status aktifasi seluruh akun dari halaman monitoring ini.
+                        Manajemen kredensial seluruh pengguna {{ \App\Models\Setting::get('app_name', 'JUTA') }}. Anda dapat melihat username, mencatat/memperbarui password dalam teks biasa, serta mengontrol peran dan status aktifasi seluruh akun dari halaman monitoring ini.
                     </p>
                 </div>
             </div>

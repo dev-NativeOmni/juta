@@ -7,7 +7,7 @@
                 </h2>
 
                 <p class="mt-1 text-sm text-gray-600">
-                    Kelola dan baca notifikasi internal TAD.
+                    Kelola dan baca notifikasi internal sistem.
                 </p>
             </div>
 

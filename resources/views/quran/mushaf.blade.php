@@ -341,7 +341,7 @@
                                                 
                                                 <!-- Action links -->
                                                 <div class="flex items-center gap-2" x-show="canRecord">
-                                                    <!-- Catat Hafalan (TAD Quick Integration) -->
+                                                    <!-- Catat Hafalan Quick Integration -->
                                                     <a :href="`{{ route('hafalan-records.create') }}?surah_id=${getSurahIdFromKey(verse.verse_key)}&ayah_start=${getAyahNumFromKey(verse.verse_key)}&ayah_end=${getAyahNumFromKey(verse.verse_key)}`"
                                                        class="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-600 hover:text-emerald-700 bg-emerald-500/10 px-2 py-0.5 rounded transition-all">
                                                         <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">

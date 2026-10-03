@@ -140,7 +140,7 @@
                                 <div class="flex items-center">
                                     <span class="font-bold w-16">Tempat</span>
                                     <span class="mr-1">:</span>
-                                    <span class="border-b border-dotted border-gray-400 flex-1 font-semibold">TAD / Sekolah</span>
+                                    <span class="border-b border-dotted border-gray-400 flex-1 font-semibold">{{ $student->institution?->name ?? 'Sekolah / Madrasah' }}</span>
                                 </div>
                             </div>
                         </div>

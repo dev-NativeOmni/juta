@@ -517,7 +517,7 @@
                     <div class="text-center flex flex-col items-center gap-4 max-w-2xl mx-auto mb-16 sm:mb-20">
                         <div class="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-orange-500/10 border border-orange-500/20 text-orange-600 dark:text-orange-400 text-xs font-bold uppercase tracking-wider backdrop-blur-md">
                             <span class="w-1.5 h-1.5 rounded-full bg-orange-500 dark:bg-orange-400 animate-pulse"></span>
-                            Fitur Unggulan TAD Management System
+                            Fitur Unggulan {{ $appName }}
                         </div>
                         <h2 class="text-3xl sm:text-4xl lg:text-5xl font-extrabold text-zinc-900 dark:text-white tracking-tight leading-tight">
                             Satu Platform, Semua Kebutuhan Pelacakan Tahfidz
@@ -541,7 +541,7 @@
                                     <span class="w-3 h-3 rounded-full bg-red-500/80"></span>
                                     <span class="w-3 h-3 rounded-full bg-amber-500/80"></span>
                                     <span class="w-3 h-3 rounded-full bg-emerald-500/80"></span>
-                                    <span class="text-xs font-bold text-zinc-500 dark:text-zinc-400 ml-2 hidden sm:inline">TAD Tahfidz Hub • Dashboard Live</span>
+                                    <span class="text-xs font-bold text-zinc-500 dark:text-zinc-400 ml-2 hidden sm:inline">{{ $appName }} • Dashboard Live</span>
                                 </div>
                                 <div class="flex items-center gap-2">
                                     <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-[10px] font-bold text-emerald-600 dark:text-emerald-400">
@@ -698,7 +698,7 @@
                             Keunggulan Sistem
                         </div>
                         <h2 class="text-3xl sm:text-4xl lg:text-5xl font-extrabold text-zinc-900 dark:text-white tracking-tight leading-tight">
-                            Mengapa Memilih TAD Management System ?
+                            Mengapa Memilih {{ $appName }} ?
                         </h2>
                         <p class="text-zinc-600 dark:text-zinc-400 text-sm sm:text-base leading-relaxed">
                             Fitur-fitur tangguh yang dirancang spesifik untuk menyederhanakan manajemen Tahfizh di sekolah, Pondok Pesantren, dan Rumah Tahfizh.
@@ -986,7 +986,7 @@
                                 <span class="w-3 h-3 rounded-full bg-red-500/80"></span>
                                 <span class="w-3 h-3 rounded-full bg-amber-500/80"></span>
                                 <span class="w-3 h-3 rounded-full bg-emerald-500/80"></span>
-                                <span class="text-xs font-bold text-zinc-500 dark:text-zinc-400 ml-2 hidden sm:inline">TAD Simulation Console</span>
+                                <span class="text-xs font-bold text-zinc-500 dark:text-zinc-400 ml-2 hidden sm:inline">{{ $appName }} Simulation Console</span>
                             </div>
                             <div class="flex items-center gap-2">
                                 <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-orange-500/10 border border-orange-500/20 text-[10px] font-bold text-orange-600 dark:text-orange-400">

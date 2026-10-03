@@ -441,7 +441,7 @@
                 const ctx = tempCanvas.getContext('2d');
 
                 const titleText = "Diagram Progres Hafalan Murid";
-                const subTitleText = "TAD Management System (Tahfizh, Adab, Disiplin) — Tanggal Ekspor: " + new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
+                const subTitleText = "{{ \App\Models\Setting::get('app_name', config('app.name', 'JUTA')) }} — Tanggal Ekspor: " + new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
 
                 const bannerHeight = 80;
                 tempCanvas.width = originalCanvas.width;

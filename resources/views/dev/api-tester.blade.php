@@ -2,7 +2,7 @@
 <html lang="id">
 <head>
     <meta charset="UTF-8">
-    <title>TAD API v1 Tester</title>
+    <title>{{ \App\Models\Setting::get('app_name', 'JUTA') }} API v1 Tester</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
 
     <style>
@@ -126,9 +126,9 @@
 <body>
 <div class="container">
     <div class="card">
-        <h1>TAD API v1 Tester</h1>
+        <h1>{{ \App\Models\Setting::get('app_name', 'JUTA') }} API v1 Tester</h1>
         <p>
-            Halaman ini untuk testing lokal endpoint API TAD.
+            Halaman ini untuk testing lokal endpoint API {{ \App\Models\Setting::get('app_name', 'JUTA') }}.
             Jangan jadikan ini halaman publik production.
         </p>
     </div>

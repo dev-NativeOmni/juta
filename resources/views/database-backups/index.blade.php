@@ -5,7 +5,7 @@
                 Backup Database
             </h2>
             <p class="text-sm text-gray-600">
-                Kelola backup database TAD secara manual dari panel admin.
+                Kelola backup database {{ \App\Models\Setting::get('app_name', 'JUTA') }} secara manual dari panel admin.
             </p>
         </div>
     </x-slot>

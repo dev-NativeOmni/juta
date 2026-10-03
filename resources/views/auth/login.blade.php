@@ -40,7 +40,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
 
-    <title>{{ $namaInstansi ? $namaInstansi . ' - ' . __('Masuk') : config('app.name', 'TAD') . ' - ' . __('Masuk') }}</title>
+    <title>{{ $namaInstansi ? $namaInstansi . ' - ' . __('Masuk') : $appName . ' - ' . __('Masuk') }}</title>
 
     <!-- PWA & Apple iOS Metadata -->
     @include('partials.app-icons', ['themeColor' => '#ea580c'])

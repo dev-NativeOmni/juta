@@ -175,8 +175,8 @@
         
         <!-- Header / Kop Surat -->
         <div class="text-center border-b-2 border-zinc-900 pb-6 mb-6">
-            <h1 class="text-2xl font-extrabold tracking-tight text-zinc-950 uppercase">TAD MONITORING SYSTEM</h1>
-            <p class="text-sm font-medium text-zinc-550 mt-1">Lembaga Tahfidz & Pendidikan Al-Qur'an Terpadu</p>
+            <h1 class="text-2xl font-extrabold tracking-tight text-zinc-950 uppercase">{{ strtoupper(\App\Models\Setting::get('app_name', config('app.name', 'JUTA'))) }} MONITORING SYSTEM</h1>
+            <p class="text-sm font-medium text-zinc-500 mt-1">Lembaga Tahfidz & Pendidikan Al-Qur'an Terpadu</p>
             <div class="mt-4 text-xs text-zinc-500 flex justify-center gap-4">
                 <span>Tanggal Laporan: {{ now()->format('d M Y') }}</span>
                 <span>•</span>
