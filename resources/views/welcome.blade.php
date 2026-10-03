@@ -294,16 +294,11 @@
                                     Dashboard
                                 </a>
                             @else
-                                <a href="{{ route('portal.gate') }}" class="hidden sm:inline-flex items-center gap-1 text-slate-300 hover:text-orange-400 font-semibold px-3 py-1.5 text-xs rounded-full border border-slate-700/80 hover:border-orange-500/50 transition-all">
+                                <a href="{{ route('portal.gate') }}" class="inline-flex items-center gap-1.5 text-zinc-700 dark:text-slate-200 hover:text-orange-600 dark:hover:text-orange-400 font-bold px-3 py-1.5 sm:px-4 sm:py-2 text-[11px] sm:text-xs rounded-full border border-zinc-300 dark:border-white/15 bg-white/50 dark:bg-black/40 hover:bg-white/80 dark:hover:bg-white/10 backdrop-blur-md shadow-xs transition-all duration-200 hover:scale-105 active:scale-95 shrink-0">
                                     <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
                                     </svg>
                                     <span>Portal Lembaga</span>
-                                </a>
-                                <a href="{{ route('login') }}" 
-                                   @click.prevent="openLoginModal()"
-                                   class="bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white font-bold px-3 py-1.5 sm:px-4 sm:py-2 text-[10px] sm:text-xs uppercase tracking-tight sm:tracking-wider rounded-full transition-all duration-200 shadow-md shadow-orange-500/25 hover:scale-105 active:scale-95 whitespace-nowrap shrink-0">
-                                    Masuk
                                 </a>
                             @endauth
                         @endif
@@ -388,10 +383,12 @@
                                         <span>Dashboard</span>
                                     </a>
                                 @else
-                                    <a href="{{ route('login') }}" 
-                                       @click.prevent="openLoginModal()"
-                                       class="inline-flex items-center justify-center px-2.5 py-1.5 sm:px-4 sm:py-2 rounded-full text-white font-bold text-[10px] sm:text-xs uppercase tracking-tight sm:tracking-wider bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 shadow-md shadow-orange-500/25 hover:scale-105 active:scale-95 transition-all duration-200 whitespace-nowrap shrink-0">
-                                        <span>Masuk</span>
+                                    <a href="{{ route('portal.gate') }}" 
+                                       class="inline-flex items-center gap-1.5 text-zinc-800 dark:text-slate-200 hover:text-orange-600 dark:hover:text-orange-400 font-bold px-3 py-1.5 sm:px-4 sm:py-2 text-[11px] sm:text-xs rounded-full border border-zinc-300/80 dark:border-white/15 bg-white/50 dark:bg-black/40 hover:bg-white/80 dark:hover:bg-white/10 backdrop-blur-md shadow-xs transition-all duration-200 hover:scale-105 active:scale-95 shrink-0">
+                                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                                        </svg>
+                                        <span>Portal Lembaga</span>
                                     </a>
                                 @endauth
                             @endif
@@ -436,10 +433,9 @@
                                 </svg>
                             </a>
                         @else
-                            <a href="{{ route('login') }}" 
-                               @click.prevent="openLoginModal()"
+                            <a href="{{ route('portal.gate') }}" 
                                class="w-full sm:w-auto px-6 py-2.5 sm:px-8 sm:py-3.5 rounded-full text-white font-bold text-xs sm:text-sm tracking-wider uppercase bg-gradient-to-r from-orange-500 via-amber-500 to-orange-600 hover:from-orange-600 hover:to-amber-600 shadow-xl shadow-orange-500/30 hover:scale-105 active:scale-95 transition-all duration-200 flex items-center justify-center gap-2">
-                                <span>Akses Portal Masuk</span>
+                                <span>Masuk Portal Lembaga</span>
                                 <svg class="w-3.5 h-3.5 sm:w-4 sm:h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
                                     <path stroke-linecap="round" stroke-linejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" />
                                 </svg>
@@ -1233,10 +1229,9 @@
                                     Masuk Dasbor Aplikasi
                                 </a>
                             @else
-                                <a href="{{ route('login') }}" 
-                                   @click.prevent="openLoginModal()"
+                                <a href="{{ route('portal.gate') }}" 
                                    class="px-8 py-3.5 text-xs sm:text-sm font-bold uppercase tracking-wider rounded-full text-white bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 shadow-xl shadow-orange-500/30 transition-all duration-200 hover:scale-105 active:scale-95">
-                                    Masuk Aplikasi
+                                    Masuk Portal Lembaga
                                 </a>
                             @endauth
                         @endif
@@ -1256,7 +1251,12 @@
             <footer class="w-full bg-zinc-950 dark:bg-black border-t border-zinc-800 dark:border-white/5 py-10 text-center relative z-10">
                 <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-6">
                     <p class="text-xs text-zinc-500">
-                        {{ $footerCopyright ?: ('© ' . date('Y') . ' ' . $appName . '. Hak Cipta Dilindungi.') }}
+                        <a href="{{ route('login') }}" 
+                           @click.prevent="openLoginModal()" 
+                           title="Akses Masuk"
+                           class="hover:text-zinc-400 transition-colors cursor-pointer focus:outline-none">
+                            {{ $footerCopyright ?: ('© ' . date('Y') . ' ' . $appName . '. Hak Cipta Dilindungi.') }}
+                        </a>
                     </p>
                     <div class="flex items-center gap-6 text-xs text-zinc-500">
                         <a href="#" class="hover:text-zinc-300 transition-colors">Syarat Ketentuan</a>
