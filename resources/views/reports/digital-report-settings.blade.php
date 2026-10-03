@@ -271,7 +271,16 @@
                         <!-- Mini Kop Surat -->
                         <div class="grid grid-cols-[38px_1fr_38px] items-center border-b border-black pb-2.5 mb-3">
                             <div class="shrink-0 flex justify-start">
-                                <img src="{{ asset('images/logo_alazhar7.png') }}" class="h-9 w-auto object-contain" alt="Logo" />
+                                @php
+                                    $prevLogo = app(\App\Services\InstitutionContext::class)->get()?->logo_url ?? (\App\Models\Setting::get('logo') ? asset('storage/' . \App\Models\Setting::get('logo')) : null);
+                                @endphp
+                                @if ($prevLogo)
+                                    <img src="{{ $prevLogo }}" class="h-9 w-auto object-contain" alt="Logo" />
+                                @else
+                                    <div class="h-8 w-8 rounded-lg border border-black flex items-center justify-center font-bold text-[9px]">
+                                        LOGO
+                                    </div>
+                                @endif
                             </div>
                             
                             <div class="flex-1 flex flex-col items-center px-1 text-center">

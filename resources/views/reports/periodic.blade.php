@@ -551,7 +551,7 @@
 
                 tempCtx.fillStyle = '#6B7280';
                 tempCtx.font = '13px Arial, sans-serif';
-                tempCtx.fillText("TAD-SMAIA7", tempCanvas.width / 2, 54);
+                tempCtx.fillText("{{ addslashes(app(\App\Services\InstitutionContext::class)->get()?->name ?? \App\Models\Setting::get('nama_instansi', \App\Models\Setting::get('app_name', config('app.name', 'JUTA')))) }}", tempCanvas.width / 2, 54);
 
                 // Divider line
                 tempCtx.strokeStyle = '#E5E7EB';

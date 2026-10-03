@@ -1,14 +1,39 @@
 @php
     try {
-        $logo = class_exists(\App\Models\Setting::class) && \Illuminate\Support\Facades\Schema::hasTable('settings') 
-            ? \App\Models\Setting::get('logo') 
-            : null;
-        $namaInstansi = class_exists(\App\Models\Setting::class) && \Illuminate\Support\Facades\Schema::hasTable('settings') 
-            ? \App\Models\Setting::get('nama_instansi') 
+        $activeInst = app(\App\Services\InstitutionContext::class)->get();
+        if ($activeInst) {
+            $logoUrl = $activeInst->logo_url;
+            $namaInstansi = $activeInst->name;
+            $appName = $activeInst->name;
+            $appTagline = $activeInst->code ?: 'Portal Lembaga';
+            $bannerLogoUrl = null;
+        } else {
+            $logoUrl = class_exists(\App\Models\Setting::class) && \Illuminate\Support\Facades\Schema::hasTable('settings') && \App\Models\Setting::get('logo')
+                ? asset('storage/' . \App\Models\Setting::get('logo'))
+                : null;
+            $bannerLogoUrl = class_exists(\App\Models\Setting::class) && \Illuminate\Support\Facades\Schema::hasTable('settings') && \App\Models\Setting::get('logo_banner')
+                ? asset('storage/' . \App\Models\Setting::get('logo_banner'))
+                : null;
+            $namaInstansi = class_exists(\App\Models\Setting::class) && \Illuminate\Support\Facades\Schema::hasTable('settings') 
+                ? \App\Models\Setting::get('nama_instansi') 
+                : null;
+            $appName = class_exists(\App\Models\Setting::class) && \Illuminate\Support\Facades\Schema::hasTable('settings') 
+                ? \App\Models\Setting::get('app_name', config('app.name', 'JUTA')) 
+                : config('app.name', 'JUTA');
+            $appTagline = class_exists(\App\Models\Setting::class) && \Illuminate\Support\Facades\Schema::hasTable('settings') 
+                ? \App\Models\Setting::get('app_tagline', 'Jurnal Tahfizh & Adab') 
+                : 'Jurnal Tahfizh & Adab';
+        }
+        $footerCopyright = class_exists(\App\Models\Setting::class) && \Illuminate\Support\Facades\Schema::hasTable('settings')
+            ? \App\Models\Setting::get('footer_copyright')
             : null;
     } catch (\Throwable $e) {
-        $logo = null;
+        $logoUrl = null;
+        $bannerLogoUrl = null;
         $namaInstansi = null;
+        $appName = config('app.name', 'JUTA');
+        $appTagline = 'Jurnal Tahfizh & Adab';
+        $footerCopyright = null;
     }
 @endphp
 <!DOCTYPE html>
@@ -17,7 +42,7 @@
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=5">
         <meta name="csrf-token" content="{{ csrf_token() }}">
-        <title>TAD Management System — Platform Pelacakan Hafalan & Murajaah Qur'an Modern</title>
+        <title>{{ $appName }} — {{ $appTagline }}</title>
         @include('partials.app-icons')
 
         <!-- Theme Initialization Script (Default: Light Mode unless explicitly set to dark) -->
@@ -184,14 +209,20 @@
             <div class="relative z-10 flex flex-col items-center gap-8">
                 <!-- Glowing Ring -->
                 <div :class="logoVisible ? 'scale-100 opacity-100' : 'scale-75 opacity-0'"
-                     class="w-64 h-64 sm:w-80 sm:h-80 rounded-full border border-teal-500/35 flex items-center justify-center shadow-[0_0_80px_rgba(13,148,136,0.3)] transition-all duration-1000 ease-out p-0 overflow-hidden">
-                    <img src="{{ asset('images/logo_alazhar7.png') }}" alt="Logo SMA Islam Al Azhar 7" class="w-full h-full object-cover">
+                     class="w-48 h-48 sm:w-64 sm:h-64 rounded-full border border-teal-500/35 flex items-center justify-center shadow-[0_0_80px_rgba(13,148,136,0.3)] transition-all duration-1000 ease-out p-4 overflow-hidden bg-white/5 backdrop-blur-xl">
+                    @if ($logoUrl)
+                        <img src="{{ $logoUrl }}" alt="{{ $appName }}" class="w-full h-full object-contain">
+                    @else
+                        <div class="w-full h-full rounded-full bg-gradient-to-tr from-teal-500 to-emerald-600 flex items-center justify-center text-white font-black text-6xl shadow-xl">
+                            {{ substr($appName, 0, 1) }}
+                        </div>
+                    @endif
                 </div>
                 
                 <!-- Large Text Reveal -->
                 <span :class="logoVisible ? 'translate-y-0 opacity-100' : 'translate-y-4 opacity-0'"
-                      class="font-black text-3xl sm:text-5xl tracking-widest text-white uppercase transition-all duration-1000 delay-300 ease-out text-center">
-                    Al Azhar <span class="text-amber-500">7</span>
+                      class="font-black text-2xl sm:text-4xl tracking-widest text-white uppercase transition-all duration-1000 delay-300 ease-out text-center">
+                    {{ $appName }}
                 </span>
             </div>
         </div>
@@ -208,10 +239,27 @@
                     x-transition:leave-end="opacity-0 -translate-y-4"
                     class="fixed top-0 inset-x-0 z-50 bg-[#f1f5f9]/85 dark:bg-zinc-900/85 border-b border-white/60 dark:border-white/10 shadow-lg shadow-slate-900/5 py-2 sm:py-2.5 backdrop-blur-2xl transition-colors duration-300">
                 <div class="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 flex items-center justify-between gap-2">
-                    <!-- Brand Logo: Pure School Logo & Pure Gemilang Banner Logo -->
-                    <div class="flex items-center gap-1.5 sm:gap-2.5 shrink-0">
-                        <img src="{{ asset('images/logo_alazhar7.png') }}" alt="Logo SMA Islam Al Azhar 7" class="h-7 w-7 xs:h-8 xs:w-8 sm:h-9 sm:w-9 md:h-10 md:w-10 object-contain shrink-0 drop-shadow-sm">
-                        <img src="{{ asset('images/logo-gemilang-banner.png') }}" alt="Logo Gemilang" class="h-5 sm:h-7 md:h-8 max-w-[95px] xs:max-w-[125px] sm:max-w-[160px] md:max-w-[200px] object-contain drop-shadow-sm shrink-0">
+                    <!-- Brand Logo -->
+                    <div class="flex items-center gap-2 sm:gap-2.5 shrink-0">
+                        @if ($logoUrl)
+                            <img src="{{ $logoUrl }}" alt="{{ $appName }}" class="h-7 w-7 sm:h-9 sm:w-9 object-contain shrink-0 drop-shadow-sm rounded-lg">
+                        @else
+                            <div class="h-7 w-7 sm:h-8 sm:w-8 rounded-xl bg-gradient-to-tr from-teal-600 to-emerald-500 flex items-center justify-center text-white font-black text-xs sm:text-sm shadow-xs shrink-0">
+                                {{ substr($appName, 0, 1) }}
+                            </div>
+                        @endif
+                        @if ($bannerLogoUrl)
+                            <img src="{{ $bannerLogoUrl }}" alt="{{ $appName }}" class="h-5 sm:h-7 md:h-8 max-w-[100px] xs:max-w-[130px] sm:max-w-[160px] md:max-w-[200px] object-contain drop-shadow-sm shrink-0">
+                        @else
+                            <div class="flex flex-col min-w-0">
+                                <span class="font-black text-xs sm:text-sm leading-tight tracking-tight text-zinc-900 dark:text-white truncate max-w-[120px] xs:max-w-[160px]">
+                                    {{ $appName }}
+                                </span>
+                                <span class="text-[9px] sm:text-[10px] font-semibold text-teal-600 dark:text-teal-400 tracking-wider uppercase truncate">
+                                    {{ $appTagline }}
+                                </span>
+                            </div>
+                        @endif
                     </div>
 
                     <!-- Desktop Pill Menu Navigation (Visible on Widescreen Desktops >= 1280px to ensure zero collision on iPads/Tablets in landscape) -->
@@ -284,10 +332,27 @@
                 <header class="max-w-6xl mx-auto w-full relative z-20">
                     <div class="p-1.5 sm:p-2.5 rounded-full bg-white/40 dark:bg-zinc-900/60 backdrop-blur-2xl border border-white/60 dark:border-white/15 shadow-xl shadow-black/5 flex items-center justify-between gap-1.5 sm:gap-3 transition-colors duration-300">
                         
-                        <!-- Left Brand Logo: Pure School Logo & Pure Gemilang Banner Logo (Responsive scaling & zero collision) -->
-                        <div class="flex items-center gap-1.5 sm:gap-2.5 pl-1 sm:pl-2 shrink-0">
-                            <img src="{{ asset('images/logo_alazhar7.png') }}" alt="Logo SMA Islam Al Azhar 7" class="h-7 w-7 xs:h-8 xs:w-8 sm:h-9 sm:w-9 md:h-10 md:w-10 object-contain shrink-0 drop-shadow-sm">
-                            <img src="{{ asset('images/logo-gemilang-banner.png') }}" alt="Logo Gemilang" class="h-5 sm:h-7 md:h-8 max-w-[95px] xs:max-w-[125px] sm:max-w-[160px] md:max-w-[200px] object-contain drop-shadow-sm brightness-105 dark:brightness-110 shrink-0">
+                        <!-- Left Brand Logo -->
+                        <div class="flex items-center gap-2 sm:gap-2.5 pl-1 sm:pl-2 shrink-0">
+                            @if ($logoUrl)
+                                <img src="{{ $logoUrl }}" alt="{{ $appName }}" class="h-7 w-7 sm:h-9 sm:w-9 object-contain shrink-0 drop-shadow-sm rounded-lg">
+                            @else
+                                <div class="h-7 w-7 sm:h-8 sm:w-8 rounded-xl bg-gradient-to-tr from-teal-600 to-emerald-500 flex items-center justify-center text-white font-black text-xs sm:text-sm shadow-xs shrink-0">
+                                    {{ substr($appName, 0, 1) }}
+                                </div>
+                            @endif
+                            @if ($bannerLogoUrl)
+                                <img src="{{ $bannerLogoUrl }}" alt="{{ $appName }}" class="h-5 sm:h-7 md:h-8 max-w-[100px] xs:max-w-[130px] sm:max-w-[160px] md:max-w-[200px] object-contain drop-shadow-sm shrink-0">
+                            @else
+                                <div class="flex flex-col min-w-0">
+                                    <span class="font-black text-xs sm:text-sm leading-tight tracking-tight text-zinc-900 dark:text-white truncate max-w-[120px] xs:max-w-[160px]">
+                                        {{ $appName }}
+                                    </span>
+                                    <span class="text-[9px] sm:text-[10px] font-semibold text-teal-600 dark:text-teal-400 tracking-wider uppercase truncate">
+                                        {{ $appTagline }}
+                                    </span>
+                                </div>
+                            @endif
                         </div>
 
                         <!-- Center Navigation Links (Visible on Widescreen Desktops >= 1280px to guarantee zero overlapping on Tablets/iPads in landscape) -->
@@ -337,26 +402,26 @@
                 <!-- Center Hero Stage: Open & Sleek Typography -->
                 <div class="max-w-4xl mx-auto w-full relative z-10 text-center flex flex-col items-center justify-center my-auto py-5 sm:py-8 md:py-12 px-2">
                     
-                    <!-- Pill Badge: Generasi Mulia Islami Cemerlang -->
+                    <!-- Pill Badge -->
                     <div class="inline-flex items-center gap-1.5 sm:gap-2 px-3 py-1 sm:px-4 sm:py-1.5 rounded-full bg-orange-500/15 dark:bg-black/50 backdrop-blur-md border border-orange-500/35 dark:border-white/20 shadow-sm text-[9px] xs:text-[10px] sm:text-xs font-bold text-orange-950 dark:text-amber-300 uppercase tracking-wider mb-3 sm:mb-4 animate-pulse">
                         <svg class="w-3 h-3 sm:w-3.5 sm:h-3.5 text-orange-600 dark:text-amber-400 shrink-0" fill="currentColor" viewBox="0 0 24 24">
                             <path d="M12 2l2.4 7.4H22l-6 4.6 2.3 7.2L12 16.8 5.7 21.2 8 14l-6-4.6h7.6z" />
                         </svg>
-                        <span>Generasi Mulia Islami Cemerlang</span>
+                        <span>{{ $appName }} • Digital Platform</span>
                     </div>
 
                     <!-- Main Hero Title -->
                     <h1 class="text-2xl xs:text-3xl sm:text-4xl lg:text-5xl font-black text-zinc-900 dark:text-white tracking-tight leading-snug sm:leading-tight drop-shadow-[0_2px_12px_rgba(255,255,255,0.9)] dark:drop-shadow-[0_4px_20px_rgba(0,0,0,0.95)] px-2">
-                        TAD Management System
+                        {{ $appName }}
                     </h1>
                     <p class="text-xs sm:text-sm font-bold tracking-widest text-orange-600 dark:text-amber-400 uppercase mt-1">
-                        (Tahfizh, Adab, Disiplin)
+                        {{ $appTagline }}
                     </p>
 
-                    <!-- Hero Subtitle in Indonesian with Sleek Frosted Glass Container to avoid Background Sign Clashing -->
+                    <!-- Hero Subtitle in Indonesian with Sleek Frosted Glass Container -->
                     <div class="mt-3 sm:mt-4 p-3 sm:p-4 rounded-2xl bg-white/40 dark:bg-black/45 backdrop-blur-md border border-white/60 dark:border-white/10 shadow-sm max-w-2xl mx-auto">
                         <p class="text-xs sm:text-sm md:text-base text-zinc-900 dark:text-zinc-100 leading-relaxed font-medium">
-                            Platform Digital Terpadu <strong class="text-zinc-950 dark:text-white font-bold">SMA Islam Al Azhar 7 Sukoharjo</strong> untuk pemantauan tahfizh mutqin, pembiasaan karakter adab, dan kemajuan akademik santri secara real-time.
+                            Platform Digital Terpadu <strong class="text-zinc-950 dark:text-white font-bold">{{ $namaInstansi ?: $appName }}</strong> untuk pemantauan tahfizh mutqin, pembiasaan karakter adab, dan kemajuan santri secara real-time.
                         </p>
                     </div>
 
@@ -937,7 +1002,7 @@
                             <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-slate-200/80 dark:border-white/10">
                                 <div>
                                     <h4 class="text-base sm:text-lg font-bold text-zinc-900 dark:text-white">Dasbor Murid — Syamil Rabbani</h4>
-                                    <p class="text-xs text-zinc-500 dark:text-zinc-400 font-medium mt-0.5">Kelas: X-MIPA 1 • SMA Islam Al Azhar 7 Solo Baru</p>
+                                    <p class="text-xs text-zinc-500 dark:text-zinc-400 font-medium mt-0.5">Kelas: X-1 • {{ $namaInstansi ?: $appName }}</p>
                                 </div>
                                 <span class="inline-flex items-center gap-1.5 self-start sm:self-auto px-3.5 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-xs font-bold text-emerald-600 dark:text-emerald-400">
                                     <span class="w-2 h-2 rounded-full bg-emerald-500 dark:bg-emerald-400"></span>
@@ -985,8 +1050,8 @@
                         <div x-show="activeDashboardTab === 'guru'" x-transition:enter="transition ease-out duration-300" x-transition:enter-start="opacity-0 scale-95" x-transition:enter-end="opacity-100 scale-100" class="space-y-6" style="display: none;">
                             <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-slate-200/80 dark:border-white/10">
                                 <div>
-                                    <h4 class="text-base sm:text-lg font-bold text-zinc-900 dark:text-white">Dasbor Ustadz Penguji — Ust. Ahmad Rabbani</h4>
-                                    <p class="text-xs text-zinc-500 dark:text-zinc-400 font-medium mt-0.5">Halaqah Tahfidz Gemilang • SMA Islam Al Azhar 7</p>
+                                    <h4 class="text-base sm:text-lg font-bold text-zinc-900 dark:text-white">Dasbor Penguji — Ust. Ahmad</h4>
+                                    <p class="text-xs text-zinc-500 dark:text-zinc-400 font-medium mt-0.5">Halaqah Tahfidz • {{ $namaInstansi ?: $appName }}</p>
                                 </div>
                                 <button class="self-start sm:self-auto px-4 py-2 bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-xs font-bold text-white rounded-full transition-all duration-150 shadow-md shadow-orange-500/25 hover:scale-105">
                                     + Input Cepat Setoran
@@ -1191,7 +1256,7 @@
             <footer class="w-full bg-zinc-950 dark:bg-black border-t border-zinc-800 dark:border-white/5 py-10 text-center relative z-10">
                 <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-6">
                     <p class="text-xs text-zinc-500">
-                        &copy; 2026 TAD Management System. SMA Islam Al Azhar 7 Sukoharjo Developed by Native
+                        {{ $footerCopyright ?: ('© ' . date('Y') . ' ' . $appName . '. Hak Cipta Dilindungi.') }}
                     </p>
                     <div class="flex items-center gap-6 text-xs text-zinc-500">
                         <a href="#" class="hover:text-zinc-300 transition-colors">Syarat Ketentuan</a>
@@ -1252,21 +1317,23 @@
 
                         <!-- Header Brand Emblem & Title -->
                         <div class="flex flex-col items-center justify-center text-center mb-5 relative z-10">
-                            <!-- Logo (Clean without box wrapper) -->
+                            <!-- Logo -->
                             <div class="relative mb-3 flex items-center justify-center">
-                                @if ($logo)
-                                    <img src="{{ asset('storage/' . $logo) }}" alt="Logo" class="w-16 h-16 sm:w-20 sm:h-20 object-contain drop-shadow-[0_8px_20px_rgba(0,0,0,0.55)]" />
+                                @if ($logoUrl)
+                                    <img src="{{ $logoUrl }}" alt="{{ $appName }}" class="w-16 h-16 sm:w-20 sm:h-20 object-contain drop-shadow-[0_8px_20px_rgba(0,0,0,0.55)] rounded-2xl" />
                                 @else
-                                    <img src="{{ asset('images/logo_alazhar7.png') }}" alt="Logo SMA Islam Al Azhar 7 Solo Baru" class="w-16 h-16 sm:w-20 sm:h-20 object-contain drop-shadow-[0_8px_20px_rgba(0,0,0,0.55)]">
+                                    <div class="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl bg-gradient-to-tr from-teal-500 via-emerald-500 to-teal-700 flex items-center justify-center text-white font-black text-2xl sm:text-3xl shadow-lg shadow-teal-500/30">
+                                        {{ substr($appName, 0, 1) }}
+                                    </div>
                                 @endif
                             </div>
 
                             <h3 id="login-modal-title" class="text-2xl sm:text-[1.75rem] font-black font-display text-white tracking-tight leading-tight">
-                                LOGIN TAD
+                                {{ $appName }}
                             </h3>
                             
                             <p class="text-xs sm:text-sm text-zinc-300 font-medium mt-1 tracking-wide">
-                                {{ ($namaInstansi && !in_array($namaInstansi, ['SMAIA 7', 'SMAIA7', 'SMA Islam Al Azhar 7 Sukoharjo'])) ? $namaInstansi : 'SMA Islam Al Azhar 7 Solo Baru' }}
+                                {{ $namaInstansi ?: $appTagline }}
                             </p>
                         </div>
 

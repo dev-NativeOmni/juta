@@ -93,54 +93,103 @@
                 <form method="POST" action="{{ route('settings.update') }}" enctype="multipart/form-data" class="p-6 space-y-6">
                     @csrf
 
-                    <!-- Nama Instansi -->
-                    <div class="space-y-2">
-                        <label for="nama_instansi" class="block text-sm font-semibold text-gray-700 dark:text-zinc-300">
-                            Nama Instansi / Sekolah
-                        </label>
-                        <input
-                            type="text"
-                            name="nama_instansi"
-                            id="nama_instansi"
-                            value="{{ old('nama_instansi', $nama_instansi) }}"
-                            placeholder="Contoh: Pondok Pesantren Al-Hikmah"
-                            class="block w-full rounded-xl border-gray-300 dark:border-zinc-700 dark:bg-[#09090b]/40 dark:text-white shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm"
-                        />
-                        <p class="text-xs text-gray-500 dark:text-zinc-500">
-                            Nama instansi ini akan ditampilkan di bawah teks utama pada halaman login dan di navigasi header.
-                        </p>
+                    <!-- White Label: Nama & Slogan Aplikasi -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div class="space-y-1.5">
+                            <label for="app_name" class="block text-xs font-bold text-gray-700 dark:text-zinc-300">
+                                Nama Aplikasi (White-Label)
+                            </label>
+                            <input
+                                type="text"
+                                name="app_name"
+                                id="app_name"
+                                value="{{ old('app_name', $app_name) }}"
+                                placeholder="Contoh: JUTA, SAPA, TAHFIZH-PRO"
+                                class="block w-full rounded-xl border-gray-300 dark:border-zinc-700 dark:bg-[#09090b]/40 dark:text-white shadow-xs focus:border-teal-500 focus:ring-teal-500 text-sm font-semibold"
+                            />
+                            <p class="text-[11px] text-gray-500 dark:text-zinc-400">
+                                Nama sistem yang tampil pada judul tab browser, header navigasi, dan PWA.
+                            </p>
+                        </div>
+
+                        <div class="space-y-1.5">
+                            <label for="app_tagline" class="block text-xs font-bold text-gray-700 dark:text-zinc-300">
+                                Slogan / Tagline Aplikasi
+                            </label>
+                            <input
+                                type="text"
+                                name="app_tagline"
+                                id="app_tagline"
+                                value="{{ old('app_tagline', $app_tagline) }}"
+                                placeholder="Contoh: Jurnal Tahfizh & Monitoring Adab"
+                                class="block w-full rounded-xl border-gray-300 dark:border-zinc-700 dark:bg-[#09090b]/40 dark:text-white shadow-xs focus:border-teal-500 focus:ring-teal-500 text-sm"
+                            />
+                            <p class="text-[11px] text-gray-500 dark:text-zinc-400">
+                                Sub-teks yang tampil di bawah logo utama pada sidebar dan landing page.
+                            </p>
+                        </div>
+                    </div>
+
+                    <!-- Nama Instansi Default & Footer Copyright -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div class="space-y-1.5">
+                            <label for="nama_instansi" class="block text-xs font-bold text-gray-700 dark:text-zinc-300">
+                                Nama Lembaga Default
+                            </label>
+                            <input
+                                type="text"
+                                name="nama_instansi"
+                                id="nama_instansi"
+                                value="{{ old('nama_instansi', $nama_instansi) }}"
+                                placeholder="Contoh: Pondok Pesantren Al-Hikmah"
+                                class="block w-full rounded-xl border-gray-300 dark:border-zinc-700 dark:bg-[#09090b]/40 dark:text-white shadow-xs focus:border-teal-500 focus:ring-teal-500 text-sm"
+                            />
+                            <p class="text-[11px] text-gray-500 dark:text-zinc-400">
+                                Nama lembaga default saat tidak ada sesi lembaga aktif.
+                            </p>
+                        </div>
+
+                        <div class="space-y-1.5">
+                            <label for="footer_copyright" class="block text-xs font-bold text-gray-700 dark:text-zinc-300">
+                                Teks Footer / Hak Cipta
+                            </label>
+                            <input
+                                type="text"
+                                name="footer_copyright"
+                                id="footer_copyright"
+                                value="{{ old('footer_copyright', $footer_copyright) }}"
+                                placeholder="Contoh: © 2026 JUTA Management System. All rights reserved."
+                                class="block w-full rounded-xl border-gray-300 dark:border-zinc-700 dark:bg-[#09090b]/40 dark:text-white shadow-xs focus:border-teal-500 focus:ring-teal-500 text-sm"
+                            />
+                            <p class="text-[11px] text-gray-500 dark:text-zinc-400">
+                                Ditampilkan di bagian bawah footer dan cetak laporan.
+                            </p>
+                        </div>
                     </div>
 
                     <hr class="border-gray-200 dark:border-zinc-800" />
 
-                    <!-- Custom Logo -->
+                    <!-- Custom Logo Utama (Persegi) -->
                     <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
                         <div class="space-y-2">
                             <label class="block text-sm font-semibold text-gray-700 dark:text-zinc-300">
-                                Logo Instansi
+                                Logo Utama (Persegi)
                             </label>
                             <p class="text-xs text-gray-500 dark:text-zinc-500">
-                                Rekomendasi gambar PNG transparan beresolusi persegi (misal: 512x512px). Maksimal 2MB.
+                                Ikon atau logo simbol aplikasi beresolusi persegi (misal: 512×512px). Maksimal 2MB.
                             </p>
                         </div>
                         <div class="md:col-span-2 space-y-4">
                             @if ($logo)
                                 <div class="flex items-center gap-4 p-4 bg-gray-50 dark:bg-[#09090b]/20 rounded-xl border border-gray-100 dark:border-zinc-800">
-                                    <img src="{{ asset('storage/' . $logo) }}" alt="Logo Instansi" class="w-16 h-16 object-contain rounded-lg bg-white border p-1" />
+                                    <img src="{{ asset('storage/' . $logo) }}" alt="Logo Utama" class="w-16 h-16 object-contain rounded-lg bg-white border p-1" />
                                     <div>
-                                        <p class="text-xs font-semibold text-gray-900 dark:text-zinc-300">Logo Custom Aktif</p>
+                                        <p class="text-xs font-semibold text-gray-900 dark:text-zinc-300">Logo Utama Custom Aktif</p>
                                         <label class="inline-flex items-center mt-1 text-xs text-red-600 hover:text-red-700 cursor-pointer">
                                             <input type="checkbox" name="reset_logo" value="1" class="rounded border-gray-300 text-red-600 focus:ring-red-500 mr-1.5" />
                                             Hapus & kembali ke Logo Default
                                         </label>
                                     </div>
-                                </div>
-                            @else
-                                <div class="p-4 bg-gray-50 dark:bg-[#09090b]/20 rounded-xl border border-gray-100 dark:border-zinc-800 text-xs text-gray-500 dark:text-zinc-400 flex items-center gap-3">
-                                    <div class="w-12 h-12 rounded-lg bg-white dark:bg-[#09090b]/40 border dark:border-zinc-800 flex items-center justify-center text-gray-455 font-bold">
-                                        DEF
-                                    </div>
-                                    <span>Menggunakan logo default TAD (SVG).</span>
                                 </div>
                             @endif
 
@@ -148,7 +197,77 @@
                                 type="file"
                                 name="logo"
                                 accept="image/*"
-                                class="block w-full text-sm text-zinc-500 file:mr-4 file:py-2.5 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-indigo-50 file:text-indigo-700 file:cursor-pointer hover:file:bg-indigo-100 dark:file:bg-zinc-800 dark:file:text-zinc-200"
+                                class="block w-full text-sm text-zinc-500 file:mr-4 file:py-2.5 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-teal-50 file:text-teal-700 file:cursor-pointer hover:file:bg-teal-100 dark:file:bg-zinc-800 dark:file:text-zinc-200"
+                            />
+                        </div>
+                    </div>
+
+                    <hr class="border-gray-200 dark:border-zinc-800" />
+
+                    <!-- Custom Logo Banner (Horisontal) -->
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        <div class="space-y-2">
+                            <label class="block text-sm font-semibold text-gray-700 dark:text-zinc-300">
+                                Logo Banner / Horisontal (Opsional)
+                            </label>
+                            <p class="text-xs text-gray-500 dark:text-zinc-500">
+                                Logo memanjang/banner untuk header navigasi. Jika dikosongkan, nama & slogan aplikasi akan dirender sebagai teks modern.
+                            </p>
+                        </div>
+                        <div class="md:col-span-2 space-y-4">
+                            @if ($logo_banner)
+                                <div class="flex items-center gap-4 p-4 bg-gray-50 dark:bg-[#09090b]/20 rounded-xl border border-gray-100 dark:border-zinc-800">
+                                    <img src="{{ asset('storage/' . $logo_banner) }}" alt="Logo Banner" class="h-10 max-w-[200px] object-contain rounded-lg bg-white border p-1" />
+                                    <div>
+                                        <p class="text-xs font-semibold text-gray-900 dark:text-zinc-300">Logo Banner Custom Aktif</p>
+                                        <label class="inline-flex items-center mt-1 text-xs text-red-600 hover:text-red-700 cursor-pointer">
+                                            <input type="checkbox" name="reset_logo_banner" value="1" class="rounded border-gray-300 text-red-600 focus:ring-red-500 mr-1.5" />
+                                            Hapus Logo Banner
+                                        </label>
+                                    </div>
+                                </div>
+                            @endif
+
+                            <input
+                                type="file"
+                                name="logo_banner"
+                                accept="image/*"
+                                class="block w-full text-sm text-zinc-500 file:mr-4 file:py-2.5 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-teal-50 file:text-teal-700 file:cursor-pointer hover:file:bg-teal-100 dark:file:bg-zinc-800 dark:file:text-zinc-200"
+                            />
+                        </div>
+                    </div>
+
+                    <hr class="border-gray-200 dark:border-zinc-800" />
+
+                    <!-- Custom Favicon & PWA Icon -->
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        <div class="space-y-2">
+                            <label class="block text-sm font-semibold text-gray-700 dark:text-zinc-300">
+                                Favicon / Ikon Tab Browser
+                            </label>
+                            <p class="text-xs text-gray-500 dark:text-zinc-500">
+                                Ikon kecil di tab browser (PNG/ICO/SVG, 32×32px atau 64×64px).
+                            </p>
+                        </div>
+                        <div class="md:col-span-2 space-y-4">
+                            @if ($favicon)
+                                <div class="flex items-center gap-4 p-4 bg-gray-50 dark:bg-[#09090b]/20 rounded-xl border border-gray-100 dark:border-zinc-800">
+                                    <img src="{{ asset('storage/' . $favicon) }}" alt="Favicon" class="w-8 h-8 object-contain rounded bg-white border p-1" />
+                                    <div>
+                                        <p class="text-xs font-semibold text-gray-900 dark:text-zinc-300">Favicon Custom Aktif</p>
+                                        <label class="inline-flex items-center mt-1 text-xs text-red-600 hover:text-red-700 cursor-pointer">
+                                            <input type="checkbox" name="reset_favicon" value="1" class="rounded border-gray-300 text-red-600 focus:ring-red-500 mr-1.5" />
+                                            Hapus Favicon
+                                        </label>
+                                    </div>
+                                </div>
+                            @endif
+
+                            <input
+                                type="file"
+                                name="favicon"
+                                accept="image/png,image/x-icon,image/svg+xml,image/webp"
+                                class="block w-full text-sm text-zinc-500 file:mr-4 file:py-2.5 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-teal-50 file:text-teal-700 file:cursor-pointer hover:file:bg-teal-100 dark:file:bg-zinc-800 dark:file:text-zinc-200"
                             />
                         </div>
                     </div>

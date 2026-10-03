@@ -240,7 +240,7 @@
     $isDashboardActive = $routeIs('dashboard') || $routeIs('*.dashboard') || request()->is('*/dashboard*') || request()->is('dashboard');
 @endphp
 
-<!-- Bottom Floating Navigation Bar in SAPA SMAIA 7 Style (Mobile & Tablet / iPad) -->
+<!-- Bottom Floating Navigation Bar (Mobile & Tablet / iPad) -->
 <nav x-data="{
          lastScrollY: 0,
          hideNav: false,

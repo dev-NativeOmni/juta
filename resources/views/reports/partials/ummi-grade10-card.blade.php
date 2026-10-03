@@ -1,14 +1,8 @@
 @php
-    $circleImgPath = public_path('images/logo-alazhar7-circle.png');
-    $gemilangImgPath = public_path('images/logo-gemilang-banner.png');
-
-    $circleLogoBase64 = file_exists($circleImgPath) 
-        ? 'data:image/png;base64,' . base64_encode(file_get_contents($circleImgPath))
-        : asset('images/logo-alazhar7-circle.png');
-
-    $gemilangLogoBase64 = file_exists($gemilangImgPath) 
-        ? 'data:image/png;base64,' . base64_encode(file_get_contents($gemilangImgPath))
-        : asset('images/logo-gemilang-banner.png');
+    $activeInst = app(\App\Services\InstitutionContext::class)->get();
+    $schoolName = $activeInst?->name ?? \App\Models\Setting::get('nama_instansi', \App\Models\Setting::get('app_name', 'JUTA'));
+    $logoSquare = $activeInst?->logo_url ?? (\App\Models\Setting::get('logo') ? asset('storage/' . \App\Models\Setting::get('logo')) : null);
+    $bannerLogo = \App\Models\Setting::get('logo_banner') ? asset('storage/' . \App\Models\Setting::get('logo_banner')) : null;
 
     $className = $selectedClass?->name ?? '';
     $hideZiyadah = (bool) preg_match('/(E2|E3|X\.?E2|X\.?E3|E-2|E-3)/i', $className);
@@ -18,11 +12,22 @@
     
     <!-- Top Header Bar with Centered Logos -->
     <div class="flex items-center justify-center gap-3 sm:gap-5 border-b-2 border-amber-300 pb-3 mb-3 text-center">
-        <!-- Logo Bulat (Left) -->
-        <img src="{{ $circleLogoBase64 }}" alt="Logo Al Azhar 7" class="w-12 h-12 sm:w-14 sm:h-14 object-contain shrink-0" style="height: 48px !important; width: 48px !important; max-height: 48px !important; max-width: 48px !important;">
+        @if ($logoSquare)
+            <img src="{{ $logoSquare }}" alt="{{ $schoolName }}" class="w-12 h-12 sm:w-14 sm:h-14 object-contain shrink-0" style="height: 48px !important; width: 48px !important; max-height: 48px !important; max-width: 48px !important;">
+        @else
+            <div class="w-12 h-12 rounded-xl bg-slate-900 text-amber-400 font-black text-xl flex items-center justify-center shrink-0">
+                {{ substr($schoolName, 0, 1) }}
+            </div>
+        @endif
 
-        <!-- Logo Gemilang (Right of Logo Bulat) -->
-        <img src="{{ $gemilangLogoBase64 }}" alt="SMA Islam Al Azhar 7 GEMILANG" class="h-10 sm:h-12 object-contain shrink-0" style="height: 44px !important; max-width: 320px !important; max-height: 44px !important;">
+        @if ($bannerLogo)
+            <img src="{{ $bannerLogo }}" alt="{{ $schoolName }}" class="h-10 sm:h-12 object-contain shrink-0" style="height: 44px !important; max-width: 320px !important; max-height: 44px !important;">
+        @else
+            <div class="flex flex-col text-left">
+                <span class="font-black text-base sm:text-lg tracking-tight uppercase" style="color: #0f172a !important;">{{ $schoolName }}</span>
+                <span class="text-xs font-bold text-amber-600 uppercase tracking-wider">LEMBAGA TAHFIDZ & PENDIDIKAN</span>
+            </div>
+        @endif
     </div>
 
     <!-- Main Title Section -->
@@ -120,11 +125,10 @@
             </div>
         </div>
 
-        <!-- Right: Social Media Contacts -->
+        <!-- Right: Institution Info -->
         <div class="text-right text-[10px] font-semibold space-y-0.5" style="color: #334155 !important;">
-            <p class="font-bold text-sm" style="color: #0f172a !important;">SMA Islam Al Azhar 7 Solo Baru</p>
-            <p class="inline-flex items-center gap-1.5 justify-end"><x-heroicon-o-globe-alt class="w-3 h-3 text-emerald-600 inline" /> <span>smaialazhar7.sch.id</span> <span class="mx-1">|</span> <x-heroicon-o-phone class="w-3 h-3 text-emerald-600 inline" /> <span>0812-2347-0077</span></p>
-            <p class="text-[9px]" style="color: #64748b !important;">@smaialazhar7</p>
+            <p class="font-bold text-sm" style="color: #0f172a !important;">{{ $schoolName }}</p>
+            <p class="text-[9px]" style="color: #64748b !important;">Laporan Resmi Capaian Tahfidz</p>
         </div>
     </div>
 </div>

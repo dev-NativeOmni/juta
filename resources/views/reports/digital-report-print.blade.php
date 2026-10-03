@@ -98,22 +98,24 @@
     </div>
 
     @php
+        $activeInst = app(\App\Services\InstitutionContext::class)->get();
         $reportMainTitle = \App\Models\Setting::get('report_main_title', 'LAPORAN TAHFIDZ, ADAB DAN TANSE');
-        $reportSchoolName = \App\Models\Setting::get('report_school_name', 'SMA ISLAM AL AZHAR 7 SUKOHARJO');
-        $reportCity = \App\Models\Setting::get('report_city', 'Sukoharjo');
+        $reportSchoolName = \App\Models\Setting::get('report_school_name', $activeInst?->name ?? \App\Models\Setting::get('nama_instansi', 'LEMBAGA PENDIDIKAN'));
+        $reportCity = \App\Models\Setting::get('report_city', 'Kota');
+        $reportLogo = $activeInst?->logo_url ?? (\App\Models\Setting::get('logo') ? asset('storage/' . \App\Models\Setting::get('logo')) : null);
 
-        $coordTahfizhName = \App\Models\Setting::get('report_coord_tahfizh_name', 'Zainal Arifin, S.Pd');
-        $coordTahfizhNik = \App\Models\Setting::get('report_coord_tahfizh_nik', '15.06.0393');
+        $coordTahfizhName = \App\Models\Setting::get('report_coord_tahfizh_name', '-');
+        $coordTahfizhNik = \App\Models\Setting::get('report_coord_tahfizh_nik', '-');
 
-        $coordKeagamaanName = \App\Models\Setting::get('report_coord_keagamaan_name', 'Rifqi Ihsan, S.Pd., Gr.');
-        $coordKeagamaanNik = \App\Models\Setting::get('report_coord_keagamaan_nik', '15.06.0393');
+        $coordKeagamaanName = \App\Models\Setting::get('report_coord_keagamaan_name', '-');
+        $coordKeagamaanNik = \App\Models\Setting::get('report_coord_keagamaan_nik', '-');
 
-        $headmasterTitle = \App\Models\Setting::get('report_headmaster_title', 'Kepala SMA Islam Al Azhar 7 Sukoharjo');
-        $headmasterName = \App\Models\Setting::get('report_headmaster_name', 'Moh Pandoyo, S.Si., M.Pd., Gr.');
-        $headmasterNik = \App\Models\Setting::get('report_headmaster_nik', '08.04.0160');
+        $headmasterTitle = \App\Models\Setting::get('report_headmaster_title', 'Kepala Sekolah');
+        $headmasterName = \App\Models\Setting::get('report_headmaster_name', '-');
+        $headmasterNik = \App\Models\Setting::get('report_headmaster_nik', '-');
 
-        $coordTanseName = \App\Models\Setting::get('report_coord_tanse_name', 'Yatim Hermawan, S.E., S.Kom');
-        $coordTanseNik = \App\Models\Setting::get('report_coord_tanse_nik', '15.06.0393');
+        $coordTanseName = \App\Models\Setting::get('report_coord_tanse_name', '-');
+        $coordTanseNik = \App\Models\Setting::get('report_coord_tanse_nik', '-');
     @endphp
 
     <!-- Official Report Card Layout -->
@@ -121,9 +123,15 @@
         
         <!-- Kop Surat Terpadu -->
         <div class="grid grid-cols-[85px_1fr_85px] items-center border-b border-black pb-4 mb-6">
-            <!-- Left Logo: SMA Islam Al Azhar 7 -->
+            <!-- Left Logo -->
             <div class="shrink-0 flex justify-start">
-                <img src="{{ asset('images/logo_alazhar7.png') }}" class="h-20 w-auto object-contain" alt="Logo SMA Islam Al Azhar 7" />
+                @if ($reportLogo)
+                    <img src="{{ $reportLogo }}" class="h-20 w-auto object-contain" alt="{{ $reportSchoolName }}" />
+                @else
+                    <div class="h-16 w-16 rounded-xl border border-black flex items-center justify-center font-bold text-lg">
+                        {{ substr($reportSchoolName, 0, 1) }}
+                    </div>
+                @endif
             </div>
             
             <!-- Title & Basmalah -->

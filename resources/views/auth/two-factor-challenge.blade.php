@@ -1,6 +1,6 @@
 @php
-    $logo = \App\Models\Setting::get('logo');
-    $namaInstansi = \App\Models\Setting::get('nama_instansi');
+    $activeInst = app(\App\Services\InstitutionContext::class)->get();
+    $appName = $activeInst?->name ?? \App\Models\Setting::get('app_name', config('app.name', 'JUTA'));
 @endphp
 <!DOCTYPE html>
 <html lang="{{ str_replace('_', '-', app()->getLocale()) }}" class="dark">
@@ -9,9 +9,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
 
-    <title>{{ config('app.name', 'IMS SMAIA 7') }} - {{ __('Verifikasi Dua Faktor') }}</title>
+    <title>{{ $appName }} - {{ __('Verifikasi Dua Faktor') }}</title>
 
-    <link rel="icon" type="image/png" href="/images/logo_alazhar7.png">
+    @include('partials.app-icons', ['themeColor' => '#ea580c'])
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>

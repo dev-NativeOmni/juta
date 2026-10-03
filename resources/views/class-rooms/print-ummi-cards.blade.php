@@ -71,6 +71,12 @@
         </div>
     </div>
 
+    @php
+        $activeInst = app(\App\Services\InstitutionContext::class)->get();
+        $schoolLogo = $activeInst?->logo_url ?? (\App\Models\Setting::get('logo') ? asset('storage/' . \App\Models\Setting::get('logo')) : null);
+        $schoolName = $activeInst?->name ?? \App\Models\Setting::get('nama_instansi', \App\Models\Setting::get('app_name', 'JUTA'));
+    @endphp
+
     <!-- Printable Page Container -->
     <div class="max-w-[1600px] mx-auto space-y-8 print:space-y-0">
         @foreach ($studentsData as $data)
@@ -85,9 +91,17 @@
                         
                         <!-- Logo & Title Header Banner -->
                         <div class="bg-zinc-900 text-white p-3 rounded-lg flex items-center justify-center gap-3 relative mb-4">
-                            <img src="{{ asset('images/logo_alazhar7.png') }}" alt="School Logo" class="w-8 h-8 object-contain rounded-full bg-white p-0.5">
+                            @if ($schoolLogo)
+                                <img src="{{ $schoolLogo }}" alt="{{ $schoolName }}" class="w-8 h-8 object-contain rounded-full bg-white p-0.5">
+                            @else
+                                <div class="w-7 h-7 rounded-full bg-white text-zinc-900 font-bold flex items-center justify-center text-xs">
+                                    {{ substr($schoolName, 0, 1) }}
+                                </div>
+                            @endif
                             <span class="font-extrabold text-xs sm:text-sm tracking-wider">KARTU PRESTASI SISWA</span>
-                            <img src="{{ asset('images/logo_alazhar7.png') }}" alt="School Logo" class="w-8 h-8 object-contain rounded-full bg-white p-0.5 absolute right-3">
+                            @if ($schoolLogo)
+                                <img src="{{ $schoolLogo }}" alt="{{ $schoolName }}" class="w-8 h-8 object-contain rounded-full bg-white p-0.5 absolute right-3">
+                            @endif
                         </div>
 
                         <!-- Student Info Two Columns -->

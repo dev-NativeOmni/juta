@@ -17,8 +17,13 @@ class SettingController extends Controller
     public function index()
     {
         return view('settings.index', [
+            'app_name' => Setting::get('app_name', config('app.name', 'JUTA')),
+            'app_tagline' => Setting::get('app_tagline', 'Jurnal Tahfizh & Adab'),
+            'nama_instansi' => Setting::get('nama_instansi', 'TAD Management System'),
+            'footer_copyright' => Setting::get('footer_copyright'),
             'logo' => Setting::get('logo'),
-            'nama_instansi' => Setting::get('nama_instansi'),
+            'logo_banner' => Setting::get('logo_banner'),
+            'favicon' => Setting::get('favicon'),
             'login_bg' => Setting::get('login_bg'),
             'landing_bg' => Setting::get('landing_bg'),
             'officials' => collect(Signatures::OFFICIALS)->map(fn ($official, $key) => [
@@ -32,8 +37,13 @@ class SettingController extends Controller
     public function update(Request $request)
     {
         $request->validate([
-            'logo' => 'nullable|image|max:2048',
+            'app_name' => 'nullable|string|max:100',
+            'app_tagline' => 'nullable|string|max:255',
             'nama_instansi' => 'nullable|string|max:255',
+            'footer_copyright' => 'nullable|string|max:255',
+            'logo' => 'nullable|image|max:2048',
+            'logo_banner' => 'nullable|image|max:3072',
+            'favicon' => 'nullable|image|mimes:png,ico,svg,webp|max:1024',
             'login_bg' => 'nullable|image|max:5120',
             'landing_bg' => 'nullable|image|max:5120',
             'signatures' => 'nullable|array',
@@ -41,6 +51,20 @@ class SettingController extends Controller
             'reset_signatures' => 'nullable|array',
             'reset_signatures.*' => 'in:'.implode(',', array_keys(Signatures::OFFICIALS)),
         ]);
+
+        // Text settings
+        if ($request->has('app_name')) {
+            Setting::set('app_name', $request->input('app_name') ?: 'JUTA');
+        }
+        if ($request->has('app_tagline')) {
+            Setting::set('app_tagline', $request->input('app_tagline'));
+        }
+        if ($request->has('nama_instansi')) {
+            Setting::set('nama_instansi', $request->input('nama_instansi'));
+        }
+        if ($request->has('footer_copyright')) {
+            Setting::set('footer_copyright', $request->input('footer_copyright'));
+        }
 
         // Tanda tangan pejabat: hapus bila dicentang, ganti bila ada unggahan baru.
         foreach (array_keys(Signatures::OFFICIALS) as $key) {
@@ -53,6 +77,7 @@ class SettingController extends Controller
             }
         }
 
+        // Logo
         if ($request->boolean('reset_logo')) {
             $oldLogo = Setting::get('logo');
             if ($oldLogo) {
@@ -68,10 +93,39 @@ class SettingController extends Controller
             Setting::set('logo', $path);
         }
 
-        if ($request->has('nama_instansi')) {
-            Setting::set('nama_instansi', $request->input('nama_instansi'));
+        // Logo Banner
+        if ($request->boolean('reset_logo_banner')) {
+            $oldBanner = Setting::get('logo_banner');
+            if ($oldBanner) {
+                Storage::disk('public')->delete($oldBanner);
+            }
+            Setting::set('logo_banner', null);
+        } elseif ($request->hasFile('logo_banner')) {
+            $oldBanner = Setting::get('logo_banner');
+            if ($oldBanner) {
+                Storage::disk('public')->delete($oldBanner);
+            }
+            $path = $request->file('logo_banner')->store('settings', 'public');
+            Setting::set('logo_banner', $path);
         }
 
+        // Favicon
+        if ($request->boolean('reset_favicon')) {
+            $oldFavicon = Setting::get('favicon');
+            if ($oldFavicon) {
+                Storage::disk('public')->delete($oldFavicon);
+            }
+            Setting::set('favicon', null);
+        } elseif ($request->hasFile('favicon')) {
+            $oldFavicon = Setting::get('favicon');
+            if ($oldFavicon) {
+                Storage::disk('public')->delete($oldFavicon);
+            }
+            $path = $request->file('favicon')->store('settings', 'public');
+            Setting::set('favicon', $path);
+        }
+
+        // Backgrounds
         if ($request->boolean('reset_login_bg')) {
             $oldBg = Setting::get('login_bg');
             if ($oldBg) {
@@ -102,7 +156,7 @@ class SettingController extends Controller
             Setting::set('landing_bg', $path);
         }
 
-        return redirect()->route('settings.index')->with('success', 'Pengaturan berhasil diperbarui.');
+        return redirect()->route('settings.index')->with('success', 'Pengaturan branding sistem berhasil diperbarui.');
     }
 
     public function editAdab()

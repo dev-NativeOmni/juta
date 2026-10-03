@@ -5,7 +5,7 @@
         <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=5">
         <meta name="csrf-token" content="{{ csrf_token() }}">
 
-        <title>{{ config('app.name', 'TAD SMAIA 7') }}</title>
+        <title>{{ (app(\App\Services\InstitutionContext::class)->get()?->name ?? \App\Models\Setting::get('app_name', config('app.name', 'JUTA'))) }}</title>
 
         <!-- PWA & Apple iOS Metadata -->
         @include('partials.app-icons')

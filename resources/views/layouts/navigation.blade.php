@@ -1,7 +1,10 @@
 @php
     $user = auth()->user();
     $activeInstitution = app(\App\Services\InstitutionContext::class)->get();
-    $logo = $activeInstitution?->logo_path ?? \App\Models\Setting::get('logo');
+    $appName = $activeInstitution?->name ?? \App\Models\Setting::get('app_name', config('app.name', 'JUTA'));
+    $appTagline = $activeInstitution ? ($activeInstitution->code ?: 'Portal Lembaga') : \App\Models\Setting::get('app_tagline', 'Jurnal Tahfizh & Adab');
+    $logoUrl = $activeInstitution?->logo_url ?? (\App\Models\Setting::get('logo') ? asset('storage/' . \App\Models\Setting::get('logo')) : null);
+    $bannerLogoUrl = \App\Models\Setting::get('logo_banner') ? asset('storage/' . \App\Models\Setting::get('logo_banner')) : null;
     $allInstitutions = ($user && $user->hasRole('super_admin'))
         ? \App\Models\Institution::where('is_active', true)->orderBy('name')->get()
         : collect();
@@ -44,13 +47,27 @@
 
          <!-- Logo -->
          <div class="flex-shrink-0 flex items-center px-4">
-             <a href="{{ route('dashboard') }}" class="flex items-center gap-2 shrink-0 select-none">
-                 @if ($logo)
-                     <img src="{{ asset('storage/' . $logo) }}" alt="Logo SMA Islam Al Azhar 7" class="h-8 w-8 object-contain shrink-0 drop-shadow-xs">
+             <a href="{{ route('dashboard') }}" class="flex items-center gap-2.5 shrink-0 select-none min-w-0">
+                 @if ($logoUrl)
+                     <img src="{{ $logoUrl }}" alt="{{ $appName }}" class="h-8 w-8 object-contain shrink-0 drop-shadow-xs rounded-lg">
                  @else
-                     <img src="{{ asset('images/logo_alazhar7.png') }}" alt="Logo SMA Islam Al Azhar 7" class="h-8 w-8 object-contain shrink-0 drop-shadow-xs">
+                     <div class="h-8 w-8 rounded-xl bg-gradient-to-tr from-teal-600 to-emerald-500 flex items-center justify-center text-white font-black text-sm shadow-sm shrink-0">
+                         {{ substr($appName, 0, 1) }}
+                     </div>
                  @endif
-                 <img src="{{ asset('images/logo-gemilang-banner.png') }}" alt="Logo Gemilang" class="h-6 max-w-[130px] sm:max-w-[150px] object-contain drop-shadow-xs shrink-0">
+
+                 @if ($bannerLogoUrl)
+                     <img src="{{ $bannerLogoUrl }}" alt="{{ $appName }}" class="h-6 max-w-[140px] object-contain drop-shadow-xs shrink-0">
+                 @else
+                     <div class="flex flex-col min-w-0">
+                         <span class="font-black text-sm leading-tight tracking-tight text-zinc-900 dark:text-white truncate max-w-[160px]">
+                             {{ $appName }}
+                         </span>
+                         <span class="text-[10px] font-semibold text-teal-600 dark:text-teal-400 tracking-wider uppercase truncate">
+                             {{ $appTagline }}
+                         </span>
+                     </div>
+                 @endif
              </a>
          </div>
 
@@ -160,13 +177,26 @@
     </button>
     <div class="flex-1 flex justify-between px-3 sm:px-4 items-center gap-2 min-w-0">
         <div class="flex items-center gap-2 sm:gap-3 shrink-0 min-w-0">
-            <a href="{{ route('dashboard') }}" class="flex items-center gap-1.5 sm:gap-2.5 shrink-0 select-none">
-                @if ($logo)
-                    <img src="{{ asset('storage/' . $logo) }}" alt="Logo SMA Islam Al Azhar 7" class="h-6 w-6 sm:h-8 sm:w-8 object-contain shrink-0 drop-shadow-xs">
+            <a href="{{ route('dashboard') }}" class="flex items-center gap-2 sm:gap-2.5 shrink-0 select-none min-w-0">
+                @if ($logoUrl)
+                    <img src="{{ $logoUrl }}" alt="{{ $appName }}" class="h-7 w-7 sm:h-8 sm:w-8 object-contain shrink-0 drop-shadow-xs rounded-lg">
                 @else
-                    <img src="{{ asset('images/logo_alazhar7.png') }}" alt="Logo SMA Islam Al Azhar 7" class="h-6 w-6 sm:h-8 sm:w-8 object-contain shrink-0 drop-shadow-xs">
+                    <div class="h-7 w-7 sm:h-8 sm:w-8 rounded-xl bg-gradient-to-tr from-teal-600 to-emerald-500 flex items-center justify-center text-white font-black text-xs sm:text-sm shadow-xs shrink-0">
+                        {{ substr($appName, 0, 1) }}
+                    </div>
                 @endif
-                <img src="{{ asset('images/logo-gemilang-banner.png') }}" alt="Logo Gemilang" class="h-4.5 sm:h-6 max-w-[95px] xs:max-w-[130px] sm:max-w-[160px] object-contain drop-shadow-xs shrink-0">
+                @if ($bannerLogoUrl)
+                    <img src="{{ $bannerLogoUrl }}" alt="{{ $appName }}" class="h-4.5 sm:h-6 max-w-[100px] xs:max-w-[130px] sm:max-w-[160px] object-contain drop-shadow-xs shrink-0">
+                @else
+                    <div class="flex flex-col min-w-0">
+                        <span class="font-black text-xs sm:text-sm leading-tight tracking-tight text-zinc-900 dark:text-white truncate max-w-[110px] xs:max-w-[150px] sm:max-w-[200px]">
+                            {{ $appName }}
+                        </span>
+                        <span class="text-[9px] sm:text-[10px] font-semibold text-teal-600 dark:text-teal-400 tracking-wider uppercase truncate max-w-[110px] xs:max-w-[150px] sm:max-w-[200px]">
+                            {{ $appTagline }}
+                        </span>
+                    </div>
+                @endif
             </a>
 
             <!-- Theme Toggle -->

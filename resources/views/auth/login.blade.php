@@ -2,12 +2,14 @@
     try {
         $activeInst = app(\App\Services\InstitutionContext::class)->get();
         if ($activeInst) {
-            $logo = $activeInst->logo_path;
+            $logo = $activeInst->logo_url;
             $namaInstansi = $activeInst->name;
             $loginBg = $activeInst->login_bg;
+            $appName = $activeInst->name;
+            $appTagline = $activeInst->code ?: 'Portal Lembaga';
         } else {
             $logo = class_exists(\App\Models\Setting::class) && \Illuminate\Support\Facades\Schema::hasTable('settings') 
-                ? \App\Models\Setting::get('logo') 
+                ? (\App\Models\Setting::get('logo') ? asset('storage/' . \App\Models\Setting::get('logo')) : null)
                 : null;
             $namaInstansi = class_exists(\App\Models\Setting::class) && \Illuminate\Support\Facades\Schema::hasTable('settings') 
                 ? \App\Models\Setting::get('nama_instansi') 
@@ -15,12 +17,20 @@
             $loginBg = class_exists(\App\Models\Setting::class) && \Illuminate\Support\Facades\Schema::hasTable('settings') 
                 ? \App\Models\Setting::get('login_bg') 
                 : null;
+            $appName = class_exists(\App\Models\Setting::class) && \Illuminate\Support\Facades\Schema::hasTable('settings') 
+                ? \App\Models\Setting::get('app_name', config('app.name', 'JUTA')) 
+                : config('app.name', 'JUTA');
+            $appTagline = class_exists(\App\Models\Setting::class) && \Illuminate\Support\Facades\Schema::hasTable('settings') 
+                ? \App\Models\Setting::get('app_tagline', 'Jurnal Tahfizh & Adab') 
+                : 'Jurnal Tahfizh & Adab';
         }
     } catch (\Throwable $e) {
         $activeInst = null;
         $logo = null;
         $namaInstansi = null;
         $loginBg = null;
+        $appName = config('app.name', 'JUTA');
+        $appTagline = 'Jurnal Tahfizh & Adab';
     }
 @endphp
 <!DOCTYPE html>
@@ -138,21 +148,23 @@
                         </div>
                     @endif
 
-                    <!-- Logo (Clean without box wrapper) -->
+                    <!-- Logo -->
                     <div class="relative mb-3 flex items-center justify-center">
                         @if ($logo)
-                            <img src="{{ (str_starts_with($logo, 'http://') || str_starts_with($logo, 'https://')) ? $logo : asset('storage/' . $logo) }}" alt="Logo" class="w-16 h-16 sm:w-20 sm:h-20 object-contain drop-shadow-[0_8px_20px_rgba(0,0,0,0.55)]" />
+                            <img src="{{ (str_starts_with($logo, 'http://') || str_starts_with($logo, 'https://')) ? $logo : asset('storage/' . $logo) }}" alt="Logo" class="w-16 h-16 sm:w-20 sm:h-20 object-contain drop-shadow-[0_8px_20px_rgba(0,0,0,0.55)] rounded-2xl" />
                         @else
-                            <img src="{{ asset('images/logo_alazhar7.png') }}" alt="Logo" class="w-16 h-16 sm:w-20 sm:h-20 object-contain drop-shadow-[0_8px_20px_rgba(0,0,0,0.55)]">
+                            <div class="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl bg-gradient-to-tr from-teal-500 via-emerald-500 to-teal-700 flex items-center justify-center text-white font-black text-2xl sm:text-3xl shadow-lg shadow-teal-500/30">
+                                {{ substr($appName, 0, 1) }}
+                            </div>
                         @endif
                     </div>
 
                     <h1 class="text-2xl sm:text-[1.75rem] font-black font-display text-white tracking-tight leading-tight">
-                        LOGIN TAD
+                        {{ $appName }}
                     </h1>
                     
                     <p class="text-xs sm:text-sm text-zinc-300 font-medium mt-1 tracking-wide">
-                        {{ $namaInstansi ?: 'TAD Management System' }}
+                        {{ $namaInstansi ?: $appTagline }}
                     </p>
                 </div>
 

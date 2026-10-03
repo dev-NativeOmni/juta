@@ -36,7 +36,7 @@ class QuarterlyReportExport implements WithMultipleSheets
             'date' => ! empty($this->data['termEndDate'])
                 ? Carbon::parse($this->data['termEndDate'])->locale('id')->translatedFormat('j F Y')
                 : '',
-            'headmaster_title' => (string) Setting::get('report_headmaster_title', 'Kepala SMA Islam Al Azhar 7 Sukoharjo'),
+            'headmaster_title' => (string) Setting::get('report_headmaster_title', 'Kepala Sekolah'),
             'headmaster_name' => $headmaster['name'],
             'headmaster_nik' => $headmaster['nik'],
             'headmaster_signature' => Signatures::absolutePath(Signatures::officialFile('headmaster')),

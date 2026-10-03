@@ -612,21 +612,21 @@ class StudentReportController extends Controller
 
         // Template Settings
         $reportMainTitle = Setting::get('report_main_title', 'LAPORAN TAHFIDZ, ADAB DAN TANSE');
-        $reportSchoolName = Setting::get('report_school_name', 'SMA ISLAM AL AZHAR 7 SUKOHARJO');
-        $reportCity = Setting::get('report_city', 'Sukoharjo');
+        $reportSchoolName = Setting::get('report_school_name', Setting::get('nama_instansi', 'LEMBAGA PENDIDIKAN'));
+        $reportCity = Setting::get('report_city', 'Kota');
 
-        $coordTahfizhName = Setting::get('report_coord_tahfizh_name', 'Zainal Arifin, S.Pd');
-        $coordTahfizhNik = Setting::get('report_coord_tahfizh_nik', '15.06.0393');
+        $coordTahfizhName = Setting::get('report_coord_tahfizh_name', 'Koordinator Tahfizh');
+        $coordTahfizhNik = Setting::get('report_coord_tahfizh_nik', '-');
 
-        $coordKeagamaanName = Setting::get('report_coord_keagamaan_name', 'Rifqi Ihsan, S.Pd., Gr.');
-        $coordKeagamaanNik = Setting::get('report_coord_keagamaan_nik', '15.06.0393');
+        $coordKeagamaanName = Setting::get('report_coord_keagamaan_name', 'Koordinator Keagamaan');
+        $coordKeagamaanNik = Setting::get('report_coord_keagamaan_nik', '-');
 
-        $headmasterTitle = Setting::get('report_headmaster_title', 'Kepala SMA Islam Al Azhar 7 Sukoharjo');
-        $headmasterName = Setting::get('report_headmaster_name', 'Moh Pandoyo, S.Si., M.Pd., Gr.');
-        $headmasterNik = Setting::get('report_headmaster_nik', '08.04.0160');
+        $headmasterTitle = Setting::get('report_headmaster_title', 'Kepala Sekolah');
+        $headmasterName = Setting::get('report_headmaster_name', 'Kepala Sekolah');
+        $headmasterNik = Setting::get('report_headmaster_nik', '-');
 
-        $coordTanseName = Setting::get('report_coord_tanse_name', 'Yatim Hermawan, S.E., S.Kom');
-        $coordTanseNik = Setting::get('report_coord_tanse_nik', '15.06.0393');
+        $coordTanseName = Setting::get('report_coord_tanse_name', 'Koordinator Tanse');
+        $coordTanseNik = Setting::get('report_coord_tanse_nik', '-');
 
         $blpDates = self::blpDates($academicYear);
         $tanseRules = self::tanseRules();
@@ -673,18 +673,18 @@ class StudentReportController extends Controller
 
         // Template Settings
         Setting::set('report_main_title', $request->input('report_main_title', 'LAPORAN TAHFIDZ, ADAB DAN TANSE'));
-        Setting::set('report_school_name', $request->input('report_school_name', 'SMA ISLAM AL AZHAR 7 SUKOHARJO'));
-        Setting::set('report_city', $request->input('report_city', 'Sukoharjo'));
+        Setting::set('report_school_name', $request->input('report_school_name', Setting::get('nama_instansi', 'LEMBAGA PENDIDIKAN')));
+        Setting::set('report_city', $request->input('report_city', 'Kota'));
 
-        Setting::set('report_coord_tahfizh_name', $request->input('report_coord_tahfizh_name', 'Zainal Arifin, S.Pd'));
-        Setting::set('report_coord_tahfizh_nik', $request->input('report_coord_tahfizh_nik', '15.06.0393'));
+        Setting::set('report_coord_tahfizh_name', $request->input('report_coord_tahfizh_name', ''));
+        Setting::set('report_coord_tahfizh_nik', $request->input('report_coord_tahfizh_nik', ''));
 
-        Setting::set('report_coord_keagamaan_name', $request->input('report_coord_keagamaan_name', 'Rifqi Ihsan, S.Pd., Gr.'));
-        Setting::set('report_coord_keagamaan_nik', $request->input('report_coord_keagamaan_nik', '15.06.0393'));
+        Setting::set('report_coord_keagamaan_name', $request->input('report_coord_keagamaan_name', ''));
+        Setting::set('report_coord_keagamaan_nik', $request->input('report_coord_keagamaan_nik', ''));
 
-        Setting::set('report_headmaster_title', $request->input('report_headmaster_title', 'Kepala SMA Islam Al Azhar 7 Sukoharjo'));
-        Setting::set('report_headmaster_name', $request->input('report_headmaster_name', 'Moh Pandoyo, S.Si., M.Pd., Gr.'));
-        Setting::set('report_headmaster_nik', $request->input('report_headmaster_nik', '08.04.0160'));
+        Setting::set('report_headmaster_title', $request->input('report_headmaster_title', 'Kepala Sekolah'));
+        Setting::set('report_headmaster_name', $request->input('report_headmaster_name', ''));
+        Setting::set('report_headmaster_nik', $request->input('report_headmaster_nik', ''));
 
         Setting::set('report_coord_tanse_name', $request->input('report_coord_tanse_name', 'Yatim Hermawan, S.E., S.Kom'));
         Setting::set('report_coord_tanse_nik', $request->input('report_coord_tanse_nik', '15.06.0393'));
